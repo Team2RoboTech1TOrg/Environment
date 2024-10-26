@@ -20,16 +20,22 @@ class WateringEnv(gym.Env):
         # Определение недоступных позиций
         unavailable_positions = {BASE_COORD * self.grid_size + BASE_COORD}  # База
 
+        def get_available_positions(unavailable):
+            return [i for i in range(self.grid_size ** 2) if
+                                   i not in unavailable]
+
         # Случайное размещение 10 цветов
-        available_positions = [i for i in range(self.grid_size ** 2) if
-                               i not in unavailable_positions]
+        # available_positions = [i for i in range(self.grid_size ** 2) if
+        #                        i not in unavailable_positions]
+        available_positions = get_available_positions(unavailable_positions)
         targets = np.random.choice(available_positions, size=COUNT_FLOWERS,
                                    replace=False)
         unavailable_positions.update(targets)
 
         # Случайное размещение 5 ям
-        available_positions = [i for i in range(self.grid_size ** 2) if
-                               i not in unavailable_positions]
+        # available_positions = [i for i in range(self.grid_size ** 2) if
+        #                        i not in unavailable_positions]
+        available_positions = get_available_positions(unavailable_positions)
         holes = np.random.choice(available_positions, size=COUNT_HOLES,
                                  replace=False)
 
