@@ -1,7 +1,7 @@
 from utils import load_image
 
 # Параметры модели
-LEARNING_RATE = 0.0001
+LEARNING_RATE = 0.001
 GAMMA = 0.99
 CLIP_RANGE = 0.2
 N_STEPS = 4096
@@ -36,15 +36,15 @@ MIN_FLOWERS_TO_WATER = 5
 
 REWARD_COMPLETION = 1000
 REWARD_MOVE = -0.5
-REWARD_WATER_SUCCESS = 200
-REWARD_WATER_FAIL_ALREADY_WATERED = -5
+REWARD_WATER_SUCCESS = 250
+REWARD_WATER_FAIL_ALREADY_WATERED = -10
 REWARD_WATER_FAIL_NOT_ON_FLOWER = -50
 REWARD_MAX_STEPS_DISTANCE = -10
 REWARD_RECHARGE = -10
 REWARD_REFILL = -10
 REWARD_COLLISION = -100  # штраф за попадание в яму
-REWARD_EXPLORE = 10  # Вознаграждение за исследование новых клеток
-REWARD_AVOID_HOLE = 30  # Вознаграждение за обход ям
+REWARD_EXPLORE = 5  # Вознаграждение за исследование новых клеток
+REWARD_AVOID_HOLE = 5 # Вознаграждение за обход ям
 REWARD_TIME = lambda t: 1 / t if t > 0 else 0
 REWARD_STEPS = lambda m: 1 / m if m > 0 else 0
 PENALTY_LOOP = -200

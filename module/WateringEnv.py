@@ -359,11 +359,11 @@ class WateringEnv(gym.Env):
 
         if np.all(self.watered_status == 1):
             logging.info("Все цветы политы")
-            if self.agent_position == self.base_position:
-                logging.info("Агент вернулся на базу")
-                reward += REWARD_COMPLETION
-                self.score += REWARD_COMPLETION
-                terminated = True
+            self.agent_position = self.base_position
+            logging.info("Агент вернулся на базу")
+            reward += REWARD_COMPLETION
+            self.score += REWARD_COMPLETION
+            terminated = True
 
         # if self.step_count - self.last_progress_step > MAX_STEPS_WITHOUT_PROGRESS:
         #     logging.info("Отсутствие прогресса в течение слишком большого количества шагов")
