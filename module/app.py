@@ -27,7 +27,7 @@ def run():
             ent_coef=COEF,
             verbose=1
         )
-        model.learn(total_timesteps=10)
+        model.learn(total_timesteps=1000)
         message = "Обучение модели завершено."
         logging.info(message)
         env.render_message(message)
@@ -76,6 +76,9 @@ def run():
                 time.sleep(5)
                 step_count = 0
             clock.tick(60)
+        message = "Конец."
+        env.render_message(message)
+        time.sleep(5)
         env.close()
     except KeyboardInterrupt:
         logging.info("Прервано пользователем")
