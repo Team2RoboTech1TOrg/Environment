@@ -27,7 +27,7 @@ def run():
             ent_coef=COEF,
             verbose=1
         )
-        model.learn(total_timesteps=1000)
+        model.learn(total_timesteps=50000)
         message = "Обучение модели завершено."
         logging.info(message)
         env.render_message(message)
