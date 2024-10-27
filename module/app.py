@@ -3,100 +3,71 @@ import sys
 import numpy as np
 from stable_baselines3 import PPO
 
-from CONST import WATER_CONSUMPTION, WATER_CAPACITY, SCREEN_SIZE
+from CONST import WATER_CONSUMPTION, LEARNING_RATE, GAMMA, CLIP_RANGE, N_STEPS, COEF
 from WateringEnv import WateringEnv
-from OptimalSearchAgent import OptimalSearchAgent
-
-
-def get_action(current_pos, next_step):
-    if next_step[0] < current_pos[0]:
-        return 0  # Движение вверх
-    elif next_step[0] > current_pos[0]:
-        return 1  # Движение вниз
-    elif next_step[1] < current_pos[1]:
-        return 2  # Движение влево
-    elif next_step[1] > current_pos[1]:
-        return 3  # Движение вправо
-    return None  # Нет движения
+from logger import logging
 
 
 def run():
-    screen = pygame.display.set_mode((SCREEN_SIZE,
-                                      SCREEN_SIZE + 100))  # Создание окна с размерами экрана и дополнительной областью для отображения информации
-    clock = pygame.time.Clock()  # Инициализация объекта для отслеживания времени
+    try:
+        pygame.display.set_caption("Drone learning")
+        env = WateringEnv()
+        model = PPO(
+            'MlpPolicy',
+            env,
+            learning_rate=LEARNING_RATE,
+            gamma=GAMMA,
+            clip_range=CLIP_RANGE,
+            n_steps=N_STEPS,
+            ent_coef=COEF,
+            verbose=1
+        )
+        logging.info("Начало обучения модели...")
+        model.learn(total_timesteps=10)
+        logging.info("Обучение модели завершено.")
+        model.save("ppo_watering_model")
 
-    env = WateringEnv()
-    # Эти две строчки запускают ППО. Если их закомитить, и раскомитить то, что ниже, будет простой алгоритм
-    model = PPO('MlpPolicy', env, verbose=1)
-    model.learn(total_timesteps=100)
+        clock = pygame.time.Clock()
+        pygame.display.set_caption("Drone Watering Flowers")
 
-    # agent = OptimalSearchAgent(env)  # Создание объекта агента, отвечающего за поиск оптимальных путей
-    #
-    # # Основной цикл симуляции
-    # obs = env.reset()  # Сбрасываем среду, получаем начальное наблюдение
-    # done = False  # Инициализация переменной завершения эпизода
-    #
-    # # Основной игровой цикл
-    # while True:
-    #     # Обрабатываем события Pygame
-    #     for event in pygame.event.get():
-    #         if event.type == pygame.QUIT:
-    #             pygame.quit()
-    #             sys.exit()
-    #
-    #     # Определяем цель
-    #     if env.water_tank < WATER_CONSUMPTION:
-    #         goal = (5, 5)  # Возвращаемся на базу для заправки водой
-    #     else:
-    #         remaining_targets = [pos for i, pos in enumerate(env.target_positions) if env.watered_status[i] == 0]
-    #         if remaining_targets:
-    #             goal = remaining_targets[0]  # Следующий неполитый цветок
-    #         else:
-    #             goal = (5, 5)  # Все цветы политы, возвращаемся на базу
-    #
-    #             # Проверяем, достиг ли агент базы после выполнения всех задач
-    #             if np.array_equal(env.agent_position, goal):
-    #                 # Отображаем сообщение и предлагаем выйти из игры
-    #                 print("Все задачи выполнены! Нажмите 'Esc' для выхода или 'Enter' чтобы продолжить.")
-    #                 waiting_for_exit = True
-    #                 while waiting_for_exit:
-    #                     for event in pygame.event.get():
-    #                         if event.type == pygame.QUIT:
-    #                             pygame.quit()
-    #                             sys.exit()
-    #                         elif event.type == pygame.KEYDOWN:
-    #                             if event.key == pygame.K_ESCAPE:
-    #                                 pygame.quit()
-    #                                 sys.exit()
-    #                             elif event.key == pygame.K_RETURN:
-    #                                 pygame.quit()
-    #                                 sys.exit()
-    #
-    #     # Ищем оптимальный путь к цели
-    #     path = agent.find_optimal_path(goal)
-    #     print(f"Текущая позиция: {env.agent_position}, Цель: {goal}, Путь: {path}")
-    #
-    #     # Определяем действие
-    #     action = None
-    #     if np.array_equal(env.agent_position, goal):
-    #         if np.array_equal(goal, (5, 5)) and env.water_tank < WATER_CAPACITY:
-    #             env.water_tank = WATER_CAPACITY  # Заправляем бак водой
-    #             print("Заправка водой на базе.")
-    #         elif any(np.array_equal(goal, pos) for pos in env.target_positions):
-    #             action = 4  # Поливаем цветок
-    #             print("Полив цветка.")
-    #     else:
-    #         if path:
-    #             next_step = path[0]
-    #             action = get_action(env.agent_position, next_step)
-    #
-    #     # Выполняем действие, если оно определено
-    #     if action is not None:
-    #         obs, reward, done, info = env.step(action)
-    #         print(f"Действие: {action}, Новая позиция: {env.agent_position}, Награда: {reward}")
-    #
-    #     # Отрисовываем обновленное состояние среды
-    #     env.render(screen)
-    #
-    #     # Ограничиваем скорость симуляции до 5 кадров в секунду
-    #     clock.tick(5)
+        obs, info = env.reset()
+        step_count = 0
+        for _ in range(1000): #while True
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit()
+            # Высокоуровневый контроллер
+            if env.agent_position in env.target_positions:
+                idx = env.target_positions.index(env.agent_position)
+                if env.watered_status[idx] == 0 and env.water_tank >= WATER_CONSUMPTION:
+                    action = 5  # Действие "Полив"
+                    logging.debug(f"Иерархический контроллер: Полив цветка на позиции {env.agent_position}")
+                else:
+                    action, _ = model.predict(obs)
+            else:
+                action, _ = model.predict(obs)
+                if action == 5:
+                    # Заменяем действие "Полив" на другое допустимое действие, например, "Вверх" (0)
+                    action = np.random.choice([0, 1, 2, 3, 4])
+                    logging.debug("Иерархический контроллер: Действие 'Полив' недопустимо, заменено на другое действие")
+
+            obs, reward, terminated, truncated, info = env.step(action)
+            env.render()
+            step_count += 1
+            logging.info(
+                f"Шаг: {step_count}, Действие: {action}, Награда: {reward}, Завершено: {terminated}, Прервано: {truncated}")
+            if terminated or truncated:
+                obs, info = env.reset()
+                step_count = 0
+            clock.tick(60)
+        env.close()
+    except KeyboardInterrupt:
+        logging.info("Прервано пользователем")
+    except Exception as e:
+        logging.error(f"Произошла ошибка: {e}")
+        raise
+    finally:
+        pygame.quit()
+
+
