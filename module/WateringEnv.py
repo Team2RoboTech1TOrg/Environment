@@ -203,8 +203,12 @@ class WateringEnv(gym.Env):
         return observation
 
     def step(self, action):
-        if self.energy <= 0:
+        if self.energy < 10:
             return self._get_observation(), -100, True, False, {}
+
+        if self.water_tank <= 10: #возврат на базу за водой
+            self.agent_position = self.base_position
+            self.water_tank = WATER_CAPACITY
 
         self.step_count += 1
         reward = 0  # Начальное вознаграждение

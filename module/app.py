@@ -71,7 +71,7 @@ def run():
             )
             if terminated or truncated:
                 obs, info = env.reset()
-                message = "Новая игра"
+                message = f"Новая игра" # add counter games
                 env.render_message(message)
                 time.sleep(5)
                 step_count = 0
