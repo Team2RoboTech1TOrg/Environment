@@ -12,7 +12,7 @@ from CONST import VIEW_RANGE, ENERGY_CAPACITY, WATER_CAPACITY, WATER_CONSUMPTION
     ENERGY_CONSUMPTION_MOVE, ENERGY_RECHARGE_AMOUNT, REWARD_RECHARGE, REWARD_WATER_SUCCESS, ENERGY_CONSUMPTION_WATER, \
     REWARD_WATER_FAIL_ALREADY_WATERED, REWARD_WATER_FAIL_NOT_ON_FLOWER, REWARD_COLLISION, REWARD_EXPLORE, \
     MAX_STEPS_WITHOUT_PROGRESS, REWARD_COMPLETION, MAX_HOLE_FALL, MIN_FLOWERS_TO_WATER, MAX_TIME, \
-    MAX_DISTANCE_FROM_FLORAL, MAX_STEPS_DISTANCE, REWARD_TIME, REWARD_STEPS, BLUE
+    MAX_DISTANCE_FROM_FLORAL, MAX_STEPS_DISTANCE, REWARD_TIME, REWARD_STEPS, BLUE, TITLE_SIZE
 
 
 class WateringEnv(gym.Env):
@@ -51,6 +51,10 @@ class WateringEnv(gym.Env):
         )
 
     def reset_objects_positions(self):
+        """
+        Reset positions of objects
+        :return: function for get object's postitions
+        """
         if PLACEMENT_MODE == 'random':
             self._randomize_positions()
         elif PLACEMENT_MODE == 'fixed':
@@ -59,16 +63,22 @@ class WateringEnv(gym.Env):
             raise ValueError("Invalid PLACEMENT_MODE. Choose 'random' or 'fixed'.")
 
     def _randomize_positions(self):
+        """
+        Get random positions of objects
+        """
         unavailable_positions = {self.base_position}
-        self.target_positions = self.get_objects_positions(unavailable_positions, COUNT_FLOWERS)
+        self.target_positions = self._get_objects_positions(unavailable_positions, COUNT_FLOWERS)
         unavailable_positions.update(self.target_positions)
-        self.hole_positions = self.get_objects_positions(unavailable_positions, COUNT_HOLES)
+        self.hole_positions = self._get_objects_positions(unavailable_positions, COUNT_HOLES)
 
     def _fixed_positions(self):
+        """
+        Get fixed positions of objects
+        """
         self.target_positions = FIXED_FLOWER_POSITIONS.copy()
         self.hole_positions = FIXED_HOLE_POSITIONS.copy()
 
-    def get_available_positions(self, unavailable: set) -> list:
+    def _get_available_positions(self, unavailable: set) -> list:
         """
         Function for get available positions from all positions - unavailable
         :param unavailable: set
@@ -77,8 +87,14 @@ class WateringEnv(gym.Env):
         all_positions = [(i, j) for i in range(self.grid_size) for j in range(self.grid_size)]
         return [pos for pos in all_positions if pos not in unavailable]
 
-    def get_objects_positions(self, unavailable: (), size: int) -> list:
-        available_positions = self.get_available_positions(unavailable)
+    def _get_objects_positions(self, unavailable: (), size: int) -> list:
+        """
+        Get list of object's positions using unavailable positions
+        :param unavailable: set()
+        :param size: int
+        :return: list of positions [x, y]
+        """
+        available_positions = self._get_available_positions(unavailable)
         indices = np.random.choice(len(available_positions), size=size, replace=False)
         return [available_positions[i] for i in indices]
 
@@ -90,7 +106,7 @@ class WateringEnv(gym.Env):
         self.energy = ENERGY_CAPACITY
         self.visited = np.zeros((self.grid_size, self.grid_size), dtype=int)
         self.visited[self.agent_position] = 1
-        self.start_time = time.time()#time.perf_counter()
+        self.start_time = time.time()  # time.perf_counter()
         self.score = 0
         self.step_count = 0
         self.hole_fall_count = 0
@@ -431,7 +447,7 @@ class WateringEnv(gym.Env):
             if hole in self.known_holes:
                 self.screen.blit(HOLE_ICON, (hole[1] * CELL_SIZE, hole[0] * CELL_SIZE))
 
-                # Рисуем линию к ближайшему цветку
+         # Рисуем линию к ближайшему цветку
         known_unwatered_flowers = [
             pos for idx, pos in enumerate(self.target_positions)
             if self.watered_status[idx] == 0 and pos in self.known_flowers
@@ -460,7 +476,8 @@ class WateringEnv(gym.Env):
         elapsed_time = time.time() - self.start_time  # Рассчитываем время
         font = pygame.font.SysFont(None, FONT_SIZE)
         status_bar_height = 120  # Высота панели статуса
-        status_bar_rect = pygame.Rect(0, SCREEN_SIZE, SCREEN_SIZE, status_bar_height)  # Прямоугольник для панели статуса
+        status_bar_rect = pygame.Rect(0, SCREEN_SIZE, SCREEN_SIZE,
+                                      status_bar_height)  # Прямоугольник для панели статуса
         pygame.draw.rect(self.screen, WHITE, status_bar_rect)
 
         self.screen.blit(font.render(f"Время: {elapsed_time:.2f} сек", True, BLACK),
@@ -486,3 +503,15 @@ class WateringEnv(gym.Env):
 
         pygame.display.flip()
         pygame.time.wait(10)
+
+    def render_message(self, render_text: str):
+        """
+        Display message in the center of screen
+        :param render_text: str
+        :return:
+        """
+        self.screen.fill(BLACK)
+        text_surf = pygame.font.SysFont(None, TITLE_SIZE).render(render_text, True, GREEN)
+        self.screen.blit(text_surf, text_surf.get_rect(center=(SCREEN_SIZE // 2, SCREEN_SIZE // 2)))
+        pygame.display.flip()
+

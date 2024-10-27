@@ -1,17 +1,22 @@
+import time
+
 import pygame
 import sys
 import numpy as np
 from stable_baselines3 import PPO
 
-from CONST import WATER_CONSUMPTION, LEARNING_RATE, GAMMA, CLIP_RANGE, N_STEPS, COEF
+from CONST import WATER_CONSUMPTION, LEARNING_RATE, GAMMA, CLIP_RANGE, N_STEPS, COEF, SCREEN_SIZE, RED, FONT_SIZE, BLACK
 from WateringEnv import WateringEnv
 from logger import logging
 
 
 def run():
     try:
-        pygame.display.set_caption("Drone learning")
         env = WateringEnv()
+        message = "Начало обучения модели."
+        env.render_message(message)
+        pygame.display.set_caption("Drone learning")
+        logging.info(message)
         model = PPO(
             'MlpPolicy',
             env,
@@ -22,17 +27,19 @@ def run():
             ent_coef=COEF,
             verbose=1
         )
-        logging.info("Начало обучения модели...")
         model.learn(total_timesteps=10)
-        logging.info("Обучение модели завершено.")
+        message = "Обучение модели завершено."
+        logging.info(message)
+        env.render_message(message)
         model.save("ppo_watering_model")
+        time.sleep(2)
 
         clock = pygame.time.Clock()
         pygame.display.set_caption("Drone Watering Flowers")
 
         obs, info = env.reset()
         step_count = 0
-        for _ in range(1000): #while True
+        for _ in range(2000):  # while True
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     pygame.quit()
@@ -56,9 +63,17 @@ def run():
             env.render()
             step_count += 1
             logging.info(
-                f"Шаг: {step_count}, Действие: {action}, Награда: {reward}, Завершено: {terminated}, Прервано: {truncated}")
+                f"Шаг: {step_count},"
+                f"Действие: {action}, "
+                f"Награда: {reward}, "
+                f"Завершено: {terminated}, "
+                f"Прервано: {truncated}"
+            )
             if terminated or truncated:
                 obs, info = env.reset()
+                message = "Новая игра"
+                env.render_message(message)
+                time.sleep(5)
                 step_count = 0
             clock.tick(60)
         env.close()
@@ -69,5 +84,3 @@ def run():
         raise
     finally:
         pygame.quit()
-
-
