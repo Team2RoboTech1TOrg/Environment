@@ -12,7 +12,8 @@ from CONST import VIEW_RANGE, ENERGY_CAPACITY, WATER_CAPACITY, WATER_CONSUMPTION
     ENERGY_CONSUMPTION_MOVE, ENERGY_RECHARGE_AMOUNT, REWARD_RECHARGE, REWARD_WATER_SUCCESS, ENERGY_CONSUMPTION_WATER, \
     REWARD_WATER_FAIL_ALREADY_WATERED, REWARD_WATER_FAIL_NOT_ON_FLOWER, REWARD_COLLISION, REWARD_EXPLORE, \
     MAX_STEPS_WITHOUT_PROGRESS, REWARD_COMPLETION, MAX_HOLE_FALL, MIN_FLOWERS_TO_WATER, MAX_TIME, \
-    MAX_DISTANCE_FROM_FLORAL, MAX_STEPS_DISTANCE, REWARD_TIME, REWARD_STEPS, BLUE, TITLE_SIZE
+    MAX_DISTANCE_FROM_FLORAL, MAX_STEPS_DISTANCE, REWARD_TIME, REWARD_STEPS, BLUE, TITLE_SIZE, MAX_STEPS_GAME, \
+    REWARD_MAX_STEPS_DISTANCE
 
 
 class WateringEnv(gym.Env):
@@ -243,7 +244,7 @@ class WateringEnv(gym.Env):
 
         # Штраф за приближение к известным ямам
         if prev_distance_to_hole != -1 and distance_to_hole != -1 and distance_to_hole < prev_distance_to_hole:
-            reward += -1  # Штраф за приближение к яме
+            reward -= 10  # Штраф за приближение к яме
 
         # Обновляем сохраненные расстояния
         self.prev_distance_to_flower = distance_to_flower
@@ -291,12 +292,12 @@ class WateringEnv(gym.Env):
                             reward += REWARD_WATER_FAIL_ALREADY_WATERED
                             logging.warning(
                                 f"Агент попытался полить цветок, который уже полит на позиции {self.agent_position}")
-                        else:
+                        else: #в ран есть условие полный бак
                             reward += REWARD_WATER_FAIL_NOT_ON_FLOWER
                             logging.warning(
                                 f"Агент попытался полить, но недостаточно воды на позиции {self.agent_position}")
                 else:
-                    # Агент попытался полить не находясь на цветке
+                    # Агент попытался, полить не находясь на цветке
                     reward += REWARD_WATER_FAIL_NOT_ON_FLOWER
                     logging.warning(f"Агент попытался полить вне цветка на позиции {self.agent_position}")
                 new_position = self.agent_position
@@ -321,7 +322,7 @@ class WateringEnv(gym.Env):
         else:
             self.agent_position = new_position
 
-            # Обновление посещенных клеток
+        # Обновление посещенных клеток
         if self.visited[self.agent_position] == 0:
             self.visited[self.agent_position] = 1
             self.last_progress_step = self.step_count
@@ -335,7 +336,7 @@ class WateringEnv(gym.Env):
         for pos in known_unwatered_flowers:
             distance = abs(self.agent_position[0] - pos[0]) + abs(self.agent_position[1] - pos[1])
             if distance == 1:
-                reward += 30  # Вознаграждение за нахождение рядом с неполитым цветком
+                reward += 1  # Вознаграждение за нахождение рядом с неполитым цветком
                 break
 
         # Приоритизация неполитых цветов с увеличенным вознаграждением
@@ -345,13 +346,13 @@ class WateringEnv(gym.Env):
                     known_unwatered_flowers,
                     key=lambda pos: abs(self.agent_position[0] - pos[0]) + abs(self.agent_position[1] - pos[1])
                 )
-                if nearest_flower not in self.known_holes:
+                if nearest_flower not in self.known_flowers:
                     reward += 100  # Увеличенное вознаграждение
             else:
                 # Агент может исследовать неразведанные зоны
                 pass
 
-            # Проверка на завершение миссии
+         # Проверка на завершение миссии
         terminated = False
         truncated = False
         info = {}
@@ -363,29 +364,26 @@ class WateringEnv(gym.Env):
                 reward += REWARD_COMPLETION
                 self.score += REWARD_COMPLETION
                 terminated = True
-            else:
-                # Стимулируем агента вернуться на базу
-                reward += 50
 
-        if self.step_count - self.last_progress_step > MAX_STEPS_WITHOUT_PROGRESS:
-            logging.info("Отсутствие прогресса в течение слишком большого количества шагов")
-            terminated = True
+        # if self.step_count - self.last_progress_step > MAX_STEPS_WITHOUT_PROGRESS:
+        #     logging.info("Отсутствие прогресса в течение слишком большого количества шагов")
+        #     terminated = True
 
         if self.energy <= (0.2 * ENERGY_CAPACITY) and self.step_count - self.last_progress_step > 0:
             logging.info("Низкий уровень энергии без прогресса")
             reward += -50
-            terminated = True
+            # terminated = True
 
         if self.hole_fall_count >= MAX_HOLE_FALL:
             logging.info("Агент слишком много раз попадал в ямы")
             reward += -50
-            terminated = True
+            # terminated = True
 
         elapsed_time = time.perf_counter() - self.start_time
         if elapsed_time > MAX_TIME and np.sum(self.watered_status) < MIN_FLOWERS_TO_WATER:
             logging.info("Время вышло, недостаточно полито цветов")
             reward += -100
-            terminated = True
+            truncated = True
 
         # Проверка расстояния до ближайшего цветка
         if len(self.target_positions) > 0:
@@ -407,8 +405,8 @@ class WateringEnv(gym.Env):
             self.steps_since_last_distance += 1
             if self.steps_since_last_distance >= MAX_STEPS_DISTANCE:
                 logging.info("Агент слишком долго находится далеко от любого цветка")
-                reward += -10
-                terminated = True
+                reward += REWARD_MAX_STEPS_DISTANCE
+                # terminated = True
         else:
             self.steps_since_last_distance = 0
 
@@ -418,7 +416,7 @@ class WateringEnv(gym.Env):
         reward += REWARD_TIME(elapsed_time)
         reward += REWARD_STEPS(self.step_count)
 
-        if self.step_count >= 1000:
+        if self.step_count >= MAX_STEPS_GAME:
             logging.info("Достигнуто максимальное количество шагов")
             truncated = True
 
