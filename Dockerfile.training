@@ -1,18 +1,29 @@
-# Dockerfile.training
+# Этап 1: Установка зависимостей на основе Python 3.10
+FROM python:3.10-slim AS builder
 
-FROM python:3.10-slim
+# Устанавливаем зависимости, необходимые для сборки Python-библиотек
+RUN apt-get update && apt-get install -y build-essential
 
+# Копируем файл с зависимостями
 COPY requirements.txt /requirements.txt
 
-# Установка зависимостей
-RUN pip install --no-cache-dir -r /requirements.txt
+# Устанавливаем зависимости в папку /install
+RUN pip install --no-cache-dir --target=/install -r /requirements.txt
 
-# Скопируем файлы модели
-COPY module  /module
+# Этап 2: Финальный контейнер на основе Alpine
+FROM python:3.10-alpine
+
+# Копируем зависимости из этапа сборки
+COPY --from=builder /install /usr/local/lib/python3.10/site-packages
+
+# Копируем файлы проекта
+COPY module /module
+
+# Устанавливаем переменную окружения PYTHONPATH
 ENV PYTHONPATH="/module"
 
-# Зададим директорию для работы
+# Задаем рабочую директорию
 WORKDIR /module
 
-# Запустим обучение и отправку метрик
+# Команда запуска приложения
 CMD ["python", "main.py"]
