@@ -8,10 +8,10 @@ COPY requirements.txt /requirements.txt
 RUN pip install --no-cache-dir -r /requirements.txt
 
 # Скопируем файлы модели
-COPY . /model
+COPY . /module
 
 # Зададим директорию для работы
-WORKDIR /model
+WORKDIR /module
 
 # Запустим обучение и отправку метрик
-CMD ["python", "train.py"]
+CMD ["python", "main.py"]
