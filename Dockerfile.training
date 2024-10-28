@@ -11,7 +11,7 @@ COPY requirements.txt /requirements.txt
 RUN pip install --no-cache-dir --target=/install -r /requirements.txt
 
 # Этап 2: Финальный контейнер на основе Alpine
-FROM python:3.10-alpine
+FROM python:3.10-slim
 
 # Копируем зависимости из этапа сборки
 COPY --from=builder /install /usr/local/lib/python3.10/site-packages
