@@ -10,7 +10,7 @@ COPY requirements.txt /requirements.txt
 # Устанавливаем зависимости в папку /install
 RUN pip install --no-cache-dir --target=/install -r /requirements.txt
 
-# Этап 2: Финальный контейнер на основе Alpine
+# Этап 2: Финальный контейнер 
 FROM python:3.10-slim
 
 # Копируем зависимости из этапа сборки
@@ -18,6 +18,7 @@ COPY --from=builder /install /usr/local/lib/python3.10/site-packages
 
 # Копируем файлы проекта
 COPY module /module
+COPY config.py /config.py
 RUN mkdir /logs
 ENV LOG_DIR=/logs
 # Задаем рабочую директорию
