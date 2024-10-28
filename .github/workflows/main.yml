@@ -44,4 +44,4 @@ jobs:
           script: |
             docker pull ${{ secrets.DOCKER_USERNAME }}/model-training:latest
             docker compose -f /shared/repo/PrometheusGrafanaJupyterHub/docker-compose.yml up -d --no-deps --force-recreate model-training
-
+            docker image prune -f
