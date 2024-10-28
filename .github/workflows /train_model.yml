@@ -1,0 +1,48 @@
+name: Deploy Model Training
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build Docker image
+        run: |
+          docker build -t ${{ secrets.DOCKER_USERNAME }}/model-training:latest -f Dockerfile.training .
+
+      - name: Push Docker image
+        run: |
+          docker push ${{ secrets.DOCKER_USERNAME }}/model-training:latest
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build-and-push
+
+    steps:
+      - name: Deploy to remote server
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SERVER_IP }}
+          username: ${{ secrets.SSH_USERNAME }}
+          password: ${{ secrets.SSH_PASSWORD }}
+          timeout: 30m
+          debug: true
+          port: 32235
+          script: |
+            docker pull ${{ secrets.DOCKER_USERNAME }}/model-training:latest
+            docker stop model-training || true
+            docker rm model-training || true
+            docker run --rm --name model-training -p 8111:8111 -d --network=prometheusgrafanajupyterhub_custom_networks daniil047/model-training:latest
