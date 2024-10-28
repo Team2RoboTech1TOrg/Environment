@@ -19,9 +19,6 @@ COPY --from=builder /install /usr/local/lib/python3.10/site-packages
 # Копируем файлы проекта
 COPY module /module
 
-# Устанавливаем переменную окружения PYTHONPATH
-ENV PYTHONPATH="/module"
-
 # Задаем рабочую директорию
 WORKDIR /module
 
