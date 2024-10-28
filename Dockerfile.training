@@ -9,6 +9,7 @@ RUN pip install --no-cache-dir -r /requirements.txt
 
 # Скопируем файлы модели
 COPY module  /module
+ENV PYTHONPATH="/module"
 
 # Зададим директорию для работы
 WORKDIR /module
