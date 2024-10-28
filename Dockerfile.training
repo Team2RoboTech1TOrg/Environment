@@ -8,7 +8,7 @@ COPY requirements.txt /requirements.txt
 RUN pip install --no-cache-dir -r /requirements.txt
 
 # Скопируем файлы модели
-COPY . /module
+COPY module  /module
 
 # Зададим директорию для работы
 WORKDIR /module
