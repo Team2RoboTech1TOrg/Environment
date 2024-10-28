@@ -8,6 +8,7 @@ from stable_baselines3 import PPO
 from CONST import WATER_CONSUMPTION, LEARNING_RATE, GAMMA, CLIP_RANGE, N_STEPS, COEF, SCREEN_SIZE, RED, FONT_SIZE, \
     BLACK, MAX_STEPS_GAME
 from WateringEnv import WateringEnv
+from config import log_dir
 from logger import logging
 
 
@@ -26,7 +27,8 @@ def run():
             clip_range=CLIP_RANGE,
             n_steps=N_STEPS,
             ent_coef=COEF,
-            verbose=1
+            verbose=1,
+            tensorboard_log=log_dir
         )
         model.learn(total_timesteps=10000)
         message = "Обучение модели завершено."
