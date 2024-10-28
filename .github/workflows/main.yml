@@ -45,4 +45,4 @@ jobs:
             docker pull ${{ secrets.DOCKER_USERNAME }}/model-training:latest
             docker stop model-training || true
             docker rm model-training || true
-            docker run --rm --name model-training -p 8111:8111 -d --network=prometheusgrafanajupyterhub_custom_networks daniil047/model-training:latest
+            docker run --rm --name model-training -p 8111:8111 -d --network=prometheusgrafanajupyterhub_custom_networks ${{ secrets.DOCKER_USERNAME }}/model-training:latest
