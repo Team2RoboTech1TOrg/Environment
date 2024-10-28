@@ -65,7 +65,7 @@ def run():
                 step_count = 0
 
             if terminated:
-                message = f"Конец игры, награда: {round(reward)}"
+                message = f"Конец игры, награда: {int(reward)}"
                 env.render_message(message)
                 time.sleep(5)
                 env.close()
