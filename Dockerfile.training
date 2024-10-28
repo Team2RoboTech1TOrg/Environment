@@ -1,0 +1,17 @@
+# Dockerfile.training
+
+FROM python:3.9-slim
+
+COPY requirements.txt /requirements.txt
+
+# Установка зависимостей
+RUN pip install --no-cache-dir -r /requirements.txt
+
+# Скопируем файлы модели
+COPY . /model
+
+# Зададим директорию для работы
+WORKDIR /model
+
+# Запустим обучение и отправку метрик
+CMD ["python", "train.py"]
