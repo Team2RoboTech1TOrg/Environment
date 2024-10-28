@@ -18,7 +18,8 @@ COPY --from=builder /install /usr/local/lib/python3.10/site-packages
 
 # Копируем файлы проекта
 COPY module /module
-
+RUN mkdir /logs
+ENV LOG_DIR=/logs
 # Задаем рабочую директорию
 WORKDIR /module
 
