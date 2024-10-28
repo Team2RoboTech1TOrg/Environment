@@ -1,6 +1,6 @@
 import pygame
 
-from module.app import run
+from app import run
 
 
 if __name__ == '__main__':
