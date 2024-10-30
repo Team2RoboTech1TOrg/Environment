@@ -70,7 +70,6 @@ def run():
                 message = f"Конец игры, награда: {int(reward)}"
                 env.render_message(message)
                 time.sleep(5)
-                env.close()
                 break
             clock.tick(60)
     except KeyboardInterrupt:
@@ -80,3 +79,6 @@ def run():
         raise
     finally:
         pygame.quit()
+
+
+

@@ -1,4 +1,4 @@
-import time 
+import time
 from collections import deque
 
 import pygame
@@ -13,7 +13,7 @@ from CONST import VIEW_RANGE, ENERGY_CAPACITY, WATER_CAPACITY, WATER_CONSUMPTION
     REWARD_WATER_FAIL_ALREADY_WATERED, REWARD_WATER_FAIL_NOT_ON_FLOWER, REWARD_COLLISION, REWARD_EXPLORE, \
     MAX_STEPS_WITHOUT_PROGRESS, REWARD_COMPLETION, MAX_HOLE_FALL, MIN_FLOWERS_TO_WATER, MAX_TIME, \
     MAX_DISTANCE_FROM_FLORAL, MAX_STEPS_DISTANCE, REWARD_TIME, REWARD_STEPS, BLUE, TITLE_SIZE, MAX_STEPS_GAME, \
-    REWARD_MAX_STEPS_DISTANCE
+    REWARD_MAX_STEPS_DISTANCE, REWARD_APPROACH_UNWATERED_FLOWER, REWARD_WATER_KNOWN_FLOWER
 
 
 class WateringEnv(gym.Env):
@@ -207,7 +207,7 @@ class WateringEnv(gym.Env):
         if self.energy < 10:
             return self._get_observation(), -100, True, False, {}
 
-        if self.water_tank <= 10: #возврат на базу за водой
+        if self.water_tank <= 10:  # возврат на базу за водой
             self.agent_position = self.base_position
             self.water_tank = WATER_CAPACITY
 
@@ -239,12 +239,14 @@ class WateringEnv(gym.Env):
         ]
 
         # Проверяем, уменьшилось ли расстояние до ближайшего известного, но неполитого цветка
-        if prev_distance_to_flower != -1 and distance_to_flower != -1 and distance_to_flower < prev_distance_to_flower:
-            reward += 20  # Увеличенное вознаграждение за приближение к известному неполитому цветку
+        if (prev_distance_to_flower != -1 and distance_to_flower != -1
+                and distance_to_flower < prev_distance_to_flower):
+            reward += REWARD_APPROACH_UNWATERED_FLOWER
 
+        # Плохо влияет на обучение агента, не подходит к цветам около ямы
         # Штраф за приближение к известным ямам
-        if prev_distance_to_hole != -1 and distance_to_hole != -1 and distance_to_hole < prev_distance_to_hole:
-            reward -= 10  # Штраф за приближение к яме
+        # if prev_distance_to_hole != -1 and distance_to_hole != -1 and distance_to_hole < prev_distance_to_hole:
+        #     reward -= 10
 
         # Обновляем сохраненные расстояния
         self.prev_distance_to_flower = distance_to_flower
@@ -279,25 +281,16 @@ class WateringEnv(gym.Env):
                         self.water_tank -= WATER_CONSUMPTION
                         self.score += REWARD_WATER_SUCCESS
                         reward += REWARD_WATER_SUCCESS
-                        # Дополнительное вознаграждение за успешный полив известного цветка
-                        if self.agent_position in self.known_flowers:
-                            reward += 20
-
+                        if self.agent_position in known_unwatered_flowers:
+                            reward += REWARD_WATER_KNOWN_FLOWER
                         self.energy -= ENERGY_CONSUMPTION_WATER
                         self.last_progress_step = self.step_count
                         logging.info(f"Полил цветок на позиции {self.agent_position}")
                     else:
-                        # Если цветок уже полит или недостаточно воды, применяем штраф
-                        if self.watered_status[idx] == 1:
-                            reward += REWARD_WATER_FAIL_ALREADY_WATERED
-                            logging.warning(
-                                f"Агент попытался полить цветок, который уже полит на позиции {self.agent_position}")
-                        else: #в ран есть условие полный бак
-                            reward += REWARD_WATER_FAIL_NOT_ON_FLOWER
-                            logging.warning(
-                                f"Агент попытался полить, но недостаточно воды на позиции {self.agent_position}")
+                        reward += REWARD_WATER_FAIL_ALREADY_WATERED
+                        logging.warning(
+                        f"Агент попытался полить цветок, который уже полит на позиции {self.agent_position}")
                 else:
-                    # Агент попытался, полить не находясь на цветке
                     reward += REWARD_WATER_FAIL_NOT_ON_FLOWER
                     logging.warning(f"Агент попытался полить вне цветка на позиции {self.agent_position}")
                 new_position = self.agent_position
@@ -321,6 +314,11 @@ class WateringEnv(gym.Env):
                 self.known_holes.add(new_position)  # Теперь агент знает об этой яме
         else:
             self.agent_position = new_position
+
+        # Штраф за ненужное движение
+        if not self.has_clear_target(new_position):
+            reward += -15
+            logging.warning(f"Агент не имеет четкой цели, штраф за ненужное движение на позицию {new_position}")
 
         # Обновление посещенных клеток
         if self.visited[self.agent_position] == 0:
@@ -352,7 +350,7 @@ class WateringEnv(gym.Env):
                 # Агент может исследовать неразведанные зоны
                 pass
 
-         # Проверка на завершение миссии
+        # Проверка на завершение миссии
         terminated = False
         truncated = False
         info = {}
@@ -423,6 +421,20 @@ class WateringEnv(gym.Env):
         obs = self._get_observation()
         return obs, reward, terminated, truncated, info
 
+    def has_clear_target(self, current_position):
+        """
+        Проверяет, есть ли у агента действительная цель в текущем положении.
+        Если агент находится рядом с целью или есть цветок, который он пытается полить.
+        """
+        # Проверяем, находимся ли мы в пределах двух клеток от неполитого цветка.
+        for target in self.target_positions:
+            if self.watered_status[self.target_positions.index(target)] == 0:
+                distance = abs(current_position[0] - target[0]) + abs(
+                    current_position[1] - target[1])
+                if distance <= 2:  # Можно настроить расстояние в зависимости от предпочтений
+                    return True
+        return False
+
     def render(self):
         self.screen.fill(GREEN)
 
@@ -449,7 +461,7 @@ class WateringEnv(gym.Env):
             if hole in self.known_holes:
                 self.screen.blit(HOLE_ICON, (hole[1] * CELL_SIZE, hole[0] * CELL_SIZE))
 
-         # Рисуем линию к ближайшему цветку
+        # Рисуем линию к ближайшему цветку
         known_unwatered_flowers = [
             pos for idx, pos in enumerate(self.target_positions)
             if self.watered_status[idx] == 0 and pos in self.known_flowers
@@ -516,4 +528,3 @@ class WateringEnv(gym.Env):
         text_surf = pygame.font.SysFont(None, TITLE_SIZE).render(render_text, True, GREEN)
         self.screen.blit(text_surf, text_surf.get_rect(center=(SCREEN_SIZE // 2, SCREEN_SIZE // 2)))
         pygame.display.flip()
-

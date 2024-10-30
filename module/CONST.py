@@ -34,11 +34,14 @@ MAX_STEPS_DISTANCE = 50
 MAX_DISTANCE_FROM_FLORAL = 5
 MIN_FLOWERS_TO_WATER = 5
 
+#Награды
+REWARD_APPROACH_UNWATERED_FLOWER = 20  #Увеличенное вознаграждение за приближение к известному неполитому цветку
+REWARD_WATER_KNOWN_FLOWER = 30 #Дополнительное вознаграждение за успешный полив неполитого известного цветка
 REWARD_COMPLETION = 1000
 REWARD_MOVE = -0.5
 REWARD_WATER_SUCCESS = 250
-REWARD_WATER_FAIL_ALREADY_WATERED = -10
-REWARD_WATER_FAIL_NOT_ON_FLOWER = -50
+REWARD_WATER_FAIL_ALREADY_WATERED = -10 # Если цветок уже полит или недостаточно воды, применяем штраф
+REWARD_WATER_FAIL_NOT_ON_FLOWER = -50 # Агент попытался, полить не находясь на цветке
 REWARD_MAX_STEPS_DISTANCE = -10
 REWARD_RECHARGE = -10
 REWARD_REFILL = -10
