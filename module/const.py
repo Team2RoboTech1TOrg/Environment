@@ -1,7 +1,7 @@
 from utils import load_image
 
 # Параметры модели
-LEARNING_RATE = 0.001
+LEARNING_RATE = 0.0001
 GAMMA = 0.99
 CLIP_RANGE = 0.2
 N_STEPS = 4096
@@ -37,19 +37,22 @@ MIN_FLOWERS_TO_WATER = 5
 #Награды
 REWARD_APPROACH_UNWATERED_FLOWER = 20  #Увеличенное вознаграждение за приближение к известному неполитому цветку
 REWARD_WATER_KNOWN_FLOWER = 30 #Дополнительное вознаграждение за успешный полив неполитого известного цветка
-REWARD_COMPLETION = 1000
+REWARD_COMPLETION = 10000
 REWARD_MOVE = -0.5
 REWARD_WATER_SUCCESS = 250
 REWARD_WATER_FAIL_ALREADY_WATERED = -10 # Если цветок уже полит или недостаточно воды, применяем штраф
 REWARD_WATER_FAIL_NOT_ON_FLOWER = -50 # Агент попытался, полить не находясь на цветке
+NEXT_2_UNWATERED_FLOWER = 0.5  # Вознаграждение за нахождение рядом с неполитым цветком
 REWARD_MAX_STEPS_DISTANCE = -10
 REWARD_RECHARGE = -10
+REWARD_UNNECESSARY_MOVE = -15  # Штраф за ненужное движение
 REWARD_REFILL = -10
-REWARD_COLLISION = -100  # штраф за попадание в яму
+PENALTY_COLLISION = -50  # штраф за попадание в яму
 REWARD_EXPLORE = 5  # Вознаграждение за исследование новых клеток
 REWARD_AVOID_HOLE = 5 # Вознаграждение за обход ям
 REWARD_TIME = lambda t: 1 / t if t > 0 else 0
 REWARD_STEPS = lambda m: 1 / m if m > 0 else 0
+PENALTY_LOW_ENERGY_NO_PROGRESS = -50 #Низкий уровень энергии без прогресса
 PENALTY_LOOP = -200
 
 # Позиции цветов и ям

@@ -6,23 +6,27 @@ import gymnasium as gym
 import numpy as np
 
 from logger import logging
-from CONST import VIEW_RANGE, ENERGY_CAPACITY, WATER_CAPACITY, WATER_CONSUMPTION, GRID_SIZE, COUNT_ACTIONS, BASE_ICON, \
-    CELL_SIZE, BASE_COORD, GREEN, AGENT_ICON, SCREEN_SIZE, BLACK, WHITE, HOLE_ICON, FLOWER_ICON, WATERED_FLOWER_ICON, \
-    COUNT_HOLES, COUNT_FLOWERS, FONT_SIZE, FIXED_FLOWER_POSITIONS, FIXED_HOLE_POSITIONS, PLACEMENT_MODE, PENALTY_LOOP, \
-    ENERGY_CONSUMPTION_MOVE, ENERGY_RECHARGE_AMOUNT, REWARD_RECHARGE, REWARD_WATER_SUCCESS, ENERGY_CONSUMPTION_WATER, \
-    REWARD_WATER_FAIL_ALREADY_WATERED, REWARD_WATER_FAIL_NOT_ON_FLOWER, REWARD_COLLISION, REWARD_EXPLORE, \
-    MAX_STEPS_WITHOUT_PROGRESS, REWARD_COMPLETION, MAX_HOLE_FALL, MIN_FLOWERS_TO_WATER, MAX_TIME, \
-    MAX_DISTANCE_FROM_FLORAL, MAX_STEPS_DISTANCE, REWARD_TIME, REWARD_STEPS, BLUE, TITLE_SIZE, MAX_STEPS_GAME, \
-    REWARD_MAX_STEPS_DISTANCE, REWARD_APPROACH_UNWATERED_FLOWER, REWARD_WATER_KNOWN_FLOWER
+import const
+
+
+# from const import VIEW_RANGE, ENERGY_CAPACITY, WATER_CAPACITY, WATER_CONSUMPTION, GRID_SIZE, COUNT_ACTIONS, BASE_ICON, \
+#     CELL_SIZE, BASE_COORD, GREEN, AGENT_ICON, SCREEN_SIZE, BLACK, WHITE, HOLE_ICON, FLOWER_ICON, WATERED_FLOWER_ICON, \
+#     COUNT_HOLES, COUNT_FLOWERS, FONT_SIZE, FIXED_FLOWER_POSITIONS, FIXED_HOLE_POSITIONS, PLACEMENT_MODE, PENALTY_LOOP, \
+#     ENERGY_CONSUMPTION_MOVE, ENERGY_RECHARGE_AMOUNT, REWARD_RECHARGE, REWARD_WATER_SUCCESS, ENERGY_CONSUMPTION_WATER, \
+#     REWARD_WATER_FAIL_ALREADY_WATERED, REWARD_WATER_FAIL_NOT_ON_FLOWER, PENALTY_COLLISION, REWARD_EXPLORE, \
+#     REWARD_COMPLETION, MAX_HOLE_FALL,\
+#     MAX_DISTANCE_FROM_FLORAL, MAX_STEPS_DISTANCE, REWARD_TIME, REWARD_STEPS, BLUE, TITLE_SIZE, MAX_STEPS_GAME, \
+#     REWARD_MAX_STEPS_DISTANCE, REWARD_APPROACH_UNWATERED_FLOWER, REWARD_WATER_KNOWN_FLOWER, REWARD_UNNECESSARY_MOVE, \
+#     NEXT_2_UNWATERED_FLOWER, PENALTY_LOW_ENERGY_NO_PROGRESS
 
 
 class WateringEnv(gym.Env):
     def __init__(self):
         super(WateringEnv, self).__init__()
-        self.grid_size = GRID_SIZE
-        self.screen = pygame.display.set_mode((SCREEN_SIZE, SCREEN_SIZE + 120))
+        self.grid_size = const.GRID_SIZE
+        self.screen = pygame.display.set_mode((const.SCREEN_SIZE, const.SCREEN_SIZE + 120))
 
-        self.base_position = (BASE_COORD, BASE_COORD)
+        self.base_position = (const.BASE_COORD, const.BASE_COORD)
         self.agent_position = None  # Стартовая позиция
         self.water_tank = None  # Заполняем бак водой
         self.energy = None  # Полный заряд энергии
@@ -42,7 +46,7 @@ class WateringEnv(gym.Env):
         self.prev_distance_to_flower = None
         self.prev_distance_to_hole = None
 
-        self.action_space = gym.spaces.Discrete(COUNT_ACTIONS)
+        self.action_space = gym.spaces.Discrete(const.COUNT_ACTIONS)
         self.action_history = deque(maxlen=5)
         self.observation_space = gym.spaces.Box(
             low=-self.grid_size,  # Позволяет delta_x и delta_y быть отрицательными
@@ -56,9 +60,9 @@ class WateringEnv(gym.Env):
         Reset positions of objects
         :return: function for get object's postitions
         """
-        if PLACEMENT_MODE == 'random':
+        if const.PLACEMENT_MODE == 'random':
             self._randomize_positions()
-        elif PLACEMENT_MODE == 'fixed':
+        elif const.PLACEMENT_MODE == 'fixed':
             self._fixed_positions()
         else:
             raise ValueError("Invalid PLACEMENT_MODE. Choose 'random' or 'fixed'.")
@@ -68,16 +72,16 @@ class WateringEnv(gym.Env):
         Get random positions of objects
         """
         unavailable_positions = {self.base_position}
-        self.target_positions = self._get_objects_positions(unavailable_positions, COUNT_FLOWERS)
+        self.target_positions = self._get_objects_positions(unavailable_positions, const.COUNT_FLOWERS)
         unavailable_positions.update(self.target_positions)
-        self.hole_positions = self._get_objects_positions(unavailable_positions, COUNT_HOLES)
+        self.hole_positions = self._get_objects_positions(unavailable_positions, const.COUNT_HOLES)
 
     def _fixed_positions(self):
         """
         Get fixed positions of objects
         """
-        self.target_positions = FIXED_FLOWER_POSITIONS.copy()
-        self.hole_positions = FIXED_HOLE_POSITIONS.copy()
+        self.target_positions = const.FIXED_FLOWER_POSITIONS.copy()
+        self.hole_positions = const.FIXED_HOLE_POSITIONS.copy()
 
     def _get_available_positions(self, unavailable: set) -> list:
         """
@@ -102,9 +106,9 @@ class WateringEnv(gym.Env):
     def reset(self, *, seed=None, options=None):
         self.reset_objects_positions()
         self.agent_position = self.base_position
-        self.watered_status = np.zeros(COUNT_FLOWERS)
-        self.water_tank = WATER_CAPACITY
-        self.energy = ENERGY_CAPACITY
+        self.watered_status = np.zeros(const.COUNT_FLOWERS)
+        self.water_tank = const.WATER_CAPACITY
+        self.energy = const.ENERGY_CAPACITY
         self.visited = np.zeros((self.grid_size, self.grid_size), dtype=int)
         self.visited[self.agent_position] = 1
         self.start_time = time.time()  # time.perf_counter()
@@ -131,8 +135,8 @@ class WateringEnv(gym.Env):
 
     def _get_observation(self):
         visible_area = []
-        for dx in range(-VIEW_RANGE, VIEW_RANGE + 1):
-            for dy in range(-VIEW_RANGE, VIEW_RANGE + 1):
+        for dx in range(-const.VIEW_RANGE, const.VIEW_RANGE + 1):
+            for dy in range(-const.VIEW_RANGE, const.VIEW_RANGE + 1):
                 x, y = self.agent_position[0] + dx, self.agent_position[1] + dy
                 if 0 <= x < self.grid_size and 0 <= y < self.grid_size:
                     pos = (x, y)
@@ -185,7 +189,7 @@ class WateringEnv(gym.Env):
         is_on_base = 1 if self.agent_position == self.base_position else 0
         is_on_flower = 1 if self.agent_position in self.target_positions else 0
         is_on_hole = 1 if self.agent_position in self.hole_positions else 0
-        remaining_flowers = COUNT_FLOWERS - np.sum(self.watered_status)
+        remaining_flowers = const.COUNT_FLOWERS - np.sum(self.watered_status)
         action_hist = list(self.action_history) + [0] * (5 - len(self.action_history))
 
         observation = np.concatenate([
@@ -204,21 +208,21 @@ class WateringEnv(gym.Env):
         return observation
 
     def step(self, action):
+        self.step_count += 1
+        reward = 0
+
         if self.energy < 10:
             return self._get_observation(), -100, True, False, {}
 
         if self.water_tank <= 10:  # возврат на базу за водой
             self.agent_position = self.base_position
-            self.water_tank = WATER_CAPACITY
-
-        self.step_count += 1
-        reward = 0  # Начальное вознаграждение
+            self.water_tank = const.WATER_CAPACITY
 
         # Запись истории позиций для обнаружения циклов
         pos_key = self.agent_position
         self.position_history[pos_key] = self.position_history.get(pos_key, 0) + 1
         if self.position_history[pos_key] > 5:
-            reward += PENALTY_LOOP
+            reward += const.PENALTY_LOOP
         self.action_history.append(action)
 
         # Сохраняем предыдущие расстояния
@@ -241,7 +245,7 @@ class WateringEnv(gym.Env):
         # Проверяем, уменьшилось ли расстояние до ближайшего известного, но неполитого цветка
         if (prev_distance_to_flower != -1 and distance_to_flower != -1
                 and distance_to_flower < prev_distance_to_flower):
-            reward += REWARD_APPROACH_UNWATERED_FLOWER
+            reward += const.REWARD_APPROACH_UNWATERED_FLOWER
 
         # Плохо влияет на обучение агента, не подходит к цветам около ямы
         # Штраф за приближение к известным ямам
@@ -256,42 +260,42 @@ class WateringEnv(gym.Env):
         match action:
             case 0:  # Вверх
                 new_position = (max(0, self.agent_position[0] - 1), self.agent_position[1])
-                self.energy -= ENERGY_CONSUMPTION_MOVE
+                self.energy -= const.ENERGY_CONSUMPTION_MOVE
             case 1:  # Вниз
                 new_position = (min(self.grid_size - 1, self.agent_position[0] + 1), self.agent_position[1])
-                self.energy -= ENERGY_CONSUMPTION_MOVE
+                self.energy -= const.ENERGY_CONSUMPTION_MOVE
             case 2:  # Влево
                 new_position = (self.agent_position[0], max(0, self.agent_position[1] - 1))
-                self.energy -= ENERGY_CONSUMPTION_MOVE
+                self.energy -= const.ENERGY_CONSUMPTION_MOVE
             case 3:  # Вправо
                 new_position = (self.agent_position[0], min(self.grid_size - 1, self.agent_position[1] + 1))
-                self.energy -= ENERGY_CONSUMPTION_MOVE
+                self.energy -= const.ENERGY_CONSUMPTION_MOVE
             case 4:  # Зарядка
                 if self.agent_position == self.base_position:
-                    self.energy = min(self.energy + ENERGY_RECHARGE_AMOUNT, ENERGY_CAPACITY)
-                    reward += REWARD_RECHARGE
+                    self.energy = min(self.energy + const.ENERGY_RECHARGE_AMOUNT, const.ENERGY_CAPACITY)
+                    reward += const.REWARD_RECHARGE
                     self.last_progress_step = self.step_count
                     logging.info("Агент зарядился на базе")
                 new_position = self.agent_position
             case 5:  # Полив
                 if self.agent_position in self.target_positions:
                     idx = self.target_positions.index(self.agent_position)
-                    if self.watered_status[idx] == 0 and self.water_tank >= WATER_CONSUMPTION:
+                    if self.watered_status[idx] == 0 and self.water_tank >= const.WATER_CONSUMPTION:
                         self.watered_status[idx] = 1
-                        self.water_tank -= WATER_CONSUMPTION
-                        self.score += REWARD_WATER_SUCCESS
-                        reward += REWARD_WATER_SUCCESS
+                        self.water_tank -= const.WATER_CONSUMPTION
+                        self.score += const.REWARD_WATER_SUCCESS
+                        reward += const.REWARD_WATER_SUCCESS
                         if self.agent_position in known_unwatered_flowers:
-                            reward += REWARD_WATER_KNOWN_FLOWER
-                        self.energy -= ENERGY_CONSUMPTION_WATER
+                            reward += const.REWARD_WATER_KNOWN_FLOWER
+                        self.energy -= const.ENERGY_CONSUMPTION_WATER
                         self.last_progress_step = self.step_count
                         logging.info(f"Полил цветок на позиции {self.agent_position}")
                     else:
-                        reward += REWARD_WATER_FAIL_ALREADY_WATERED
+                        reward += const.REWARD_WATER_FAIL_ALREADY_WATERED
                         logging.warning(
-                        f"Агент попытался полить цветок, который уже полит на позиции {self.agent_position}")
+                            f"Агент попытался полить цветок, который уже полит на позиции {self.agent_position}")
                 else:
-                    reward += REWARD_WATER_FAIL_NOT_ON_FLOWER
+                    reward += const.REWARD_WATER_FAIL_NOT_ON_FLOWER
                     logging.warning(f"Агент попытался полить вне цветка на позиции {self.agent_position}")
                 new_position = self.agent_position
 
@@ -301,23 +305,21 @@ class WateringEnv(gym.Env):
         # Проверяем, известна ли яма
         if new_position in self.hole_positions:
             if new_position in self.known_holes:
-                reward += REWARD_COLLISION * 5  # Увеличиваем штраф
+                reward += const.PENALTY_COLLISION * 2  # Увеличиваем штраф
                 logging.warning(f"Агент попытался зайти в известную яму на позиции {new_position}")
                 # Не обновляем позицию
                 new_position = self.agent_position
             else:
-                # Агент попал в неизвестную яму
-                reward += REWARD_COLLISION  # Штраф за попадание в яму
+                reward += const.PENALTY_COLLISION
                 logging.warning(f"Агент попал в неизвестную яму на позиции {new_position}")
                 self.hole_fall_count += 1
                 self.agent_position = new_position
-                self.known_holes.add(new_position)  # Теперь агент знает об этой яме
+                self.known_holes.add(new_position)
         else:
             self.agent_position = new_position
 
-        # Штраф за ненужное движение
         if not self.has_clear_target(new_position):
-            reward += -15
+            reward += const.REWARD_UNNECESSARY_MOVE
             logging.warning(f"Агент не имеет четкой цели, штраф за ненужное движение на позицию {new_position}")
 
         # Обновление посещенных клеток
@@ -325,16 +327,15 @@ class WateringEnv(gym.Env):
             self.visited[self.agent_position] = 1
             self.last_progress_step = self.step_count
 
-        # Вознаграждение за исследование новых клеток
         if self.agent_position not in self.explored_cells:
-            reward += REWARD_EXPLORE
+            reward += const.REWARD_EXPLORE
             self.explored_cells.add(self.agent_position)
 
         # Дополнительное вознаграждение за нахождение рядом с неполитым цветком
         for pos in known_unwatered_flowers:
             distance = abs(self.agent_position[0] - pos[0]) + abs(self.agent_position[1] - pos[1])
             if distance == 1:
-                reward += 1  # Вознаграждение за нахождение рядом с неполитым цветком
+                reward += const.NEXT_2_UNWATERED_FLOWER
                 break
 
         # Приоритизация неполитых цветов с увеличенным вознаграждением
@@ -346,9 +347,6 @@ class WateringEnv(gym.Env):
                 )
                 if nearest_flower not in self.known_flowers:
                     reward += 100  # Увеличенное вознаграждение
-            else:
-                # Агент может исследовать неразведанные зоны
-                pass
 
         # Проверка на завершение миссии
         terminated = False
@@ -359,29 +357,27 @@ class WateringEnv(gym.Env):
             logging.info("Все цветы политы")
             self.agent_position = self.base_position
             logging.info("Агент вернулся на базу")
-            reward += REWARD_COMPLETION
-            self.score += REWARD_COMPLETION
+            reward += const.REWARD_COMPLETION
+            self.score += const.REWARD_COMPLETION
             terminated = True
 
         # if self.step_count - self.last_progress_step > MAX_STEPS_WITHOUT_PROGRESS:
         #     logging.info("Отсутствие прогресса в течение слишком большого количества шагов")
         #     terminated = True
 
-        if self.energy <= (0.2 * ENERGY_CAPACITY) and self.step_count - self.last_progress_step > 0:
+        if self.energy <= (0.2 * const.ENERGY_CAPACITY) and self.step_count - self.last_progress_step > 0:
             logging.info("Низкий уровень энергии без прогресса")
-            reward += -50
-            # terminated = True
+            reward += const.PENALTY_LOW_ENERGY_NO_PROGRESS
 
-        if self.hole_fall_count >= MAX_HOLE_FALL:
+        if self.hole_fall_count >= const.MAX_HOLE_FALL:
             logging.info("Агент слишком много раз попадал в ямы")
             reward += -50
-            # terminated = True
 
         elapsed_time = time.perf_counter() - self.start_time
-        if elapsed_time > MAX_TIME and np.sum(self.watered_status) < MIN_FLOWERS_TO_WATER:
-            logging.info("Время вышло, недостаточно полито цветов")
-            reward += -100
-            truncated = True
+        # if elapsed_time > MAX_TIME and np.sum(self.watered_status) < MIN_FLOWERS_TO_WATER:
+        #     logging.info("Время вышло, недостаточно полито цветов")
+        #     reward += -100
+        #     truncated = True
 
         # Проверка расстояния до ближайшего цветка
         if len(self.target_positions) > 0:
@@ -399,22 +395,21 @@ class WateringEnv(gym.Env):
         else:
             nearest_flower_dist = 0
 
-        if nearest_flower_dist > MAX_DISTANCE_FROM_FLORAL:
+        if nearest_flower_dist > const.MAX_DISTANCE_FROM_FLORAL:
             self.steps_since_last_distance += 1
-            if self.steps_since_last_distance >= MAX_STEPS_DISTANCE:
+            if self.steps_since_last_distance >= const.MAX_STEPS_DISTANCE:
                 logging.info("Агент слишком долго находится далеко от любого цветка")
-                reward += REWARD_MAX_STEPS_DISTANCE
-                # terminated = True
+                reward += const.REWARD_MAX_STEPS_DISTANCE
         else:
             self.steps_since_last_distance = 0
 
         if reward > 0:
             self.last_progress_step = self.step_count
 
-        reward += REWARD_TIME(elapsed_time)
-        reward += REWARD_STEPS(self.step_count)
+        reward += const.REWARD_TIME(elapsed_time)
+        reward += const.REWARD_STEPS(self.step_count)
 
-        if self.step_count >= MAX_STEPS_GAME:
+        if self.step_count >= const.MAX_STEPS_GAME:
             logging.info("Достигнуто максимальное количество шагов")
             truncated = True
 
@@ -436,30 +431,30 @@ class WateringEnv(gym.Env):
         return False
 
     def render(self):
-        self.screen.fill(GREEN)
-
+        self.screen.fill(const.GREEN)
         # Отрисовка сетки
         for x in range(self.grid_size):
             for y in range(self.grid_size):
-                pygame.draw.rect(self.screen, BLACK, (x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE, CELL_SIZE),
+                pygame.draw.rect(self.screen, const.BLACK,
+                                 (x * const.CELL_SIZE, y * const.CELL_SIZE, const.CELL_SIZE, const.CELL_SIZE),
                                  1)  # Рисуем черную границу вокруг каждой клетки
 
         # Отрисовка базы
-        self.screen.blit(BASE_ICON,
-                         (self.base_position[1] * CELL_SIZE, self.base_position[0] * CELL_SIZE))
+        self.screen.blit(const.BASE_ICON,
+                         (self.base_position[1] * const.CELL_SIZE, self.base_position[0] * const.CELL_SIZE))
 
         # Рисуем цветы и ямы, которые были обнаружены
         for i, pos in enumerate(self.target_positions):
             if pos in self.known_flowers:
                 if self.watered_status[i]:
-                    icon = WATERED_FLOWER_ICON
+                    icon = const.WATERED_FLOWER_ICON
                 else:
-                    icon = FLOWER_ICON
-                self.screen.blit(icon, (pos[1] * CELL_SIZE, pos[0] * CELL_SIZE))
+                    icon = const.FLOWER_ICON
+                self.screen.blit(icon, (pos[1] * const.CELL_SIZE, pos[0] * const.CELL_SIZE))
 
         for hole in self.hole_positions:
             if hole in self.known_holes:
-                self.screen.blit(HOLE_ICON, (hole[1] * CELL_SIZE, hole[0] * CELL_SIZE))
+                self.screen.blit(const.HOLE_ICON, (hole[1] * const.CELL_SIZE, hole[0] * const.CELL_SIZE))
 
         # Рисуем линию к ближайшему цветку
         known_unwatered_flowers = [
@@ -471,49 +466,50 @@ class WateringEnv(gym.Env):
                 known_unwatered_flowers,
                 key=lambda pos: abs(self.agent_position[0] - pos[0]) + abs(self.agent_position[1] - pos[1])
             )
-            agent_x = self.agent_position[1] * CELL_SIZE + CELL_SIZE // 2
-            agent_y = self.agent_position[0] * CELL_SIZE + CELL_SIZE // 2
-            flower_x = nearest_flower[1] * CELL_SIZE + CELL_SIZE // 2
-            flower_y = nearest_flower[0] * CELL_SIZE + CELL_SIZE // 2
-            pygame.draw.line(self.screen, BLUE, (agent_x, agent_y), (flower_x, flower_y), 2)
+            agent_x = self.agent_position[1] * const.CELL_SIZE + const.CELL_SIZE // 2
+            agent_y = self.agent_position[0] * const.CELL_SIZE + const.CELL_SIZE // 2
+            flower_x = nearest_flower[1] * const.CELL_SIZE + const.CELL_SIZE // 2
+            flower_y = nearest_flower[0] * const.CELL_SIZE + const.CELL_SIZE // 2
+            pygame.draw.line(self.screen, const.BLUE, (agent_x, agent_y), (flower_x, flower_y), 2)
 
         # Накладываем исследование области
         for x in range(self.grid_size):
             for y in range(self.grid_size):
                 pos = (x, y)
                 if pos not in self.explored_cells:
-                    dark_overlay = pygame.Surface((CELL_SIZE, CELL_SIZE), pygame.SRCALPHA)
+                    dark_overlay = pygame.Surface((const.CELL_SIZE, const.CELL_SIZE), pygame.SRCALPHA)
                     dark_overlay.fill((0, 0, 0, 200))  # Непрозрачный
-                    self.screen.blit(dark_overlay, (y * CELL_SIZE, x * CELL_SIZE))
+                    self.screen.blit(dark_overlay, (y * const.CELL_SIZE, x * const.CELL_SIZE))
 
         # Отрисовка времени, очков, заряда и уровня воды
         elapsed_time = time.time() - self.start_time  # Рассчитываем время
-        font = pygame.font.SysFont(None, FONT_SIZE)
+        font = pygame.font.SysFont(None, const.FONT_SIZE)
         status_bar_height = 120  # Высота панели статуса
-        status_bar_rect = pygame.Rect(0, SCREEN_SIZE, SCREEN_SIZE,
+        status_bar_rect = pygame.Rect(0, const.SCREEN_SIZE, const.SCREEN_SIZE,
                                       status_bar_height)  # Прямоугольник для панели статуса
-        pygame.draw.rect(self.screen, WHITE, status_bar_rect)
+        pygame.draw.rect(self.screen, const.WHITE, status_bar_rect)
 
-        self.screen.blit(font.render(f"Время: {elapsed_time:.2f} сек", True, BLACK),
-                         (10, SCREEN_SIZE + 10))
-        self.screen.blit(font.render(f"Очки: {self.score}", True, BLACK),
-                         (10, SCREEN_SIZE + 40))
-        self.screen.blit(font.render(f"Энергия: {self.energy}", True, BLACK),
-                         (200, SCREEN_SIZE + 10))
-        self.screen.blit(font.render(f"Вода: {self.water_tank}", True, BLACK),
-                         (200, SCREEN_SIZE + 40))
-        self.screen.blit(font.render(f"Шаги: {self.step_count}", True, BLACK),
-                         (400, SCREEN_SIZE + 10))
-        self.screen.blit(font.render(f"Обнаружено ям: {len(self.known_holes)}/{COUNT_HOLES}", True, BLACK),
-                         (400, SCREEN_SIZE + 40))
-        self.screen.blit(font.render(f"Обнаружено цветков: {len(self.known_flowers)}/{COUNT_FLOWERS}", True, BLACK),
-                         (10, SCREEN_SIZE + 70))
-        self.screen.blit(font.render(f"Полито цветков: {int(np.sum(self.watered_status))}/{COUNT_FLOWERS}", True,
-                                     BLACK), (300, SCREEN_SIZE + 70))
+        self.screen.blit(font.render(f"Время: {elapsed_time:.2f} сек", True, const.BLACK),
+                         (10, const.SCREEN_SIZE + 10))
+        self.screen.blit(font.render(f"Очки: {self.score}", True, const.BLACK),
+                         (10, const.SCREEN_SIZE + 40))
+        self.screen.blit(font.render(f"Энергия: {self.energy}", True, const.BLACK),
+                         (200, const.SCREEN_SIZE + 10))
+        self.screen.blit(font.render(f"Вода: {self.water_tank}", True, const.BLACK),
+                         (200, const.SCREEN_SIZE + 40))
+        self.screen.blit(font.render(f"Шаги: {self.step_count}", True, const.BLACK),
+                         (400, const.SCREEN_SIZE + 10))
+        self.screen.blit(font.render(f"Обнаружено ям: {len(self.known_holes)}/{const.COUNT_HOLES}",
+                                     True, const.BLACK), (400, const.SCREEN_SIZE + 40))
+        self.screen.blit(
+            font.render(f"Обнаружено цветков: {len(self.known_flowers)}/{const.COUNT_FLOWERS}",
+                        True, const.BLACK), (10, const.SCREEN_SIZE + 70))
+        self.screen.blit(font.render(f"Полито цветков: {int(np.sum(self.watered_status))}/"
+                                     f"{const.COUNT_FLOWERS}", True, const.BLACK), (300, const.SCREEN_SIZE + 70))
 
         # Отрисовка агента
-        self.screen.blit(AGENT_ICON, (self.agent_position[1] * CELL_SIZE,
-                                      self.agent_position[0] * CELL_SIZE))
+        self.screen.blit(const.AGENT_ICON, (self.agent_position[1] * const.CELL_SIZE,
+                                            self.agent_position[0] * const.CELL_SIZE))
 
         pygame.display.flip()
         pygame.time.wait(10)
@@ -524,7 +520,7 @@ class WateringEnv(gym.Env):
         :param render_text: str
         :return:
         """
-        self.screen.fill(BLACK)
-        text_surf = pygame.font.SysFont(None, TITLE_SIZE).render(render_text, True, GREEN)
-        self.screen.blit(text_surf, text_surf.get_rect(center=(SCREEN_SIZE // 2, SCREEN_SIZE // 2)))
+        self.screen.fill(const.BLACK)
+        text_surf = pygame.font.SysFont(None, const.TITLE_SIZE).render(render_text, True, const.GREEN)
+        self.screen.blit(text_surf, text_surf.get_rect(center=(const.SCREEN_SIZE // 2, const.SCREEN_SIZE // 2)))
         pygame.display.flip()

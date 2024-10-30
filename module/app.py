@@ -2,11 +2,9 @@ import time
 
 import pygame
 import sys
-import numpy as np
 from stable_baselines3 import PPO
 
-from CONST import WATER_CONSUMPTION, LEARNING_RATE, GAMMA, CLIP_RANGE, N_STEPS, COEF, SCREEN_SIZE, RED, FONT_SIZE, \
-    BLACK, MAX_STEPS_GAME
+from const import LEARNING_RATE, GAMMA, CLIP_RANGE, N_STEPS, COEF, MAX_STEPS_GAME
 from WateringEnv import WateringEnv
 from config import log_dir
 from logger import logging
@@ -30,7 +28,7 @@ def run():
             verbose=1,
             tensorboard_log=log_dir
         )
-        model.learn(total_timesteps=10000)
+        model.learn(total_timesteps=20000)
         message = "Обучение модели завершено."
         logging.info(message)
         env.render_message(message)
@@ -42,7 +40,7 @@ def run():
 
         obs, info = env.reset()
         step_count = 0
-        for _ in range(MAX_STEPS_GAME * 5): #  костыль
+        for _ in range(MAX_STEPS_GAME * 2): #  костыль
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     pygame.quit()
