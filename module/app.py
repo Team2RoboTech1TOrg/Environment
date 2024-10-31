@@ -4,7 +4,7 @@ import pygame
 import sys
 from stable_baselines3 import PPO
 
-from const import LEARNING_RATE, GAMMA, CLIP_RANGE, N_STEPS, COEF, MAX_STEPS_GAME
+from const import LEARNING_RATE, GAMMA, CLIP_RANGE, N_STEPS, COEF, MAX_STEPS_GAME, N_EPOCHS, BATCH_SIZE
 from WateringEnv import WateringEnv
 from config import log_dir
 from logger import logging
@@ -26,6 +26,8 @@ def run():
             n_steps=N_STEPS,
             ent_coef=COEF,
             verbose=1,
+            n_epochs=N_EPOCHS,
+            batch_size=BATCH_SIZE,
             tensorboard_log=log_dir
         )
         model.learn(total_timesteps=10000)
@@ -40,7 +42,7 @@ def run():
 
         obs, info = env.reset()
         step_count = 0
-        for _ in range(MAX_STEPS_GAME * 5): #  костыль
+        for _ in range(MAX_STEPS_GAME * 5):  # костыль
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     pygame.quit()
@@ -52,7 +54,7 @@ def run():
             step_count += 1
             if truncated:
                 obs, info = env.reset()
-                message = f"Новая игра" # add counter games
+                message = f"Новая игра"  # add counter games
                 env.render_message(message)
                 time.sleep(5)
                 step_count = 0
@@ -70,6 +72,3 @@ def run():
         raise
     finally:
         pygame.quit()
-
-
-

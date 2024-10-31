@@ -359,16 +359,10 @@ class WateringEnv(gym.Env):
 
         # if self.step_count - self.last_progress_step > MAX_STEPS_WITHOUT_PROGRESS:
         #     logging.info("Отсутствие прогресса в течение слишком большого количества шагов")
-        #     terminated = True
 
         # if self.energy <= (0.2 * const.ENERGY_CAPACITY) and self.step_count - self.last_progress_step > 0:
         #     logging.info("Низкий уровень энергии без прогресса")
         #     self.reward += const.PENALTY_LOW_ENERGY_NO_PROGRESS
-
-        # и так есть штраф за ямы
-        # if self.hole_fall_count >= const.MAX_HOLE_FALL:
-        #     logging.info("Агент слишком много раз попадал в ямы")
-        #     self.reward += -50
 
         elapsed_time = time.perf_counter() - self.start_time
         # if elapsed_time > MAX_TIME and np.sum(self.watered_status) < MIN_FLOWERS_TO_WATER:
@@ -461,20 +455,20 @@ class WateringEnv(gym.Env):
                 self.screen.blit(const.HOLE_ICON, (hole[1] * const.CELL_SIZE, hole[0] * const.CELL_SIZE))
 
         # Рисуем линию к ближайшему цветку
-        known_unwatered_flowers = [
-            pos for idx, pos in enumerate(self.target_positions)
-            if self.watered_status[idx] == 0 and pos in self.known_flowers
-        ]
-        if known_unwatered_flowers:
-            nearest_flower = min(
-                known_unwatered_flowers,
-                key=lambda pos: abs(self.agent_position[0] - pos[0]) + abs(self.agent_position[1] - pos[1])
-            )
-            agent_x = self.agent_position[1] * const.CELL_SIZE + const.CELL_SIZE // 2
-            agent_y = self.agent_position[0] * const.CELL_SIZE + const.CELL_SIZE // 2
-            flower_x = nearest_flower[1] * const.CELL_SIZE + const.CELL_SIZE // 2
-            flower_y = nearest_flower[0] * const.CELL_SIZE + const.CELL_SIZE // 2
-            pygame.draw.line(self.screen, const.BLUE, (agent_x, agent_y), (flower_x, flower_y), 2)
+        # known_unwatered_flowers = [
+        #     pos for idx, pos in enumerate(self.target_positions)
+        #     if self.watered_status[idx] == 0 and pos in self.known_flowers
+        # ]
+        # if known_unwatered_flowers:
+        #     nearest_flower = min(
+        #         known_unwatered_flowers,
+        #         key=lambda pos: abs(self.agent_position[0] - pos[0]) + abs(self.agent_position[1] - pos[1])
+        #     )
+        #     agent_x = self.agent_position[1] * const.CELL_SIZE + const.CELL_SIZE // 2
+        #     agent_y = self.agent_position[0] * const.CELL_SIZE + const.CELL_SIZE // 2
+        #     flower_x = nearest_flower[1] * const.CELL_SIZE + const.CELL_SIZE // 2
+        #     flower_y = nearest_flower[0] * const.CELL_SIZE + const.CELL_SIZE // 2
+            # pygame.draw.line(self.screen, const.BLUE, (agent_x, agent_y), (flower_x, flower_y), 2)
 
         # Накладываем исследование области
         for x in range(self.grid_size):
