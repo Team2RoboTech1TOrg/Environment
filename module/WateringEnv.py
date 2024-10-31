@@ -270,7 +270,7 @@ class WateringEnv(gym.Env):
             case 3:  # Вправо
                 new_position = (self.agent_position[0], min(self.grid_size - 1, self.agent_position[1] + 1))
                 self.energy -= const.ENERGY_CONSUMPTION_MOVE
-            case 4:  # Зарядка
+            case 4:  # Зарядка сделать штраф если он и так заряжен
                 if self.agent_position == self.base_position:
                     self.energy = min(self.energy + const.ENERGY_RECHARGE_AMOUNT, const.ENERGY_CAPACITY)
                     reward += const.REWARD_RECHARGE
@@ -278,11 +278,11 @@ class WateringEnv(gym.Env):
                     logging.info("Агент зарядился на базе")
                 new_position = self.agent_position
             case 5:  # Полив
+                self.water_tank -= const.WATER_CONSUMPTION
                 if self.agent_position in self.target_positions:
                     idx = self.target_positions.index(self.agent_position)
                     if self.watered_status[idx] == 0 and self.water_tank >= const.WATER_CONSUMPTION:
                         self.watered_status[idx] = 1
-                        self.water_tank -= const.WATER_CONSUMPTION
                         self.score += const.REWARD_WATER_SUCCESS
                         reward += const.REWARD_WATER_SUCCESS
                         if self.agent_position in known_unwatered_flowers:
