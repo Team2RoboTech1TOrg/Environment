@@ -43,5 +43,7 @@ jobs:
           port: 32235
           script: |
             docker pull ${{ secrets.DOCKER_USERNAME }}/model-training:latest
-            docker compose -f /shared/repo/PrometheusGrafanaJupyterHub/docker-compose.yml up -d --no-deps --force-recreate model-training
+            docker stop model-training || true-training:latest
+            docker rm model-training || true
+            docker run --rm --name model-training -p 8111:8111 -d --network=prometheusgrafanajupyterhub_custom_networks ${{ secrets.DOCKER_USERNAME }}/model-training:latest
             docker image prune -f
