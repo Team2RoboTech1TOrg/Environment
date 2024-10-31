@@ -28,7 +28,7 @@ def run():
             verbose=1,
             tensorboard_log=log_dir
         )
-        model.learn(total_timesteps=20000)
+        model.learn(total_timesteps=25000)
         message = "Обучение модели завершено."
         logging.info(message)
         env.render_message(message)
@@ -40,7 +40,7 @@ def run():
 
         obs, info = env.reset()
         step_count = 0
-        for _ in range(MAX_STEPS_GAME * 2): #  костыль
+        for _ in range(MAX_STEPS_GAME * 5): #  костыль
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     pygame.quit()
