@@ -28,7 +28,7 @@ def run():
             verbose=1,
             tensorboard_log=log_dir
         )
-        model.learn(total_timesteps=25000)
+        model.learn(total_timesteps=10000)
         message = "Обучение модели завершено."
         logging.info(message)
         env.render_message(message)
@@ -46,17 +46,10 @@ def run():
                     pygame.quit()
                     sys.exit()
             action, _ = model.predict(obs)
-
+            pygame.time.wait(5)
             obs, reward, terminated, truncated, info = env.step(action)
             env.render()
             step_count += 1
-            logging.info(
-                f"Шаг: {step_count},"
-                f"Действие: {action}, "
-                f"Награда: {reward}, "
-                f"Завершено: {terminated}, "
-                f"Прервано: {truncated}"
-            )
             if truncated:
                 obs, info = env.reset()
                 message = f"Новая игра" # add counter games

@@ -1,7 +1,7 @@
 from utils import load_image
 
 # Параметры модели
-LEARNING_RATE = 0.0001
+LEARNING_RATE = 0.001
 GAMMA = 0.99
 CLIP_RANGE = 0.2
 N_STEPS = 4096
@@ -19,7 +19,7 @@ COUNT_HOLES = 5
 MAX_STEPS_GAME = 10000
 VIEW_RANGE = 1  # Область зрения 3x3
 WATER_CAPACITY = 300  # Максимальный запас воды
-ENERGY_CAPACITY = 10000  # Максимальный запас энергии
+ENERGY_CAPACITY = 5000  # Максимальный запас энергии
 WATER_CONSUMPTION = 10  # Расход воды на полив
 ENERGY_CONSUMPTION_MOVE = 1
 ENERGY_CONSUMPTION_WATER = 2
@@ -36,24 +36,25 @@ MIN_FLOWERS_TO_WATER = 5
 
 #Награды
 REWARD_APPROACH_UNWATERED_FLOWER = 2  #Увеличенное вознаграждение за приближение к известному неполитому цветку
-REWARD_WATER_KNOWN_FLOWER = 70 #Дополнительное вознаграждение за успешный полив неполитого известного цветка
-REWARD_COMPLETION = 1000
+REWARD_WATER_KNOWN_FLOWER = 1000 #Дополнительное вознаграждение за успешный полив неполитого известного цветка
+REWARD_COMPLETION = 3000
 REWARD_MOVE = -0.5
-REWARD_WATER_SUCCESS = 100
-PENALTY_WATER_FAIL_ALREADY_WATERED = -5 # Если цветок уже полит
-PENALTY_WATER_FAIL_NOT_ON_FLOWER = -10 # Агент попытался, полить не находясь на цветке
+REWARD_WATER_SUCCESS = 150
+PENALTY_WATER_FAIL_ALREADY_WATERED = -3 # Если цветок уже полит
+PENALTY_WATER_FAIL_NOT_ON_FLOWER = -5 # Агент попытался полить не находясь на цветке
 NEXT_2_UNWATERED_FLOWER = 0.5  # Вознаграждение за нахождение рядом с неполитым цветком
 REWARD_MAX_STEPS_DISTANCE = -10
 REWARD_UNNECESSARY_MOVE = -15  # Штраф за ненужное движение
 # REWARD_REFILL = -10
-PENALTY_BASE_BACK = -5
-PENALTY_COLLISION = -50  # штраф за попадание в яму
+REWARD_BASE_BACK = 5 # На базу с низким зарядом
+PENALTY_BASE_BACK = -5 # На базу с большим зарядом
+PENALTY_COLLISION = -25  # штраф за попадание в яму
 REWARD_EXPLORE = 5  # Вознаграждение за исследование новых клеток
 # REWARD_AVOID_HOLE = 5 # Вознаграждение за обход ям
 REWARD_TIME = lambda t: 1 / t if t > 0 else 0
 REWARD_STEPS = lambda m: 1 / m if m > 0 else 0
-PENALTY_LOW_ENERGY_NO_PROGRESS = -50 #Низкий уровень энергии без прогресса
-PENALTY_LOOP = -200
+PENALTY_LOW_ENERGY_NO_PROGRESS = -10 #Низкий уровень энергии без прогресса
+PENALTY_LOOP = -10
 
 # Позиции цветов и ям
 # PLACEMENT_MODE = 'fixed'

@@ -233,15 +233,17 @@ class WateringEnv(gym.Env):
             if self.watered_status[idx] == 0 and pos in self.known_flowers
         ]
 
+        prev_position =([obs[0], obs[1]])
+        # idx = self.target_positions.index(prev_position)
+        if (prev_position in self.target_positions) and (action != 5) and self.watered_status[[obs[0], obs[1]]] == 0:
+            self.reward -= 5
+            logging.info(f"Должен был поливать цветок на {prev_position}, но выбрал иное действие {self.agent_position}")
+
         # Проверяем, уменьшилось ли расстояние до ближайшего известного, но неполитого цветка
         if (prev_distance_to_flower != -1 and distance_to_flower != -1
                 and distance_to_flower < prev_distance_to_flower):
             self.reward += const.REWARD_APPROACH_UNWATERED_FLOWER
-
-        # Плохо влияет на обучение агента, не подходит к цветам около ямы
-        # Штраф за приближение к известным ямам
-        # if prev_distance_to_hole != -1 and distance_to_hole != -1 and distance_to_hole < prev_distance_to_hole:
-        #     reward -= 10
+            logging.info(f"Уменьшилось расстояние до неполитого цветка {self.agent_position}")
 
         # Обновляем сохраненные расстояния
         self.prev_distance_to_flower = distance_to_flower
@@ -261,24 +263,25 @@ class WateringEnv(gym.Env):
             case 3:  # Вправо
                 new_position = (self.agent_position[0], min(self.grid_size - 1, self.agent_position[1] + 1))
                 self.energy -= const.ENERGY_CONSUMPTION_MOVE
-            case 4:  # Зарядка сделать штраф если он и так заряжен
+            case 4:  # Зарядка
                 if self.agent_position == self.base_position:
-                    if self.energy > 10:
+                    if self.energy > 30:
                         self.reward += const.PENALTY_BASE_BACK
                         logging.info("Агент летит на базу без вызова")
-                    # self.energy = min(self.energy + const.ENERGY_RECHARGE_AMOUNT, const.ENERGY_CAPACITY)
-                    # self.last_progress_step = self.step_count
-                    # logging.info("Агент зарядился на базе")
+                    else:
+                        self.energy = const.ENERGY_CAPACITY
+                        self.reward += const.REWARD_BASE_BACK
+                        self.last_progress_step = self.step_count
+                        logging.info("Агент зарядился на базе")
                 new_position = self.agent_position
             case 5:  # Полив
                 self.water_tank -= const.WATER_CONSUMPTION
                 self.energy -= const.ENERGY_CONSUMPTION_WATER
-                self.last_progress_step = self.step_count #???
-
                 if self.agent_position in self.target_positions:
                     logging.info(f"Полил цветок на позиции {self.agent_position}")
                     idx = self.target_positions.index(self.agent_position)
                     if self.watered_status[idx] == 0:
+                        self.last_progress_step = self.step_count
                         self.watered_status[idx] = 1
                         if self.agent_position in known_unwatered_flowers:
                             self.reward += const.REWARD_WATER_KNOWN_FLOWER
@@ -296,22 +299,13 @@ class WateringEnv(gym.Env):
             case _:
                 new_position = self.agent_position
 
-        if self.agent_position in self.target_positions:
-            pos_key = self.agent_position
-            self.position_history[pos_key] = self.position_history.get(pos_key, 0) + 1
-            if self.position_history[pos_key] == 1:
-                idx = self.target_positions.index(self.agent_position)
-                if self.watered_status[idx] == 0 and action != 5:
-                    self.reward -= 20
-                logging.info(f"Не полил цветок на позиции {self.agent_position}")
-
         # Проверяем, известна ли яма
         if new_position in self.hole_positions:
             if new_position in self.known_holes:
                 self.reward += const.PENALTY_COLLISION * 2  # Увеличиваем штраф
                 logging.warning(f"Агент попытался зайти в известную яму на позиции {new_position}")
                 # Не обновляем позицию
-                new_position = self.agent_position
+                # new_position = self.agent_position
             else:
                 self.reward += const.PENALTY_COLLISION
                 logging.warning(f"Агент попал в неизвестную яму на позиции {new_position}")
@@ -417,6 +411,13 @@ class WateringEnv(gym.Env):
             truncated = True
 
         obs = self._get_observation()
+        logging.info(
+            f"Шаг: {self.step_count},"
+            f"Действие: {action}, "
+            f"Награда: {self.reward}, "
+            f"Завершено: {terminated}, "
+            f"Прервано: {truncated}"
+        )
         return obs, self.reward, terminated, truncated, info
 
     def has_clear_target(self, current_position):
