@@ -4,7 +4,7 @@ import pygame
 import sys
 from stable_baselines3 import PPO
 
-from const import LEARNING_RATE, GAMMA, CLIP_RANGE, N_STEPS, COEF, MAX_STEPS_GAME, N_EPOCHS, BATCH_SIZE
+from const import LEARNING_RATE, GAMMA, CLIP_RANGE, N_STEPS, COEF, MAX_STEPS_GAME, N_EPOCHS, BATCH_SIZE, CLIP_RANGE_VF
 from WateringEnv import WateringEnv
 from config import log_dir
 from logger import logging
@@ -28,7 +28,8 @@ def run():
             verbose=1,
             n_epochs=N_EPOCHS,
             batch_size=BATCH_SIZE,
-            tensorboard_log=log_dir
+            tensorboard_log=log_dir,
+            clip_range_vf=CLIP_RANGE_VF
         )
         model.learn(total_timesteps=10000)
         message = "Обучение модели завершено."

@@ -1,12 +1,13 @@
 from utils import load_image
 
 # Параметры модели
-LEARNING_RATE = 0.0003
+LEARNING_RATE = 0.01
 GAMMA = 0.99
 CLIP_RANGE = 0.2
 N_STEPS = 4096
 COEF = 0.01
-N_EPOCHS = 100
+CLIP_RANGE_VF = 0.3
+N_EPOCHS = 200
 BATCH_SIZE = 128
 
 # Параметры экрана и сетки
@@ -25,36 +26,35 @@ ENERGY_CAPACITY = 5000  # Максимальный запас энергии
 WATER_CONSUMPTION = 10  # Расход воды на полив
 ENERGY_CONSUMPTION_MOVE = 1
 ENERGY_CONSUMPTION_WATER = 2
-ENERGY_RECHARGE_AMOUNT = 100
-WATER_REFILL_AMOUNT = 50
+# ENERGY_RECHARGE_AMOUNT = 100
+# WATER_REFILL_AMOUNT = 50
 COUNT_ACTIONS = 6
-MAX_STEPS_WITHOUT_PROGRESS = 1000
-MAX_ENERGY_WITHOUT_PROGRESS = 800
-MAX_HOLE_FALL = 5
-MAX_TIME = 3000
+# MAX_STEPS_WITHOUT_PROGRESS = 1000
+# MAX_ENERGY_WITHOUT_PROGRESS = 800
+# MAX_TIME = 3000
 MAX_STEPS_DISTANCE = 5
 MAX_DISTANCE_FROM_FLORAL = 10
 MIN_FLOWERS_TO_WATER = 5
+MIN_GAME_STEPS = 2000
 
 # Награды
 # REWARD_APPROACH_UNWATERED_FLOWER = 2  # Увеличенное вознаграждение за приближение к известному неполитому цветку
-REWARD_WATER_KNOWN_FLOWER = 200  # Дополнительное вознаграждение за успешный полив неполитого известного цветка
+REWARD_WATER_KNOWN_FLOWER = 200  # Дополнительное вознаграждение за полив неполитого известного цветка
 REWARD_COMPLETION = 3000
-REWARD_MOVE = -0.5
-REWARD_WATER_SUCCESS = 300 # Дополнительное вознаграждение за успешный полив неполитого известного цветка
+REWARD_WATER_SUCCESS = 300 # Дополнительное вознаграждение за полив неполитого известного цветка
 PENALTY_WATER_FAIL_ALREADY_WATERED = -3  # Если цветок уже полит
-PENALTY_WATER_FAIL_NOT_ON_FLOWER = -50  # Агент попытался полить не находясь на цветке
+PENALTY_WATER_FAIL_NOT_ON_FLOWER = -15  # Агент попытался полить не находясь на цветке
 NEXT_2_UNWATERED_FLOWER = 5  # Вознаграждение за нахождение рядом с неполитым цветком
 REWARD_MAX_STEPS_DISTANCE = -10
 # REWARD_UNNECESSARY_MOVE = -15  # Штраф за ненужное движение
 # REWARD_REFILL = -10
 REWARD_BASE_BACK = 5  # На базу с низким зарядом
-PENALTY_BASE_BACK = -5  # На базу с большим зарядом
-PENALTY_COLLISION = -25  # штраф за попадание в яму
-REWARD_EXPLORE = 5  # Вознаграждение за исследование новых клеток
+PENALTY_BASE_BACK = -15  # На базу с большим зарядом
+PENALTY_COLLISION = -15  # штраф за попадание в яму
+REWARD_EXPLORE = 1  # Вознаграждение за исследование новых клеток
 # REWARD_AVOID_HOLE = 5 # Вознаграждение за обход ям
-REWARD_TIME = lambda t: 1 / t if t > 0 else 0
-REWARD_STEPS = lambda m: 1 / m if m > 0 else 0
+# REWARD_TIME = lambda t: 1 / t if t > 0 else 0
+# REWARD_STEPS = lambda m: 1 / m if m > 0 else 0
 PENALTY_LOW_ENERGY_NO_PROGRESS = -10  # Низкий уровень энергии без прогресса
 PENALTY_LOOP = -15
 
