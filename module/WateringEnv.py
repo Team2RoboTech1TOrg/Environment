@@ -34,7 +34,7 @@ class WateringEnv(gym.Env):
         self.prev_distance_to_flower = None
         self.prev_distance_to_hole = None
         self.action_space = gym.spaces.Discrete(const.COUNT_ACTIONS)
-        self.action_history = deque(maxlen=5)
+        self.action_history = None
         self.observation_space = gym.spaces.Box(
             low=-self.grid_size,  # Позволяет delta_x и delta_y быть отрицательными
             high=self.grid_size,
@@ -103,7 +103,8 @@ class WateringEnv(gym.Env):
         self.step_count = 0
         self.steps_since_last_distance = 0
         self.distance_progress_steps = 0
-        self.position_history = {}
+        self.position_history = deque(maxlen=10)#{}
+        self.action_history = deque(maxlen=5)
         self.action_history.clear()
         self.known_holes = set()
         self.known_flowers = set()
@@ -199,14 +200,6 @@ class WateringEnv(gym.Env):
             self.agent_position = self.base_position
             self.water_tank = const.WATER_CAPACITY
 
-        # Запись истории позиций для обнаружения циклов
-        # не работает, так как проверка идет по всем шагам юнита
-        pos_key = self.agent_position
-        # self.position_history[pos_key] = self.position_history.get(pos_key, 0) + 1
-        # if self.action_history[pos_key] > 3:
-        #     print(pos_key)
-        #     self.reward += const.PENALTY_LOOP
-        #     logging.info('Penalty')
         self.action_history.append(action)
 
         # Сохраняем предыдущие расстояния
@@ -247,21 +240,12 @@ class WateringEnv(gym.Env):
             case 3:  # Вправо
                 new_position = (self.agent_position[0], min(self.grid_size - 1, self.agent_position[1] + 1))
                 self.energy -= const.ENERGY_CONSUMPTION_MOVE
-            case 4:  # Зарядка
-                if self.energy > 30:
-                    self.reward += const.PENALTY_BASE_BACK
-                    logging.info("Агент летит на базу без вызова")
-                else:
-                    self.energy = const.ENERGY_CAPACITY
-                    # self.reward += const.REWARD_BASE_BACK
-                    logging.info("Агент зарядился на базе")
-                new_position = self.base_position
-            case 5:  # Полив
+            case 4:  # Полив
                 self.water_tank -= const.WATER_CONSUMPTION
                 self.energy -= const.ENERGY_CONSUMPTION_WATER
                 if self.action_history[0] == 5:
                     logging.info('Aгент попытался полить тоже место второй раз подряд ')
-                    self.reward += const.PENALTY_WATER_FAIL_NOT_ON_FLOWER * 20
+                    self.reward += const.PENALTY_WATER_FAIL_NOT_ON_FLOWER * 2
                 elif self.agent_position in self.target_positions:
                     logging.info(f"Полил цветок на позиции {self.agent_position}")
                     idx = self.target_positions.index(self.agent_position)
@@ -283,10 +267,17 @@ class WateringEnv(gym.Env):
             case _:
                 new_position = self.agent_position
 
+        # Запись истории позиций для обнаружения циклов
+        # если в последних 10 записях повторяется 2 раза позиция
+        self.position_history.append(new_position)
+        if self.position_history.count(new_position) > 2 and action != 4:
+            self.reward += const.PENALTY_LOOP
+            logging.info('Penalty')
+
         # если был на цветке на прошлом шаге и на этом не поливает
         prev_position = ([obs[0], obs[1]])
         if (prev_position in known_unwatered_flowers) and (action != 5) == 0:
-            self.reward -= 5
+            self.reward += const.DONT_WATERING
             logging.info(
                 f"Должен был поливать цветок на {prev_position}, но выбрал иное действие {action}")
 
