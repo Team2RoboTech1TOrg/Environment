@@ -1,13 +1,13 @@
 from utils import load_image
 
 # Параметры модели
-LEARNING_RATE = 0.001
+LEARNING_RATE = 0.0001
 GAMMA = 0.99
 CLIP_RANGE = 0.2
 N_STEPS = 4096
 COEF = 0.01
 CLIP_RANGE_VF = 0.2
-N_EPOCHS = 100
+N_EPOCHS = 200
 BATCH_SIZE = 64
 
 # Параметры экрана и сетки
@@ -22,25 +22,17 @@ COUNT_HOLES = 5
 MAX_STEPS_GAME = 10000
 VIEW_RANGE = 1  # Область зрения 3x3
 WATER_CAPACITY = 300  # Максимальный запас воды
-ENERGY_CAPACITY = 5000  # Максимальный запас энергии
+ENERGY_CAPACITY = 2000  # Максимальный запас энергии
 WATER_CONSUMPTION = 10  # Расход воды на полив
 ENERGY_CONSUMPTION_MOVE = 1
 ENERGY_CONSUMPTION_WATER = 2
-COUNT_ACTIONS = 5
-MIN_GAME_STEPS = 2000
+COUNT_ACTIONS = 4
+MIN_GAME_STEPS = GRID_SIZE * 3
 
 # Награды
-REWARD_WATER_KNOWN_FLOWER = 2000  # Дополнительное вознаграждение за полив неполитого известного цветка
-REWARD_COMPLETION = 10000
-REWARD_WATER_SUCCESS = 1500 # Дополнительное вознаграждение за полив неполитого известного цветка
-PENALTY_WATER_FAIL_ALREADY_WATERED = -10  # Если цветок уже полит
-PENALTY_WATER_FAIL_NOT_ON_FLOWER = -15  # Агент попытался полить не находясь на цветке
-NEXT_2_UNWATERED_FLOWER = 5  # Вознаграждение за нахождение рядом с неполитым цветком
-REWARD_MAX_STEPS_DISTANCE = -10
-PENALTY_COLLISION = -15  # штраф за попадание в яму
-REWARD_EXPLORE = 25  # Вознаграждение за исследование новых клеток
-DONT_WATERING = - 5
-PENALTY_LOOP = -15
+REWARD_COMPLETION = 500
+REWARD_EXPLORE = 60  # Вознаграждение за исследование новых клеток
+PENALTY_LOOP = 10
 
 # Позиции цветов и ям
 # PLACEMENT_MODE = 'fixed'

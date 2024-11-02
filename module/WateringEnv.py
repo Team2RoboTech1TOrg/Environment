@@ -128,7 +128,7 @@ class WateringEnv(gym.Env):
                             logging.debug(f"Новый известный цветок: {pos}")
                     else:
                         visible_area.extend([0, 0])  # Пустая клетка
-                    self.explored_cells.add(pos)
+                    # self.explored_cells.add(pos)
                 else:
                     visible_area.extend([-1, 0])  # Вне границ
 
@@ -159,9 +159,6 @@ class WateringEnv(gym.Env):
         # Обновляем наблюдение, чтобы получить новые расстояния
         obs = self._get_observation()
 
-        # Определяем известные неполитые цветки
-        known_unwatered_flowers = self.get_unwatered_flowers()
-
         # Действия агента в зависимости от выбранного действия
         match action:
             case 0:  # Вверх
@@ -176,49 +173,8 @@ class WateringEnv(gym.Env):
             case 3:  # Вправо
                 new_position = (self.agent_position[0], min(self.grid_size - 1, self.agent_position[1] + 1))
                 self.energy -= const.ENERGY_CONSUMPTION_MOVE
-            case 4:  # Полив
-                self.water_tank -= const.WATER_CONSUMPTION
-                self.energy -= const.ENERGY_CONSUMPTION_WATER
-                if self.action_history[0] == 5:
-                    logging.info('Aгент попытался полить тоже место второй раз подряд ')
-                    self.reward += const.PENALTY_WATER_FAIL_NOT_ON_FLOWER * 2
-                elif self.agent_position in self.target_positions:
-                    logging.info(f"Полил цветок на позиции {self.agent_position}")
-                    idx = self.target_positions.index(self.agent_position)
-                    if self.watered_status[idx] == 0:
-                        self.watered_status[idx] = 1
-                        if self.agent_position in known_unwatered_flowers:
-                            self.reward += const.REWARD_WATER_KNOWN_FLOWER
-                        else:
-                            self.reward += const.REWARD_WATER_SUCCESS
-                    else:
-                        self.reward += const.PENALTY_WATER_FAIL_ALREADY_WATERED
-                        logging.warning(
-                            f"Агент попытался полить цветок, который уже полит")
-                else:
-                    self.reward += const.PENALTY_WATER_FAIL_NOT_ON_FLOWER
-                    logging.warning(f"Агент попытался полить вне цветка")
-                new_position = self.agent_position
-
             case _:
                 new_position = self.agent_position
-
-        # Запись истории позиций для обнаружения циклов
-        # если в последних 10 записях повторяется 3 раза позиция
-        self.position_history.append(new_position)
-        if self.position_history.count(new_position) > 3 and action != 4:
-            self.reward += const.PENALTY_LOOP
-            logging.info('Penalty')
-
-        # если был на цветке на прошлом шаге и на этом не поливает
-        prev_position = ([obs[0], obs[1]])
-        if (prev_position in known_unwatered_flowers) and (action != 5) == 0:
-            self.reward += const.DONT_WATERING
-            logging.info(
-                f"Должен был поливать цветок на {prev_position}, но выбрал иное действие {action}")
-
-        # Проверяем, не в яме ли агент
-        self.is_in_hole(new_position)
 
         # Обновление посещенных клеток - пределы поля учитывать
         self.update_visited_cells(new_position)
@@ -244,7 +200,6 @@ class WateringEnv(gym.Env):
             truncated = True
 
         self.agent_position = new_position
-        obs = self._get_observation()
         logging.info(
             f"Шаг: {self.step_count},"
             f"Действие: {action} - {self.agent_position}, "
@@ -254,32 +209,34 @@ class WateringEnv(gym.Env):
         )
         return obs, self.reward, terminated, truncated, info
 
-    def is_in_hole(self, new_position):
-        """Is agent in hole, reward depends of knowmed hole or not"""
-        if new_position in self.hole_positions:
-            if new_position in self.known_holes:
-                self.reward += const.PENALTY_COLLISION * 2
-                logging.warning(f"Агент попытался зайти в известную яму на позиции {new_position}")
-            else:
-                self.reward += const.PENALTY_COLLISION
-                logging.warning(f"Агент попал в неизвестную яму на позиции {new_position}")
-                self.agent_position = new_position
-                self.known_holes.add(new_position)
-
-    def get_unwatered_flowers(self) -> list[tuple]:
-        """Return list of coordinates of unwatered flowers"""
-        return [
-            pos for idx, pos in enumerate(self.target_positions)
-            if self.watered_status[idx] == 0 and pos in self.known_flowers
-        ]
-
     def update_visited_cells(self, new_position):
         """Update visited and explored cells"""
+        # Запись истории позиций для обнаружения циклов
+        self.position_history.append(new_position)
+
         if self.visited[new_position] == 0:
             self.visited[new_position] = 1
-        if new_position not in self.explored_cells:
-            self.reward += const.REWARD_EXPLORE
-            self.explored_cells.add(new_position)
+            # тут будет проверка на территорию поля
+            if new_position not in self.explored_cells:
+                self.reward += const.REWARD_EXPLORE
+                self.explored_cells.add(new_position)
+                # если на цветке, то поливаем
+                if new_position in self.target_positions:
+                    self.energy -= const.ENERGY_CONSUMPTION_WATER
+                    self.water_tank -= const.WATER_CONSUMPTION
+                    idx = self.target_positions.index(new_position)
+                    self.watered_status[idx] = 1
+                    logging.info("Полил цветок")
+        else:
+            if new_position == self.position_history[-2]:
+                self.reward -= const.PENALTY_LOOP * 3
+                logging.info(f"Штраф за стену {self.position_history[-2]}")
+            elif self.position_history.count(new_position) > 2:
+                self.reward -= const.PENALTY_LOOP * 2
+                logging.info("Штраф за вторичное посещение клетки в последние 10 шагов")
+            else:
+                self.reward -= const.PENALTY_LOOP
+                logging.info("Штраф за вторичное посещение клетки")
 
     def render(self):
         """Render agent game"""
