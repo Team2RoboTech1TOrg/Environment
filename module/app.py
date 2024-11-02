@@ -37,7 +37,7 @@ def run():
         env.render_message(message)
         model.save("ppo_watering_model")
         time.sleep(2)
-
+        # model = PPO.load("ppo_watering_model", print_system_info=True)
         clock = pygame.time.Clock()
         pygame.display.set_caption("Drone Watering Flowers")
 

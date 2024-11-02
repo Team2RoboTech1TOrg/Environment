@@ -1,6 +1,5 @@
 import time
 from collections import deque
-
 import pygame
 import gymnasium as gym
 import numpy as np
@@ -14,31 +13,25 @@ class WateringEnv(gym.Env):
         super(WateringEnv, self).__init__()
         self.grid_size = const.GRID_SIZE
         self.screen = pygame.display.set_mode((const.SCREEN_SIZE, const.SCREEN_SIZE + 120))
-
         self.base_position = (const.BASE_COORD, const.BASE_COORD)
         self.agent_position = None  # Стартовая позиция
         self.water_tank = None  # Заполняем бак водой
         self.energy = None  # Полный заряд энергии
         self.start_time = None  # Начальное время
-        # self.score = None
         self.reward = None
         self.watered_status = None  # Статус всех цветов (0 - не полит, 1 - полит)
         self.visited = None
         self.step_count = None
-        self.steps_since_last_distance = None
-        self.distance_progress_steps = None
         self.position_history = None
         self.known_holes = None
         self.known_flowers = None
         self.explored_cells = None
-        self.prev_distance_to_flower = None
-        self.prev_distance_to_hole = None
         self.action_space = gym.spaces.Discrete(const.COUNT_ACTIONS)
         self.action_history = None
         self.observation_space = gym.spaces.Box(
-            low=-self.grid_size,  # Позволяет delta_x и delta_y быть отрицательными
+            low=-self.grid_size,
             high=self.grid_size,
-            shape=(35,),  # Надо описать магию
+            shape=(22,),
             dtype=np.float32
         )
 
@@ -97,20 +90,15 @@ class WateringEnv(gym.Env):
         self.water_tank = const.WATER_CAPACITY
         self.energy = const.ENERGY_CAPACITY
         self.visited = np.zeros((self.grid_size, self.grid_size), dtype=int)
-        self.visited[self.agent_position] = 1
         self.start_time = time.time()
         self.reward = 0
         self.step_count = 0
-        self.steps_since_last_distance = 0
-        self.distance_progress_steps = 0
-        self.position_history = deque(maxlen=10)#{}
+        self.position_history = deque(maxlen=10)
         self.action_history = deque(maxlen=5)
         self.action_history.clear()
         self.known_holes = set()
         self.known_flowers = set()
         self.explored_cells = set()
-        self.prev_distance_to_flower = -1
-        self.prev_distance_to_hole = -1
         logging.info("Environment reset")
         obs = self._get_observation()
         if obs.shape != self.observation_space.shape:
@@ -144,46 +132,11 @@ class WateringEnv(gym.Env):
                 else:
                     visible_area.extend([-1, 0])  # Вне границ
 
-        # Вычисляем расстояние до ближайшего известного, но неполитого цветка
-        known_unwatered_flowers = self.get_unwatered_flowers()
-        if known_unwatered_flowers:
-            nearest_flower = min(
-                known_unwatered_flowers,
-                key=lambda pos: abs(self.agent_position[0] - pos[0]) + abs(self.agent_position[1] - pos[1])
-            )
-            distance_to_flower = abs(self.agent_position[0] - nearest_flower[0]) + abs(
-                self.agent_position[1] - nearest_flower[1])
-            delta_x = nearest_flower[0] - self.agent_position[0]
-            delta_y = nearest_flower[1] - self.agent_position[1]
-        else:
-            distance_to_flower = -1  # Нет известных неполитых цветов
-            delta_x = 0
-            delta_y = 0
-
-        # Вычисляем расстояние до ближайшей известной ямы
-        if self.known_holes:
-            distance_to_hole = min([
-                abs(self.agent_position[0] - pos[0]) + abs(self.agent_position[1] - pos[1])
-                for pos in self.known_holes
-            ])
-        else:
-            distance_to_hole = -1  # Нет известных ям
-
-        is_on_base = 1 if self.agent_position == self.base_position else 0
-        is_on_flower = 1 if self.agent_position in self.target_positions else 0
-        is_on_hole = 1 if self.agent_position in self.hole_positions else 0
-        remaining_flowers = const.COUNT_FLOWERS - np.sum(self.watered_status)
-        action_hist = list(self.action_history) + [0] * (5 - len(self.action_history))
-
         observation = np.concatenate([
             np.array(self.agent_position, dtype=float),  # 0-1
             np.array([self.water_tank, self.energy], dtype=float),  # 2-3
             np.array(visible_area, dtype=float),  # 4-21
-            np.array([distance_to_flower, distance_to_hole], dtype=float),  # 22-23
-            np.array([is_on_base, is_on_flower, is_on_hole, remaining_flowers], dtype=float),  # 24-27
-            np.array([delta_x, delta_y], dtype=float),  # 28-29
-            np.array(action_hist, dtype=float)  # 30-34
-        ])  # Всего 35 элемента
+        ])  # Всего 22 элемента
         if observation.shape != self.observation_space.shape:
             raise ValueError(
                 f"Observation shape {observation.shape} does not match observation_space {self.observation_space.shape}"
@@ -200,28 +153,11 @@ class WateringEnv(gym.Env):
             self.agent_position = self.base_position
             self.water_tank = const.WATER_CAPACITY
 
+        # Добавили действие в историю
         self.action_history.append(action)
-
-        # Сохраняем предыдущие расстояния
-        # prev_distance_to_flower = self.prev_distance_to_flower
-        # prev_distance_to_hole = self.prev_distance_to_hole
 
         # Обновляем наблюдение, чтобы получить новые расстояния
         obs = self._get_observation()
-        # distance_to_flower = obs[22]
-        # distance_to_hole = obs[23]
-        # delta_x = obs[28]
-        # delta_y = obs[29]
-
-        # # Проверяем, уменьшилось ли расстояние до ближайшего известного, но неполитого цветка
-        # if (prev_distance_to_flower != -1 and distance_to_flower != -1
-        #         and distance_to_flower < prev_distance_to_flower):
-        #     self.reward += const.REWARD_APPROACH_UNWATERED_FLOWER
-        #     logging.info(f"Уменьшилось расстояние до неполитого цветка {self.agent_position}")
-
-        # Обновляем сохраненные расстояния
-        # self.prev_distance_to_flower = distance_to_flower
-        # self.prev_distance_to_hole = distance_to_hole
 
         # Определяем известные неполитые цветки
         known_unwatered_flowers = self.get_unwatered_flowers()
@@ -268,9 +204,9 @@ class WateringEnv(gym.Env):
                 new_position = self.agent_position
 
         # Запись истории позиций для обнаружения циклов
-        # если в последних 10 записях повторяется 2 раза позиция
+        # если в последних 10 записях повторяется 3 раза позиция
         self.position_history.append(new_position)
-        if self.position_history.count(new_position) > 2 and action != 4:
+        if self.position_history.count(new_position) > 3 and action != 4:
             self.reward += const.PENALTY_LOOP
             logging.info('Penalty')
 
@@ -285,30 +221,7 @@ class WateringEnv(gym.Env):
         self.is_in_hole(new_position)
 
         # Обновление посещенных клеток - пределы поля учитывать
-        if self.visited[new_position] == 0:
-            self.visited[new_position] = 1
-        if new_position not in self.explored_cells:
-            self.reward += const.REWARD_EXPLORE
-            self.explored_cells.add(new_position)
-
-        # Дополнительное вознаграждение за нахождение рядом с неполитым цветком
-        # если только ставить условие что не в яме и не на базе
-        # for pos in known_unwatered_flowers:
-        #     distance = abs(self.agent_position[0] - pos[0]) + abs(self.agent_position[1] - pos[1])
-        #     if distance == 1:
-        #         self.reward += const.NEXT_2_UNWATERED_FLOWER
-        #         logging.info(f'нахождение рядом с неполитым цветком')
-
-        # Приоритизация неполитых цветов с увеличенным вознаграждением
-        # не работает, так просто добавляет награду за нахождение у цветка
-        # if np.any(self.watered_status == 0):
-        #     if known_unwatered_flowers:
-        #         nearest_flower = min(
-        #             known_unwatered_flowers,
-        #             key=lambda pos: abs(self.agent_position[0] - pos[0]) + abs(self.agent_position[1] - pos[1])
-        #         )
-        #         if nearest_flower not in self.known_flowers:
-        #             self.reward += 100  # Увеличенное вознаграждение
+        self.update_visited_cells(new_position)
 
         # Проверка на завершение
         terminated = False
@@ -326,30 +239,6 @@ class WateringEnv(gym.Env):
                 self.reward += const.REWARD_COMPLETION
             terminated = True
 
-        # Проверка расстояния до ближайшего цветка
-        # if len(self.target_positions) > 0:
-        #     unwatered_positions = [
-        #         pos for idx, pos in enumerate(self.target_positions)
-        #         if self.watered_status[idx] == 0
-        #     ]
-        #     if unwatered_positions:
-        #         nearest_flower_dist = min([
-        #             abs(self.agent_position[0] - pos[0]) + abs(self.agent_position[1] - pos[1])
-        #             for pos in unwatered_positions
-        #         ])
-        #     else:
-        #         nearest_flower_dist = 0
-        # else:
-        #     nearest_flower_dist = 0
-        #
-        # if nearest_flower_dist > const.MAX_DISTANCE_FROM_FLORAL:
-        #     self.steps_since_last_distance += 1
-        #     if self.steps_since_last_distance >= const.MAX_STEPS_DISTANCE:
-        #         logging.info("Агент слишком долго находится далеко от любого цветка")
-        #         self.reward += const.REWARD_MAX_STEPS_DISTANCE
-        # else:
-        #     self.steps_since_last_distance = 0
-
         if self.step_count >= const.MAX_STEPS_GAME:  # костыль чтоб не циклился
             logging.info("Достигнуто максимальное количество шагов")
             truncated = True
@@ -366,10 +255,10 @@ class WateringEnv(gym.Env):
         return obs, self.reward, terminated, truncated, info
 
     def is_in_hole(self, new_position):
-        # Проверяем, известна ли яма
+        """Is agent in hole, reward depends of knowmed hole or not"""
         if new_position in self.hole_positions:
             if new_position in self.known_holes:
-                self.reward += const.PENALTY_COLLISION * 2  # Увеличиваем штраф
+                self.reward += const.PENALTY_COLLISION * 2
                 logging.warning(f"Агент попытался зайти в известную яму на позиции {new_position}")
             else:
                 self.reward += const.PENALTY_COLLISION
@@ -377,14 +266,23 @@ class WateringEnv(gym.Env):
                 self.agent_position = new_position
                 self.known_holes.add(new_position)
 
-    def get_unwatered_flowers(self):
-        """Определяем известные неполитые цветки"""
+    def get_unwatered_flowers(self) -> list[tuple]:
+        """Return list of coordinates of unwatered flowers"""
         return [
             pos for idx, pos in enumerate(self.target_positions)
             if self.watered_status[idx] == 0 and pos in self.known_flowers
         ]
 
+    def update_visited_cells(self, new_position):
+        """Update visited and explored cells"""
+        if self.visited[new_position] == 0:
+            self.visited[new_position] = 1
+        if new_position not in self.explored_cells:
+            self.reward += const.REWARD_EXPLORE
+            self.explored_cells.add(new_position)
+
     def render(self):
+        """Render agent game"""
         self.screen.fill(const.GREEN)
         # Отрисовка сетки
         for x in range(self.grid_size):
@@ -409,22 +307,6 @@ class WateringEnv(gym.Env):
         for hole in self.hole_positions:
             if hole in self.known_holes:
                 self.screen.blit(const.HOLE_ICON, (hole[1] * const.CELL_SIZE, hole[0] * const.CELL_SIZE))
-
-        # Рисуем линию к ближайшему цветку
-        # known_unwatered_flowers = [
-        #     pos for idx, pos in enumerate(self.target_positions)
-        #     if self.watered_status[idx] == 0 and pos in self.known_flowers
-        # ]
-        # if known_unwatered_flowers:
-        #     nearest_flower = min(
-        #         known_unwatered_flowers,
-        #         key=lambda pos: abs(self.agent_position[0] - pos[0]) + abs(self.agent_position[1] - pos[1])
-        #     )
-        #     agent_x = self.agent_position[1] * const.CELL_SIZE + const.CELL_SIZE // 2
-        #     agent_y = self.agent_position[0] * const.CELL_SIZE + const.CELL_SIZE // 2
-        #     flower_x = nearest_flower[1] * const.CELL_SIZE + const.CELL_SIZE // 2
-        #     flower_y = nearest_flower[0] * const.CELL_SIZE + const.CELL_SIZE // 2
-        # pygame.draw.line(self.screen, const.BLUE, (agent_x, agent_y), (flower_x, flower_y), 2)
 
         # Накладываем исследование области
         for x in range(self.grid_size):
