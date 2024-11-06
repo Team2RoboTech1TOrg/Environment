@@ -12,6 +12,8 @@ class WateringEnv(gym.Env):
     def __init__(self):
         super(WateringEnv, self).__init__()
         self.grid_size = const.GRID_SIZE
+        self.margin = const.MARGIN_SIZE  # добавляем MARGIN для внутреннего поля
+        self.inner_grid_size = self.grid_size - self.margin  # Размер внутреннего поля
         self.screen = pygame.display.set_mode((const.SCREEN_SIZE, const.SCREEN_SIZE + 120))
         self.base_position = (const.BASE_COORD, const.BASE_COORD)
         self.agent_position = None  # Стартовая позиция
@@ -69,7 +71,10 @@ class WateringEnv(gym.Env):
         :param unavailable: set
         :return: available positions
         """
-        all_positions = [(i, j) for i in range(self.grid_size) for j in range(self.grid_size)]
+        all_positions = [
+            (i, j) for i in range(self.margin, self.grid_size - self.margin)
+            for j in range(self.margin, self.grid_size - self.margin)
+        ]
         return [pos for pos in all_positions if pos not in unavailable]
 
     def _get_objects_positions(self, unavailable: (), size: int) -> list:
@@ -99,7 +104,7 @@ class WateringEnv(gym.Env):
         self.known_holes = set()
         self.known_flowers = set()
         self.explored_cells = set()
-        logging.info("Environment reset")
+        logging.info("Перезагрузка среды")
         obs = self._get_observation()
         if obs.shape != self.observation_space.shape:
             raise ValueError(
@@ -176,10 +181,9 @@ class WateringEnv(gym.Env):
             case _:
                 new_position = self.agent_position
 
-        # Обновление посещенных клеток - пределы поля учитывать
-        self.update_visited_cells(new_position)
+        # Обновление позиции
+        new_position = self.update_visited_cells(new_position)
 
-        # Проверка на завершение
         terminated = False
         truncated = False
         info = {}
@@ -195,7 +199,7 @@ class WateringEnv(gym.Env):
                 self.reward += const.REWARD_COMPLETION
             terminated = True
 
-        if self.step_count >= const.MAX_STEPS_GAME:  # костыль чтоб не циклился
+        if self.step_count >= const.MAX_STEPS_GAME:  # костыль выхода, потом убрать
             logging.info("Достигнуто максимальное количество шагов")
             truncated = True
 
@@ -214,39 +218,50 @@ class WateringEnv(gym.Env):
         # Запись истории позиций для обнаружения циклов
         self.position_history.append(new_position)
 
-        if self.visited[new_position] == 0:
-            self.visited[new_position] = 1
-            # тут будет проверка на территорию поля
+        # Проверка на выход за границы внутреннего поля
+        if not ((self.margin <= new_position[0] < self.inner_grid_size) and (
+                self.margin <= new_position[1] < self.inner_grid_size)):
+            self.reward -= const.PENALTY_OUT_FIELD
+            logging.warning(f"Агент вышел за границы внутреннего поля: {new_position}")
+            new_position = self.agent_position
+        else:
+            # if new_position not in self.hole_positions:
+            #     self.reward -= const.PENALTY_HOLE
+            #     new_position = self.agent_position
             if new_position not in self.explored_cells:
                 self.reward += const.REWARD_EXPLORE
+                logging.info("Зашел на новую клетку")
                 self.explored_cells.add(new_position)
-                # если на цветке, то поливаем
                 if new_position in self.target_positions:
                     self.energy -= const.ENERGY_CONSUMPTION_WATER
                     self.water_tank -= const.WATER_CONSUMPTION
                     idx = self.target_positions.index(new_position)
                     self.watered_status[idx] = 1
                     logging.info("Полил цветок")
-        else:
-            if new_position == self.position_history[-2]:
-                self.reward -= const.PENALTY_LOOP * 3
-                logging.info(f"Штраф за стену {self.position_history[-2]}")
-            elif self.position_history.count(new_position) > 2:
-                self.reward -= const.PENALTY_LOOP * 2
-                logging.info("Штраф за вторичное посещение клетки в последние 10 шагов")
             else:
-                self.reward -= const.PENALTY_LOOP
-                logging.info("Штраф за вторичное посещение клетки")
+                if new_position == self.position_history[-2]:
+                    self.reward -= const.PENALTY_LOOP * 3
+                    new_position = self.agent_position
+                    logging.info(f"Штраф за 'стену' {self.position_history[-2]}")
+                elif self.position_history.count(new_position) > 2:
+                    self.reward -= const.PENALTY_LOOP * 2
+                    new_position = self.agent_position
+                    logging.info("Штраф за вторичное посещение клетки в последние 10 шагов")
+                # else: # неудачно работает, подумать
+                #     self.reward -= const.PENALTY_LOOP
+                #     logging.info("Штраф за вторичное посещение клетки")
+        return new_position
 
     def render(self):
         """Render agent game"""
         self.screen.fill(const.GREEN)
         # Отрисовка сетки
-        for x in range(self.grid_size):
-            for y in range(self.grid_size):
-                pygame.draw.rect(self.screen, const.BLACK,
-                                 (x * const.CELL_SIZE, y * const.CELL_SIZE, const.CELL_SIZE, const.CELL_SIZE),
-                                 1)  # Рисуем черную границу вокруг каждой клетки
+        for x in range(self.margin, self.grid_size - self.margin):
+            for y in range(self.margin, self.grid_size - self.margin):
+                pygame.draw.rect(
+                    self.screen, const.BLACK,
+                    (x * const.CELL_SIZE, y * const.CELL_SIZE, const.CELL_SIZE, const.CELL_SIZE), 1
+                )
 
         # Отрисовка базы
         self.screen.blit(const.BASE_ICON,
