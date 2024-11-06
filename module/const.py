@@ -7,14 +7,14 @@ CLIP_RANGE = 0.2
 N_STEPS = 4096
 COEF = 0.01
 CLIP_RANGE_VF = 0.2
-N_EPOCHS = 5
+N_EPOCHS = 10
 BATCH_SIZE = 64
 
 # Параметры экрана и сетки
 SCREEN_SIZE = 900
-GRID_SIZE = 15
+GRID_SIZE = 13
 CELL_SIZE = SCREEN_SIZE // GRID_SIZE
-MARGIN_SIZE = 2
+MARGIN_SIZE = 1
 
 # Параметры игры
 BASE_COORD = GRID_SIZE // 2
@@ -31,10 +31,10 @@ COUNT_ACTIONS = 4
 MIN_GAME_STEPS = GRID_SIZE * 10
 
 # Награды
-REWARD_COMPLETION = 1000
-REWARD_EXPLORE = 100  # Вознаграждение за исследование новых клеток
+REWARD_COMPLETION = 500
+REWARD_EXPLORE = 50  # Вознаграждение за исследование новых клеток
 PENALTY_LOOP = 10
-PENALTY_OUT_FIELD = 50
+PENALTY_OUT_FIELD = 20
 PENALTY_HOLE = 10
 
 # Позиции цветов и ям

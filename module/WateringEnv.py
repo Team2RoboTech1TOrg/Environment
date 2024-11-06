@@ -13,7 +13,7 @@ class WateringEnv(gym.Env):
         super(WateringEnv, self).__init__()
         self.grid_size = const.GRID_SIZE
         self.margin = const.MARGIN_SIZE  # добавляем MARGIN для внутреннего поля
-        self.inner_grid_size = self.grid_size - self.margin  # Размер внутреннего поля
+        self.inner_grid_size = self.grid_size - self.margin * 2  # Размер внутреннего поля
         self.screen = pygame.display.set_mode((const.SCREEN_SIZE, const.SCREEN_SIZE + 120))
         self.base_position = (const.BASE_COORD, const.BASE_COORD)
         self.agent_position = None  # Стартовая позиция
@@ -73,8 +73,8 @@ class WateringEnv(gym.Env):
         :return: available positions
         """
         all_positions = [
-            (i, j) for i in range(self.margin, self.grid_size - self.margin)
-            for j in range(self.margin, self.grid_size - self.margin)
+            (i, j) for i in range(self.margin, self.inner_grid_size + 1)
+            for j in range(self.margin, self.inner_grid_size + 1)
         ]
         return [pos for pos in all_positions if pos not in unavailable]
 
@@ -119,7 +119,7 @@ class WateringEnv(gym.Env):
         for dx in range(-const.VIEW_RANGE, const.VIEW_RANGE + 1):
             for dy in range(-const.VIEW_RANGE, const.VIEW_RANGE + 1):
                 x, y = self.agent_position[0] + dx, self.agent_position[1] + dy
-                if 0 <= x <= self.grid_size and 0 <= y <= self.grid_size:
+                if 0 <= x < self.grid_size and 0 <= y < self.grid_size:
                     pos = (x, y)
                     self.viewed_cells.add(pos)
                     if pos in self.hole_positions:
@@ -210,16 +210,16 @@ class WateringEnv(gym.Env):
         self.position_history.append(new_position)
 
         # Проверка на выход за границы внутреннего поля
-        if not ((self.margin <= new_position[0] < self.inner_grid_size) and (
-                self.margin <= new_position[1] < self.inner_grid_size)):
+        if not ((self.margin <= new_position[0] <= self.inner_grid_size) and (
+                self.margin <= new_position[1] <= self.inner_grid_size)):
             self.reward -= const.PENALTY_OUT_FIELD
             logging.warning(f"Агент вышел за границы внутреннего поля: {new_position}")
             new_position = self.agent_position
         else:
-            # if new_position not in self.hole_positions:
-            #     self.reward -= const.PENALTY_HOLE
-            #     new_position = self.agent_position
-            if new_position not in self.explored_cells:
+            if new_position in self.hole_positions:
+                self.reward -= const.PENALTY_HOLE
+                new_position = self.agent_position
+            elif new_position not in self.explored_cells:
                 self.reward += const.REWARD_EXPLORE
                 logging.info("Зашел на новую клетку")
                 self.explored_cells.add(new_position)
@@ -272,12 +272,19 @@ class WateringEnv(gym.Env):
         """Render agent game"""
         self.screen.fill(const.GREEN)
         # Отрисовка сетки
-        for x in range(self.margin, self.grid_size - self.margin):
-            for y in range(self.margin, self.grid_size - self.margin):
+        for x in range(self.grid_size):  # self.margin, self.grid_size - self.margin):
+            for y in range(self.grid_size):  # self.margin, self.grid_size - self.margin):
                 pygame.draw.rect(
                     self.screen, const.BLACK,
                     (x * const.CELL_SIZE, y * const.CELL_SIZE, const.CELL_SIZE, const.CELL_SIZE), 1
                 )
+
+        # Отрисовка границы внутреннего поля (устанавливаем цвет и толщину линии)
+        inner_field_size = self.inner_grid_size * const.CELL_SIZE
+        margin_x = (self.grid_size * const.CELL_SIZE - inner_field_size) // 2
+        margin_y = (self.grid_size * const.CELL_SIZE - inner_field_size) // 2
+        inner_field_rect = pygame.Rect(margin_x, margin_y, inner_field_size, inner_field_size)
+        pygame.draw.rect(self.screen, const.BLACK, inner_field_rect, 4)
 
         # Отрисовка базы
         self.screen.blit(const.BASE_ICON,
@@ -304,6 +311,7 @@ class WateringEnv(gym.Env):
                     dark_overlay = pygame.Surface((const.CELL_SIZE, const.CELL_SIZE), pygame.SRCALPHA)
                     dark_overlay.fill((0, 0, 0, 200))  # Непрозрачный
                     self.screen.blit(dark_overlay, (y * const.CELL_SIZE, x * const.CELL_SIZE))
+
 
         # Отрисовка времени, очков, заряда и уровня воды
         elapsed_time = time.time() - self.start_time  # Рассчитываем время

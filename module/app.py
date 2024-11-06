@@ -61,9 +61,9 @@ def run():
                 step_count = 0
 
             if terminated:
-                message = f"Конец игры, награда: {int(reward)}"
+                message = f"Конец игры, награда: {int(reward)}, шагов: {step_count}"
                 env.render_message(message)
-                time.sleep(5)
+                time.sleep(15)
                 break
             clock.tick(60)
     except KeyboardInterrupt:
