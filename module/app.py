@@ -49,7 +49,7 @@ def run():
                     pygame.quit()
                     sys.exit()
             action, _ = model.predict(obs)
-            pygame.time.wait(10)
+            pygame.time.wait(15)
             obs, reward, terminated, truncated, info = env.step(action)
             env.render()
             step_count += 1

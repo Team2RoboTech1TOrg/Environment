@@ -7,7 +7,7 @@ CLIP_RANGE = 0.2
 N_STEPS = 4096
 COEF = 0.01
 CLIP_RANGE_VF = 0.2
-N_EPOCHS = 1
+N_EPOCHS = 5
 BATCH_SIZE = 64
 
 # Параметры экрана и сетки
@@ -22,9 +22,9 @@ COUNT_FLOWERS = 10
 COUNT_HOLES = 5
 MAX_STEPS_GAME = 3000
 VIEW_RANGE = 1  # Область зрения 3x3
-WATER_CAPACITY = 300  # Максимальный запас воды
-ENERGY_CAPACITY = 2000  # Максимальный запас энергии
 WATER_CONSUMPTION = 10  # Расход воды на полив
+WATER_CAPACITY = COUNT_FLOWERS * WATER_CONSUMPTION  # Максимальный запас воды
+ENERGY_CAPACITY = 2000  # Максимальный запас энергии
 ENERGY_CONSUMPTION_MOVE = 1
 ENERGY_CONSUMPTION_WATER = 2
 COUNT_ACTIONS = 4

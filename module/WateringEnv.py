@@ -27,13 +27,14 @@ class WateringEnv(gym.Env):
         self.position_history = None
         self.known_holes = None
         self.known_flowers = None
+        self.viewed_cells = None
         self.explored_cells = None
         self.action_space = gym.spaces.Discrete(const.COUNT_ACTIONS)
         self.action_history = None
         self.observation_space = gym.spaces.Box(
             low=-self.grid_size,
             high=self.grid_size,
-            shape=(22,),
+            shape=(2,),
             dtype=np.float32
         )
 
@@ -94,7 +95,7 @@ class WateringEnv(gym.Env):
         self.watered_status = np.zeros(const.COUNT_FLOWERS)
         self.water_tank = const.WATER_CAPACITY
         self.energy = const.ENERGY_CAPACITY
-        self.visited = np.zeros((self.grid_size, self.grid_size), dtype=int)
+        # self.visited = np.zeros((self.grid_size, self.grid_size), dtype=int)
         self.start_time = time.time()
         self.reward = 0
         self.step_count = 0
@@ -104,6 +105,7 @@ class WateringEnv(gym.Env):
         self.known_holes = set()
         self.known_flowers = set()
         self.explored_cells = set()
+        self.viewed_cells = set()
         logging.info("Перезагрузка среды")
         obs = self._get_observation()
         if obs.shape != self.observation_space.shape:
@@ -113,35 +115,37 @@ class WateringEnv(gym.Env):
         return obs, {}
 
     def _get_observation(self):
-        visible_area = []
+        # visible_area = []
         for dx in range(-const.VIEW_RANGE, const.VIEW_RANGE + 1):
             for dy in range(-const.VIEW_RANGE, const.VIEW_RANGE + 1):
                 x, y = self.agent_position[0] + dx, self.agent_position[1] + dy
-                if 0 <= x < self.grid_size and 0 <= y < self.grid_size:
+                if 0 <= x <= self.grid_size and 0 <= y <= self.grid_size:
                     pos = (x, y)
+                    self.viewed_cells.add(pos)
                     if pos in self.hole_positions:
-                        visible_area.extend([1, 0])  # Яма
+                        # visible_area.append(1)  # Яма
                         if pos not in self.known_holes:
                             self.known_holes.add(pos)
                             logging.debug(f"Новая известная яма: {pos}")
                     elif pos in self.target_positions:
-                        idx = self.target_positions.index(pos)
-                        watered = self.watered_status[idx]
-                        visible_area.extend([2, watered])  # Цветок
+                        # idx = self.target_positions.index(pos)
+                        # watered = self.watered_status[idx]
+                        # visible_area.append(2)  # Цветок
                         if pos not in self.known_flowers:
                             self.known_flowers.add(pos)
                             logging.debug(f"Новый известный цветок: {pos}")
-                    else:
-                        visible_area.extend([0, 0])  # Пустая клетка
-                    # self.explored_cells.add(pos)
-                else:
-                    visible_area.extend([-1, 0])  # Вне границ
+                    # else:
+                    #     visible_area.append(3)  # Пустая клетка
+                # else:
+                #     visible_area.append(-1)  # Вне границ
 
-        observation = np.concatenate([
-            np.array(self.agent_position, dtype=float),  # 0-1
-            np.array([self.water_tank, self.energy], dtype=float),  # 2-3
-            np.array(visible_area, dtype=float),  # 4-21
-        ])  # Всего 22 элемента
+        # observation = np.concatenate([
+        #     np.array(self.agent_position, dtype=float),  # 0-1
+        #     np.array([self.water_tank, self.energy], dtype=float),  # 2-3
+        #     np.array(visible_area, dtype=float),  # 4-13
+        # ])  # Всего 13
+
+        observation = np.array(self.agent_position, dtype=int)
         if observation.shape != self.observation_space.shape:
             raise ValueError(
                 f"Observation shape {observation.shape} does not match observation_space {self.observation_space.shape}"
@@ -183,27 +187,9 @@ class WateringEnv(gym.Env):
 
         # Обновление позиции
         new_position = self.update_visited_cells(new_position)
-
-        terminated = False
-        truncated = False
-        info = {}
-
-        if np.all(self.watered_status == 1):
-            logging.info("Все цветы политы")
-            self.agent_position = self.base_position
-            logging.info("Агент вернулся на базу")
-            # условие по времени выполнения
-            if self.step_count <= const.MIN_GAME_STEPS:
-                self.reward += const.REWARD_COMPLETION * 3
-            else:
-                self.reward += const.REWARD_COMPLETION
-            terminated = True
-
-        if self.step_count >= const.MAX_STEPS_GAME:  # костыль выхода, потом убрать
-            logging.info("Достигнуто максимальное количество шагов")
-            truncated = True
-
+        terminated, truncated, info = self._check_termination_conditions()
         self.agent_position = new_position
+
         logging.info(
             f"Шаг: {self.step_count},"
             f"Действие: {action} - {self.agent_position}, "
@@ -211,10 +197,15 @@ class WateringEnv(gym.Env):
             f"Завершено: {terminated}, "
             f"Прервано: {truncated}"
         )
-        return obs, self.reward, terminated, truncated, info
+        return obs, self.reward, terminated, truncated, {}
 
-    def update_visited_cells(self, new_position):
-        """Update visited and explored cells"""
+    def update_visited_cells(self, new_position: tuple[int, int]) -> tuple[int, int]:
+        """
+        Update explored cells, update position of agent in dependency of cells.
+        Give reward in dependency of cells.
+        :param new_position: coordinates of agent (x, y)
+        :return: coordinates of agent (x, y)
+        """
         # Запись истории позиций для обнаружения циклов
         self.position_history.append(new_position)
 
@@ -252,6 +243,31 @@ class WateringEnv(gym.Env):
                 #     logging.info("Штраф за вторичное посещение клетки")
         return new_position
 
+    def _check_termination_conditions(self) -> tuple:
+        """
+        Check conditions for exit game: quantity of steps and if all flowers are watered.
+        :return: tuple of conditions (bool, bool, dictionary)
+        """
+        terminated = False
+        truncated = False
+
+        if self.step_count >= const.MAX_STEPS_GAME:  # костыль выхода, потом убрать
+            logging.info("Достигнуто максимальное количество шагов")
+            truncated = True
+
+        elif np.all(self.watered_status == 1):
+            logging.info("Все цветы политы")
+            self.agent_position = self.base_position
+            logging.info("Агент вернулся на базу")
+            # условие по времени выполнения
+            if self.step_count <= const.MIN_GAME_STEPS:
+                self.reward += const.REWARD_COMPLETION * 3
+            else:
+                self.reward += const.REWARD_COMPLETION
+            terminated = True
+
+        return terminated, truncated, {}
+
     def render(self):
         """Render agent game"""
         self.screen.fill(const.GREEN)
@@ -284,7 +300,7 @@ class WateringEnv(gym.Env):
         for x in range(self.grid_size):
             for y in range(self.grid_size):
                 pos = (x, y)
-                if pos not in self.explored_cells:
+                if pos not in self.viewed_cells:
                     dark_overlay = pygame.Surface((const.CELL_SIZE, const.CELL_SIZE), pygame.SRCALPHA)
                     dark_overlay.fill((0, 0, 0, 200))  # Непрозрачный
                     self.screen.blit(dark_overlay, (y * const.CELL_SIZE, x * const.CELL_SIZE))
