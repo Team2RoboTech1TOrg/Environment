@@ -7,7 +7,7 @@ CLIP_RANGE = 0.2
 N_STEPS = 4096
 COEF = 0.01
 CLIP_RANGE_VF = 0.2
-N_EPOCHS = 10
+N_EPOCHS = 1
 BATCH_SIZE = 64
 
 # Параметры экрана и сетки
