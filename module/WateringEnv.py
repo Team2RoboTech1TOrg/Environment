@@ -3,6 +3,7 @@ from collections import deque
 import pygame
 import gymnasium as gym
 import numpy as np
+from gymnasium import spaces
 
 from Agent import Agent
 from logger import logging
@@ -25,6 +26,10 @@ class WateringEnv(gym.Env):
         self.position_history = None
         self.action_space = gym.spaces.Discrete(const.COUNT_ACTIONS)
         self.action_history = None
+
+        # self.observation_space = gym.spaces.Tuple(self.agent.observation_space)
+        # observation_spaces = {f"1_obs": self.agent.observation_space}
+        # self.observation_space = spaces.Dict(observation_spaces)
         self.observation_space = gym.spaces.Box(
             low=-self.grid_size,
             high=self.grid_size,
@@ -45,6 +50,7 @@ class WateringEnv(gym.Env):
         self.action_history.clear()
         logging.info("Перезагрузка среды")
         obs = self.agent.get_observation()
+        # obs = {f"1_obs": self.agent.get_observation()}
         return obs, {}
 
     def step(self, action):

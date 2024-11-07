@@ -1,7 +1,7 @@
-import logging
-
 import numpy as np
+import gymnasium as gym
 
+import logging
 import const
 
 
@@ -15,6 +15,12 @@ class Agent:
         self.known_flowers = None
         self.known_holes = None
         self.explored_cells = None
+        self.observation_space = gym.spaces.Box(
+            low=-self.env.grid_size,
+            high=self.env.grid_size,
+            shape=(2,),
+            dtype=np.float32
+        )
 
     def reset(self):
         self.position = self.env.base_position

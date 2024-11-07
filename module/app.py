@@ -18,7 +18,7 @@ def run():
         pygame.display.set_caption("Drone learning")
         logging.info(message)
         model = PPO(
-            'MlpPolicy',
+            'MlpPolicy', #MultiInputPolicy
             env,
             learning_rate=LEARNING_RATE,
             gamma=GAMMA,
@@ -63,7 +63,7 @@ def run():
             if terminated:
                 message = f"Конец игры, награда: {int(reward)}, шагов: {step_count}"
                 env.render_message(message)
-                time.sleep(15)
+                time.sleep(5)
                 break
             clock.tick(60)
     except KeyboardInterrupt:
