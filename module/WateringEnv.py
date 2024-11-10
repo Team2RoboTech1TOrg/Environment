@@ -18,28 +18,40 @@ class WateringEnv(gym.Env):
         self.inner_grid_size = self.grid_size - self.margin * 2  # Размер внутреннего поля
         self.screen = pygame.display.set_mode((const.SCREEN_SIZE, const.SCREEN_SIZE + 120))
         self.base_position = (const.BASE_COORD, const.BASE_COORD)
-        self.agent = Agent(self)
+        self.agents = [Agent(self) for _ in range(2)]  # new
         self.start_time = None  # Начальное время
         self.reward = None
         self.watered_status = None  # Статус всех цветов (0 - не полит, 1 - полит)
         self.step_count = None
         self.position_history = None
-        self.action_space = gym.spaces.Discrete(const.COUNT_ACTIONS)
+        # self.action_space = gym.spaces.Discrete(const.COUNT_ACTIONS)
+        action_spaces = {  # new
+            f'agent_{i}': agent.action_space
+            for i, agent in enumerate(self.agents)
+        }
+        self.action_space = spaces.Dict(action_spaces)  # new
+        # self.action_spaces = {agent: spaces.Discrete(const.COUNT_ACTIONS) for agent in self.agents}
         self.action_history = None
+        self.known_holes = None
+        self.known_flowers = None
+        self.viewed_cells = None
+        self.explored_cells = None
 
-        # self.observation_space = gym.spaces.Tuple(self.agent.observation_space)
-        # observation_spaces = {f"1_obs": self.agent.observation_space}
-        # self.observation_space = spaces.Dict(observation_spaces)
-        self.observation_space = gym.spaces.Box(
-            low=-self.grid_size,
-            high=self.grid_size,
-            shape=(2,),
-            dtype=np.float32
-        )
+        observation_spaces = {  # new
+            f'agent_{i}': agent.observation_space
+            for i, agent in enumerate(self.agents)
+        }
+        self.observation_space = spaces.Dict(observation_spaces)  # new
+        # self.observation_space = gym.spaces.Box(
+        #     low=-self.grid_size,
+        #     high=self.grid_size,
+        #     shape=(2,),
+        #     dtype=np.float32
+        # )
 
     def reset(self, *, seed=None, options=None):
         self.reset_objects_positions()
-        self.agent.reset()
+        # [agent.reset() for agent in self.agents]  # new
         self.watered_status = np.zeros(const.COUNT_FLOWERS)
         # self.visited = np.zeros((self.grid_size, self.grid_size), dtype=int)
         self.start_time = time.time()
@@ -48,41 +60,50 @@ class WateringEnv(gym.Env):
         self.position_history = deque(maxlen=10)
         self.action_history = deque(maxlen=5)
         self.action_history.clear()
+        self.known_holes = set()
+        self.known_flowers = set()
+        self.viewed_cells = set()
+        self.explored_cells = set()
         logging.info("Перезагрузка среды")
-        obs = self.agent.get_observation()
+        # obs = [agent.get_observation() for agent in self.agents]  # new
+        obs = {f"agent_{i}": agent.reset() for i, agent in enumerate(self.agents)}
         # obs = {f"1_obs": self.agent.get_observation()}
         return obs, {}
 
-    def step(self, action):
+    def step(self, actions):
+        obs = {}  # new
         self.step_count += 1
 
         # if self.agent.energy < 10:  # костыль
         #     return self._get_observation(), -100, True, False, {}
 
         # Добавили действие в историю
-        self.action_history.append(action)
+        self.action_history.append(actions)
 
-        obs, new_position = self.agent.take_action(action)
+        # for agent, action in actions.items():
+        for i, agent in enumerate(self.agents):  # new
+            new_position = agent.take_action(actions[i])
+            obs[f"agent_{i}"] = new_position  # new
 
-        # Обновление позиции
-        new_position = self.update_visited_cells(new_position)
-
+            # Обновление позиции
+            new_position = self.update_visited_cells(new_position, agent)
+            agent.position = new_position  # new
         terminated, truncated, info = self._check_termination_conditions()
-        self.agent.position = new_position
 
         logging.info(
             f"Шаг: {self.step_count},"
-            f"Действие: {action} - {self.agent.position}, "
+            # f"Действие: {action} - {self.agent.position}, "
             f"Награда: {self.reward}, "
             f"Завершено: {terminated}, "
             f"Прервано: {truncated}"
         )
         return obs, self.reward, terminated, truncated, {}
 
-    def update_visited_cells(self, new_position: tuple[int, int]) -> tuple[int, int]:
+    def update_visited_cells(self, new_position: tuple[int, int], agent: Agent) -> tuple[int, int]:
         """
         Update explored cells, update position of agent in dependency of cells.
         Give reward in dependency of cells.
+        :param agent:
         :param new_position: coordinates of agent (x, y)
         :return: coordinates of agent (x, y)
         """
@@ -94,18 +115,18 @@ class WateringEnv(gym.Env):
                 self.margin <= new_position[1] <= self.inner_grid_size)):
             self.reward -= const.PENALTY_OUT_FIELD
             logging.warning(f"Агент вышел за границы внутреннего поля: {new_position}")
-            new_position = self.agent.position
+            new_position = agent.position
         else:
             if new_position in self.hole_positions:
                 self.reward -= const.PENALTY_HOLE
-                new_position = self.agent.position
-            elif new_position not in self.agent.explored_cells:
+                new_position = agent.position
+            elif new_position not in self.explored_cells:
                 self.reward += const.REWARD_EXPLORE
                 logging.info("Зашел на новую клетку")
-                self.agent.explored_cells.add(new_position)
+                self.explored_cells.add(new_position)
                 if new_position in self.target_positions:
-                    self.agent.energy -= const.ENERGY_CONSUMPTION_WATER
-                    self.agent.water_tank -= const.WATER_CONSUMPTION
+                    agent.energy -= const.ENERGY_CONSUMPTION_WATER
+                    agent.water_tank -= const.WATER_CONSUMPTION
                     idx = self.target_positions.index(new_position)
                     self.watered_status[idx] = 1
                     logging.info("Полил цветок")
@@ -135,7 +156,8 @@ class WateringEnv(gym.Env):
 
         elif np.all(self.watered_status == 1):
             logging.info("Все цветы политы")
-            self.agent.position = self.base_position
+            for agent in self.agents:
+                agent.position = self.base_position
             logging.info("Агент вернулся на базу")
             # условие по времени выполнения
             if self.step_count <= const.MIN_GAME_STEPS:
@@ -170,7 +192,7 @@ class WateringEnv(gym.Env):
 
         # Рисуем цветы и ямы, которые были обнаружены
         for i, pos in enumerate(self.target_positions):
-            if pos in self.agent.known_flowers:
+            if pos in self.known_flowers:
                 if self.watered_status[i]:
                     icon = const.WATERED_FLOWER_ICON
                 else:
@@ -178,18 +200,17 @@ class WateringEnv(gym.Env):
                 self.screen.blit(icon, (pos[1] * const.CELL_SIZE, pos[0] * const.CELL_SIZE))
 
         for hole in self.hole_positions:
-            if hole in self.agent.known_holes:
+            if hole in self.known_holes:
                 self.screen.blit(const.HOLE_ICON, (hole[1] * const.CELL_SIZE, hole[0] * const.CELL_SIZE))
 
         # Накладываем исследование области
         for x in range(self.grid_size):
             for y in range(self.grid_size):
                 pos = (x, y)
-                if pos not in self.agent.viewed_cells:
+                if pos not in self.viewed_cells:
                     dark_overlay = pygame.Surface((const.CELL_SIZE, const.CELL_SIZE), pygame.SRCALPHA)
                     dark_overlay.fill((0, 0, 0, 200))  # Непрозрачный
                     self.screen.blit(dark_overlay, (y * const.CELL_SIZE, x * const.CELL_SIZE))
-
 
         # Отрисовка времени, очков, заряда и уровня воды
         elapsed_time = time.time() - self.start_time  # Рассчитываем время
@@ -203,23 +224,25 @@ class WateringEnv(gym.Env):
                          (10, const.SCREEN_SIZE + 10))
         self.screen.blit(font.render(f"Очки: {int(self.reward)}", True, const.BLACK),
                          (10, const.SCREEN_SIZE + 40))
-        self.screen.blit(font.render(f"Энергия: {self.agent.energy}", True, const.BLACK),
-                         (200, const.SCREEN_SIZE + 10))
-        self.screen.blit(font.render(f"Вода: {self.agent.water_tank}", True, const.BLACK),
-                         (200, const.SCREEN_SIZE + 40))
+        # self.screen.blit(font.render(f"Энергия: {self.agent.energy}", True, const.BLACK),
+        #                  (200, const.SCREEN_SIZE + 10))
+        # self.screen.blit(font.render(f"Вода: {self.agent.water_tank}", True, const.BLACK),
+        #                  (200, const.SCREEN_SIZE + 40))
         self.screen.blit(font.render(f"Шаги: {self.step_count}", True, const.BLACK),
                          (400, const.SCREEN_SIZE + 10))
-        self.screen.blit(font.render(f"Обнаружено ям: {len(self.agent.known_holes)}/{const.COUNT_HOLES}",
+        self.screen.blit(font.render(f"Обнаружено ям: {len(self.known_holes)}/{const.COUNT_HOLES}",
                                      True, const.BLACK), (400, const.SCREEN_SIZE + 40))
         self.screen.blit(
-            font.render(f"Обнаружено цветков: {len(self.agent.known_flowers)}/{const.COUNT_FLOWERS}",
+            font.render(f"Обнаружено цветков: {len(self.known_flowers)}/{const.COUNT_FLOWERS}",
                         True, const.BLACK), (10, const.SCREEN_SIZE + 70))
         self.screen.blit(font.render(f"Полито цветков: {int(np.sum(self.watered_status))}/"
                                      f"{const.COUNT_FLOWERS}", True, const.BLACK), (300, const.SCREEN_SIZE + 70))
 
         # Отрисовка агента
-        self.screen.blit(const.AGENT_ICON, (self.agent.position[1] * const.CELL_SIZE,
-                                            self.agent.position[0] * const.CELL_SIZE))
+        for agent in self.agents:
+            print(agent, agent.position)
+            self.screen.blit(const.AGENT_ICON, (agent.position[1] * const.CELL_SIZE,
+                                                agent.position[0] * const.CELL_SIZE))
 
         pygame.display.flip()
         pygame.time.wait(10)

@@ -15,6 +15,7 @@ class Agent:
         self.known_flowers = None
         self.known_holes = None
         self.explored_cells = None
+        self.action_space = gym.spaces.Discrete(const.COUNT_ACTIONS)
         self.observation_space = gym.spaces.Box(
             low=-self.env.grid_size,
             high=self.env.grid_size,
@@ -26,10 +27,6 @@ class Agent:
         self.position = self.env.base_position
         self.water_tank = const.WATER_CAPACITY
         self.energy = const.ENERGY_CAPACITY
-        self.known_holes = set()
-        self.known_flowers = set()
-        self.viewed_cells = set()
-        self.explored_cells = set()
         return self.position
 
     def take_action(self, action):
@@ -56,7 +53,7 @@ class Agent:
                 self.energy -= const.ENERGY_CONSUMPTION_MOVE
             case _:
                 new_position = self.position
-        return obs, new_position
+        return new_position #new old: obs, pos
 
     def get_observation(self):
         for dx in range(-const.VIEW_RANGE, const.VIEW_RANGE + 1):
@@ -64,14 +61,14 @@ class Agent:
                 x, y = self.position[0] + dx, self.position[1] + dy
                 if 0 <= x < self.env.grid_size and 0 <= y < self.env.grid_size:
                     pos = (x, y)
-                    self.viewed_cells.add(pos)
+                    self.env.viewed_cells.add(pos)
                     if pos in self.env.hole_positions:
-                        if pos not in self.known_holes:
-                            self.known_holes.add(pos)
+                        if pos not in self.env.known_holes:
+                            self.env.known_holes.add(pos)
                             logging.debug(f"Новая известная яма: {pos}")
                     elif pos in self.env.target_positions:
-                        if pos not in self.known_flowers:
-                            self.known_flowers.add(pos)
+                        if pos not in self.env.known_flowers:
+                            self.env.known_flowers.add(pos)
                             logging.debug(f"Новый известный цветок: {pos}")
 
         observation = np.array(self.position, dtype=int)

@@ -18,7 +18,7 @@ def run():
         pygame.display.set_caption("Drone learning")
         logging.info(message)
         model = PPO(
-            'MlpPolicy', #MultiInputPolicy
+            'MultiInputPolicy', #'MlpPolicy', #MultiInputPolicy
             env,
             learning_rate=LEARNING_RATE,
             gamma=GAMMA,
