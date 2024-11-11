@@ -8,6 +8,7 @@ from gymnasium import spaces
 from Agent import Agent
 from logger import logging
 import const
+from utils import convert_to_multidiscrete
 
 
 class WateringEnv(gym.Env):
@@ -18,24 +19,26 @@ class WateringEnv(gym.Env):
         self.inner_grid_size = self.grid_size - self.margin * 2  # Размер внутреннего поля
         self.screen = pygame.display.set_mode((const.SCREEN_SIZE, const.SCREEN_SIZE + 120))
         self.base_position = (const.BASE_COORD, const.BASE_COORD)
-        self.agents = [Agent(self) for _ in range(2)]  # new
+        self.num_agents = const.NUM_AGENTS
+        self.agents = [Agent(self) for _ in range(self.num_agents)]  # new
         self.start_time = None  # Начальное время
         self.reward = None
         self.watered_status = None  # Статус всех цветов (0 - не полит, 1 - полит)
         self.step_count = None
         self.position_history = None
         # self.action_space = gym.spaces.Discrete(const.COUNT_ACTIONS)
-        action_spaces = {  # new
-            f'agent_{i}': agent.action_space
-            for i, agent in enumerate(self.agents)
-        }
-        self.action_space = spaces.Dict(action_spaces)  # new
-        # self.action_spaces = {agent: spaces.Discrete(const.COUNT_ACTIONS) for agent in self.agents}
+        # print(self.action_space)
         self.action_history = None
         self.known_holes = None
         self.known_flowers = None
         self.viewed_cells = None
         self.explored_cells = None
+
+        action_spaces = spaces.Dict({  # new
+            f'agent_{i}': agent.action_space
+            for i, agent in enumerate(self.agents)
+        })
+        self.action_space = convert_to_multidiscrete(action_spaces)
 
         observation_spaces = {  # new
             f'agent_{i}': agent.observation_space

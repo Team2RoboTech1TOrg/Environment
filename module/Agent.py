@@ -11,10 +11,6 @@ class Agent:
         self.position = None  # Стартовая позиция
         self.water_tank = None  # Заполняем бак водой
         self.energy = None  # Полный заряд энергии
-        self.viewed_cells = None
-        self.known_flowers = None
-        self.known_holes = None
-        self.explored_cells = None
         self.action_space = gym.spaces.Discrete(const.COUNT_ACTIONS)
         self.observation_space = gym.spaces.Box(
             low=-self.env.grid_size,
