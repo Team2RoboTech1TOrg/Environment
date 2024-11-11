@@ -6,7 +6,8 @@ import const
 
 
 class Agent:
-    def __init__(self, env):
+    def __init__(self, env, name=None):
+        self.name = name or f'agent_{id(self)}'
         self.env = env
         self.position = None  # Стартовая позиция
         self.water_tank = None  # Заполняем бак водой
@@ -26,8 +27,8 @@ class Agent:
         return self.position
 
     def take_action(self, action):
-        # Обновляем наблюдение, чтобы получить новые расстояния
-        obs = self.get_observation()
+        # пока никак не используется
+        obs = self._get_observation()
 
         if self.water_tank <= 10:  # возврат на базу за водой
             self.position = self.env.base_position
@@ -49,9 +50,9 @@ class Agent:
                 self.energy -= const.ENERGY_CONSUMPTION_MOVE
             case _:
                 new_position = self.position
-        return new_position #new old: obs, pos
+        return new_position  # new old: obs, pos
 
-    def get_observation(self):
+    def _get_observation(self):
         for dx in range(-const.VIEW_RANGE, const.VIEW_RANGE + 1):
             for dy in range(-const.VIEW_RANGE, const.VIEW_RANGE + 1):
                 x, y = self.position[0] + dx, self.position[1] + dy
@@ -69,3 +70,6 @@ class Agent:
 
         observation = np.array(self.position, dtype=int)
         return observation
+
+    def __repr__(self):
+        return f'<Agent {self.name}>'

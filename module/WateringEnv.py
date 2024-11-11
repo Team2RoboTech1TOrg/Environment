@@ -1,5 +1,5 @@
 import time
-from collections import deque
+from collections import deque, Counter
 import pygame
 import gymnasium as gym
 import numpy as np
@@ -15,48 +15,36 @@ class WateringEnv(gym.Env):
     def __init__(self):
         super(WateringEnv, self).__init__()
         self.grid_size = const.GRID_SIZE
-        self.margin = const.MARGIN_SIZE  # добавляем MARGIN для внутреннего поля
-        self.inner_grid_size = self.grid_size - self.margin * 2  # Размер внутреннего поля
+        self.margin = const.MARGIN_SIZE
+        self.inner_grid_size = self.grid_size - self.margin * 2
         self.screen = pygame.display.set_mode((const.SCREEN_SIZE, const.SCREEN_SIZE + 120))
         self.base_position = (const.BASE_COORD, const.BASE_COORD)
         self.num_agents = const.NUM_AGENTS
-        self.agents = [Agent(self) for _ in range(self.num_agents)]  # new
-        self.start_time = None  # Начальное время
+        self.agents = [Agent(self, name=f'agent_{i}') for i in range(self.num_agents)]
+        self.start_time = None
         self.reward = None
-        self.watered_status = None  # Статус всех цветов (0 - не полит, 1 - полит)
+        self.watered_status = None
         self.step_count = None
         self.position_history = None
-        # self.action_space = gym.spaces.Discrete(const.COUNT_ACTIONS)
-        # print(self.action_space)
         self.action_history = None
         self.known_holes = None
         self.known_flowers = None
         self.viewed_cells = None
         self.explored_cells = None
-
-        action_spaces = spaces.Dict({  # new
+        action_spaces = spaces.Dict({
             f'agent_{i}': agent.action_space
             for i, agent in enumerate(self.agents)
         })
         self.action_space = convert_to_multidiscrete(action_spaces)
-
-        observation_spaces = {  # new
+        observation_spaces = {
             f'agent_{i}': agent.observation_space
             for i, agent in enumerate(self.agents)
         }
-        self.observation_space = spaces.Dict(observation_spaces)  # new
-        # self.observation_space = gym.spaces.Box(
-        #     low=-self.grid_size,
-        #     high=self.grid_size,
-        #     shape=(2,),
-        #     dtype=np.float32
-        # )
+        self.observation_space = spaces.Dict(observation_spaces)
 
     def reset(self, *, seed=None, options=None):
         self.reset_objects_positions()
-        # [agent.reset() for agent in self.agents]  # new
         self.watered_status = np.zeros(const.COUNT_FLOWERS)
-        # self.visited = np.zeros((self.grid_size, self.grid_size), dtype=int)
         self.start_time = time.time()
         self.reward = 0
         self.step_count = 0
@@ -68,9 +56,7 @@ class WateringEnv(gym.Env):
         self.viewed_cells = set()
         self.explored_cells = set()
         logging.info("Перезагрузка среды")
-        # obs = [agent.get_observation() for agent in self.agents]  # new
         obs = {f"agent_{i}": agent.reset() for i, agent in enumerate(self.agents)}
-        # obs = {f"1_obs": self.agent.get_observation()}
         return obs, {}
 
     def step(self, actions):
@@ -80,27 +66,43 @@ class WateringEnv(gym.Env):
         # if self.agent.energy < 10:  # костыль
         #     return self._get_observation(), -100, True, False, {}
 
-        # Добавили действие в историю
+        # Добавили действие в общую историю
         self.action_history.append(actions)
 
-        # for agent, action in actions.items():
         for i, agent in enumerate(self.agents):  # new
             new_position = agent.take_action(actions[i])
-            obs[f"agent_{i}"] = new_position  # new
-
-            # Обновление позиции
+            obs[f"agent_{i}"] = new_position
+            new_position = self.check_crash(obs, agent, new_position)
             new_position = self.update_visited_cells(new_position, agent)
-            agent.position = new_position  # new
+            agent.position = new_position
+            logging.info(
+                f"Шаг: {self.step_count},"
+                f"Действие: {actions[i]} - позиция: {agent.position} - {agent.name}")
         terminated, truncated, info = self._check_termination_conditions()
 
         logging.info(
             f"Шаг: {self.step_count},"
-            # f"Действие: {action} - {self.agent.position}, "
+            # f"Действие: {actions[i]} - {agent.position}, "
             f"Награда: {self.reward}, "
             f"Завершено: {terminated}, "
             f"Прервано: {truncated}"
         )
         return obs, self.reward, terminated, truncated, {}
+
+    def check_crash(self, obs: dict, agent: Agent, new_position: tuple[int, int]):
+        """
+        Check if agents positions is same.
+        :param new_position:
+        :param agent:
+        :param obs:
+        :return: agent coordinates x, y
+        """
+        crashes = {pos for pos, count in Counter(obs.values()).items() if count > 1}
+        if crashes:
+            self.reward -= const.PENALTY_CRASH
+            logging.warning(f"{crashes} агентов")
+            new_position = agent.position
+        return new_position
 
     def update_visited_cells(self, new_position: tuple[int, int], agent: Agent) -> tuple[int, int]:
         """
@@ -161,7 +163,7 @@ class WateringEnv(gym.Env):
             logging.info("Все цветы политы")
             for agent in self.agents:
                 agent.position = self.base_position
-            logging.info("Агент вернулся на базу")
+            logging.info("Агенты вернулись на базу")
             # условие по времени выполнения
             if self.step_count <= const.MIN_GAME_STEPS:
                 self.reward += const.REWARD_COMPLETION * 3
@@ -243,7 +245,6 @@ class WateringEnv(gym.Env):
 
         # Отрисовка агента
         for agent in self.agents:
-            print(agent, agent.position)
             self.screen.blit(const.AGENT_ICON, (agent.position[1] * const.CELL_SIZE,
                                                 agent.position[0] * const.CELL_SIZE))
 

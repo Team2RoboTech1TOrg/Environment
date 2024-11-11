@@ -63,9 +63,9 @@ def run():
             if terminated:
                 message = f"Конец игры, награда: {int(reward)}, шагов: {step_count}"
                 env.render_message(message)
-                time.sleep(5)
+                # time.sleep(5)
                 break
-            clock.tick(60)
+            clock.tick(10)
     except KeyboardInterrupt:
         logging.info("Прервано пользователем")
     except Exception as e:

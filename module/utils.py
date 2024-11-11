@@ -16,8 +16,13 @@ def load_image(filename: str, cell_size: int):
         return pygame.Surface((cell_size, cell_size))  # Возвращаем пустую поверхность
 
 
-def convert_to_multidiscrete(action_space):
-    discrete_spaces = list(action_space.values())
+def convert_to_multidiscrete(action_spaces: spaces.Dict) -> spaces.MultiDiscrete:
+    """
+    Переводит формат словаря в нужный для мультиагентной среды формат MultiDiscrete
+    :param action_spaces:
+    :return:
+    """
+    discrete_spaces = list(action_spaces.values())
     nvec = [space.n for space in discrete_spaces]
     new_action_space = spaces.MultiDiscrete(nvec)
     return new_action_space
