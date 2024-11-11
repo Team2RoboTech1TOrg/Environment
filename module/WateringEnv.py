@@ -12,14 +12,14 @@ from utils import convert_to_multidiscrete
 
 
 class WateringEnv(gym.Env):
-    def __init__(self):
+    def __init__(self, num_agents: int):
         super(WateringEnv, self).__init__()
         self.grid_size = const.GRID_SIZE
         self.margin = const.MARGIN_SIZE
         self.inner_grid_size = self.grid_size - self.margin * 2
         self.screen = pygame.display.set_mode((const.SCREEN_SIZE, const.SCREEN_SIZE + 120))
         self.base_position = (const.BASE_COORD, const.BASE_COORD)
-        self.num_agents = const.NUM_AGENTS
+        self.num_agents = num_agents#const.NUM_AGENTS
         self.agents = [Agent(self, name=f'agent_{i}') for i in range(self.num_agents)]
         self.start_time = None
         self.reward = None
@@ -75,9 +75,7 @@ class WateringEnv(gym.Env):
             new_position = self.check_crash(obs, agent, new_position)
             new_position = self.update_visited_cells(new_position, agent)
             agent.position = new_position
-            logging.info(
-                f"Шаг: {self.step_count},"
-                f"Действие: {actions[i]} - позиция: {agent.position} - {agent.name}")
+            logging.info(f"Действие: {actions[i]} - позиция: {agent.position} - {agent.name}")
         terminated, truncated, info = self._check_termination_conditions()
 
         logging.info(

@@ -11,14 +11,16 @@ from logger import logging
 
 
 def run():
+    print("Введите количество агентов:")
+    num_agents = int(input())
     try:
-        env = WateringEnv()
+        env = WateringEnv(num_agents)
         message = "Начало обучения модели."
         env.render_message(message)
         pygame.display.set_caption("Drone learning")
         logging.info(message)
         model = PPO(
-            'MultiInputPolicy', #'MlpPolicy', #MultiInputPolicy
+            'MultiInputPolicy',  # 'MlpPolicy', #MultiInputPolicy
             env,
             learning_rate=LEARNING_RATE,
             gamma=GAMMA,
@@ -65,7 +67,7 @@ def run():
                 env.render_message(message)
                 # time.sleep(5)
                 break
-            clock.tick(10)
+            clock.tick(10)  # slow
     except KeyboardInterrupt:
         logging.info("Прервано пользователем")
     except Exception as e:
