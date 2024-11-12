@@ -5,10 +5,10 @@ from WateringEnv import WateringEnv
 
 
 class CustomObservationSpace(gym.Space):
-    def __init__(self, env, discovered_points, point_types):
+    def __init__(self, env, points, point_types):
         super().__init__()
         self.env = env
-        self.discovered_points = discovered_points
+        self.points = points
         self.point_types = point_types
 
         self.agent_observations = spaces.Dict({
@@ -16,8 +16,9 @@ class CustomObservationSpace(gym.Space):
             for i, agent in enumerate(self.env.agents)
         })
         self.points_observations = spaces.Dict({
-            coord: spaces.Discrete(len(point_types[coord])) for coord in discovered_points.keys()
+            coord: spaces.Discrete(point_types) for coord in points.keys()
         })
+
         self.observation_space = spaces.Dict({
             'agents': self.agent_observations,
             'points': self.points_observations

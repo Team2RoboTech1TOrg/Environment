@@ -14,11 +14,12 @@ from logger import logging
 
 def run():
     print("Введите количество агентов:")
-    num_agents = int(input())
-    print(f"Введите размер поля больше, чем : {ceil((const.COUNT_FLOWERS + const.COUNT_OBSTACLES + 1) ** 0.5) + 1}")
-    grid_size = int(input())
+    num_agents = input() or const.NUM_AGENTS
+    print(f"Введите размер поля больше, чем :"
+          f"{ceil((const.COUNT_FLOWERS + const.COUNT_OBSTACLES + 1) ** 0.5) + 1}")
+    grid_size = input() or const.GRID_SIZE
     try:
-        env = WateringEnv(num_agents, grid_size)
+        env = WateringEnv(int(num_agents), int(grid_size))
         message = "Начало обучения модели."
         env.render_message(message)
         pygame.display.set_caption("Drone learning")
