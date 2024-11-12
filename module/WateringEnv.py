@@ -8,18 +8,19 @@ from gymnasium import spaces
 from Agent import Agent
 from logger import logging
 import const
-from utils import convert_to_multidiscrete
+from utils import convert_to_multidiscrete, load_image
 
 
 class WateringEnv(gym.Env):
-    def __init__(self, num_agents: int):
+    def __init__(self, num_agents: int, grid_size: int):
         super(WateringEnv, self).__init__()
-        self.grid_size = const.GRID_SIZE
+        self.grid_size = grid_size
+        self.cell_size = const.SCREEN_SIZE // self.grid_size
         self.margin = const.MARGIN_SIZE
         self.inner_grid_size = self.grid_size - self.margin * 2
         self.screen = pygame.display.set_mode((const.SCREEN_SIZE, const.SCREEN_SIZE + 120))
-        self.base_position = (const.BASE_COORD, const.BASE_COORD)
-        self.num_agents = num_agents  # const.NUM_AGENTS
+        self.base_position = (self.grid_size // 2, self.grid_size // 2)
+        self.num_agents = num_agents
         self.agents = [Agent(self, name=f'agent_{i}') for i in range(self.num_agents)]
         self.start_time = None
         self.total_reward = None
@@ -71,8 +72,8 @@ class WateringEnv(gym.Env):
 
         for i, agent in enumerate(self.agents):
             new_position, agent_reward, terminated, truncated, info = agent.take_action(actions[i])
-            obs[f"agent_{i}"] = new_position
             new_position = self.check_crash(obs, agent, new_position)
+            obs[f"agent_{i}"] = new_position
             self.step_reward += agent_reward
         reward, terminated, truncated, info = self._check_termination_conditions()
 
@@ -86,15 +87,15 @@ class WateringEnv(gym.Env):
     def check_crash(self, obs: dict, agent: Agent, new_position: tuple[int, int]):
         """
         Check if agents positions is same.
-        :param new_position:
-        :param agent:
-        :param obs:
+        :param new_position: position of agent (x, y)
+        :param agent: agent in process
+        :param obs: all agents positions at the moment
         :return: agent coordinates x, y
         """
         crashes = {pos for pos, count in Counter(obs.values()).items() if count > 1}
         if crashes:
             self.total_reward -= const.PENALTY_CRASH
-            logging.warning(f"{crashes} агентов")
+            logging.warning(f"Столкнование {crashes} агентов")
             new_position = agent.position
         return new_position
 
@@ -132,47 +133,53 @@ class WateringEnv(gym.Env):
 
     def render(self):
         """Render agent game"""
+        AGENT_ICON = load_image(const.AGENT, self.cell_size)  # Изображение робота
+        FLOWER_ICON = load_image(const.FLOWER, self.cell_size)  # Сухие цветы
+        WATERED_FLOWER_ICON = load_image(const.WATERED, self.cell_size)  # Политые цветы
+        OBSTACLE_ICON = load_image(const.OBSTACLE, self.cell_size)  # Яма
+        BASE_ICON = load_image(const.BASE, self.cell_size)  # База
+
         self.screen.fill(const.GREEN)
         # Отрисовка сетки
         for x in range(self.grid_size):  # self.margin, self.grid_size - self.margin):
             for y in range(self.grid_size):  # self.margin, self.grid_size - self.margin):
                 pygame.draw.rect(
                     self.screen, const.BLACK,
-                    (x * const.CELL_SIZE, y * const.CELL_SIZE, const.CELL_SIZE, const.CELL_SIZE), 1
+                    (x * self.cell_size, y * self.cell_size, self.cell_size, self.cell_size), 1
                 )
 
         # Отрисовка границы внутреннего поля (устанавливаем цвет и толщину линии)
-        inner_field_size = self.inner_grid_size * const.CELL_SIZE
-        margin_x = (self.grid_size * const.CELL_SIZE - inner_field_size) // 2
-        margin_y = (self.grid_size * const.CELL_SIZE - inner_field_size) // 2
+        inner_field_size = self.inner_grid_size * self.cell_size
+        margin_x = (self.grid_size * self.cell_size - inner_field_size) // 2
+        margin_y = (self.grid_size * self.cell_size - inner_field_size) // 2
         inner_field_rect = pygame.Rect(margin_x, margin_y, inner_field_size, inner_field_size)
         pygame.draw.rect(self.screen, const.BLACK, inner_field_rect, 4)
 
         # Отрисовка базы
-        self.screen.blit(const.BASE_ICON,
-                         (self.base_position[1] * const.CELL_SIZE, self.base_position[0] * const.CELL_SIZE))
+        self.screen.blit(BASE_ICON,
+                         (self.base_position[1] * self.cell_size, self.base_position[0] * self.cell_size))
 
         # Рисуем цветы и ямы, которые были обнаружены
         for i, pos in enumerate(self.target_positions):
             if pos in self.known_flowers:
                 if self.watered_status[i]:
-                    icon = const.WATERED_FLOWER_ICON
+                    icon = WATERED_FLOWER_ICON
                 else:
-                    icon = const.FLOWER_ICON
-                self.screen.blit(icon, (pos[1] * const.CELL_SIZE, pos[0] * const.CELL_SIZE))
+                    icon = FLOWER_ICON
+                self.screen.blit(icon, (pos[1] * self.cell_size, pos[0] * self.cell_size))
 
         for hole in self.obstacle_positions:
             if hole in self.known_obstacles:
-                self.screen.blit(const.OBSTACLE_ICON, (hole[1] * const.CELL_SIZE, hole[0] * const.CELL_SIZE))
+                self.screen.blit(OBSTACLE_ICON, (hole[1] * self.cell_size, hole[0] * self.cell_size))
 
         # Накладываем исследование области
         for x in range(self.grid_size):
             for y in range(self.grid_size):
                 pos = (x, y)
                 if pos not in self.viewed_cells:
-                    dark_overlay = pygame.Surface((const.CELL_SIZE, const.CELL_SIZE), pygame.SRCALPHA)
+                    dark_overlay = pygame.Surface((self.cell_size, self.cell_size), pygame.SRCALPHA)
                     dark_overlay.fill((0, 0, 0, 200))  # Непрозрачный
-                    self.screen.blit(dark_overlay, (y * const.CELL_SIZE, x * const.CELL_SIZE))
+                    self.screen.blit(dark_overlay, (y * self.cell_size, x * self.cell_size))
 
         # Отрисовка времени, очков, заряда и уровня воды
         elapsed_time = time.time() - self.start_time  # Рассчитываем время
@@ -202,8 +209,8 @@ class WateringEnv(gym.Env):
 
         # Отрисовка агента
         for agent in self.agents:
-            self.screen.blit(const.AGENT_ICON, (agent.position[1] * const.CELL_SIZE,
-                                                agent.position[0] * const.CELL_SIZE))
+            self.screen.blit(AGENT_ICON, (agent.position[1] * self.cell_size,
+                                          agent.position[0] * self.cell_size))
 
         pygame.display.flip()
         pygame.time.wait(10)

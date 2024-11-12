@@ -13,12 +13,12 @@ BATCH_SIZE = 64
 # Параметры экрана и сетки
 SCREEN_SIZE = 900
 GRID_SIZE = 20 #13
-CELL_SIZE = SCREEN_SIZE // GRID_SIZE
+# CELL_SIZE = SCREEN_SIZE // GRID_SIZE
 MARGIN_SIZE = 1
 
 # Параметры игры
-NUM_AGENTS = 5 #3
-BASE_COORD = GRID_SIZE // 2
+# NUM_AGENTS = 5 #3
+# BASE_COORD = GRID_SIZE // 2
 COUNT_FLOWERS = 50 #10
 COUNT_OBSTACLES = 15 #5
 MAX_STEPS_GAME = GRID_SIZE * 100
@@ -63,8 +63,14 @@ FONT_SIZE = 24
 TITLE_SIZE = 60
 
 # Подгружаем изображения
-AGENT_ICON = load_image("images/unit.png", CELL_SIZE)  # Изображение робота
-FLOWER_ICON = load_image("images/clumb2.png", CELL_SIZE)  # Сухие цветы
-WATERED_FLOWER_ICON = load_image("images/clumb1.png", CELL_SIZE)  # Политые цветы
-OBSTACLE_ICON = load_image("images/pit.png", CELL_SIZE)  # Яма
-BASE_ICON = load_image("images/robdocst.png", CELL_SIZE)  # База
+AGENT = "images/unit.png" # Изображение робота
+FLOWER = "images/clumb2.png"  # Сухие цветы
+WATERED = "images/clumb1.png"  # Политые цветы
+OBSTACLE = "images/pit.png"  # Яма
+BASE = "images/robdocst.png"  # База
+
+# AGENT_ICON = load_image("images/unit.png", CELL_SIZE)  # Изображение робота
+# FLOWER_ICON = load_image("images/clumb2.png", CELL_SIZE)  # Сухие цветы
+# WATERED_FLOWER_ICON = load_image("images/clumb1.png", CELL_SIZE)  # Политые цветы
+# OBSTACLE_ICON = load_image("images/pit.png", CELL_SIZE)  # Яма
+# BASE_ICON = load_image("images/robdocst.png", CELL_SIZE)  # База

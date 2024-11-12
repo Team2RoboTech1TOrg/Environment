@@ -1,9 +1,11 @@
 import time
+from math import ceil
 
 import pygame
 import sys
 from stable_baselines3 import PPO
 
+import const
 from const import LEARNING_RATE, GAMMA, CLIP_RANGE, N_STEPS, COEF, MAX_STEPS_GAME, N_EPOCHS, BATCH_SIZE, CLIP_RANGE_VF
 from WateringEnv import WateringEnv
 from config import log_dir
@@ -13,8 +15,10 @@ from logger import logging
 def run():
     print("Введите количество агентов:")
     num_agents = int(input())
+    print(f"Введите размер поля больше, чем : {ceil((const.COUNT_FLOWERS + const.COUNT_OBSTACLES + 1) ** 0.5) + 1}")
+    grid_size = int(input())
     try:
-        env = WateringEnv(num_agents)
+        env = WateringEnv(num_agents, grid_size)
         message = "Начало обучения модели."
         env.render_message(message)
         pygame.display.set_caption("Drone learning")
