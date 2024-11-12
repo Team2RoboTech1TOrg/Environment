@@ -7,7 +7,7 @@ CLIP_RANGE = 0.2
 N_STEPS = 4096
 COEF = 0.01
 CLIP_RANGE_VF = 0.2
-N_EPOCHS = 10
+N_EPOCHS = 50
 BATCH_SIZE = 64
 
 # Параметры экрана и сетки
@@ -20,7 +20,7 @@ MARGIN_SIZE = 1
 NUM_AGENTS = 5 #3
 BASE_COORD = GRID_SIZE // 2
 COUNT_FLOWERS = 50 #10
-COUNT_HOLES = 15 #5
+COUNT_OBSTACLES = 15 #5
 MAX_STEPS_GAME = GRID_SIZE * 100
 VIEW_RANGE = 1  # Область зрения 3x3
 WATER_CONSUMPTION = 10  # Расход воды на полив
@@ -29,7 +29,7 @@ ENERGY_CAPACITY = 1000  # Максимальный запас энергии
 ENERGY_CONSUMPTION_MOVE = 1
 ENERGY_CONSUMPTION_WATER = 2
 COUNT_ACTIONS = 4
-MIN_GAME_STEPS = GRID_SIZE * 2
+MIN_GAME_STEPS = GRID_SIZE * GRID_SIZE * 2
 
 # Награды
 REWARD_EXPLORE = 50  # Вознаграждение за исследование новых клеток
@@ -66,5 +66,5 @@ TITLE_SIZE = 60
 AGENT_ICON = load_image("images/unit.png", CELL_SIZE)  # Изображение робота
 FLOWER_ICON = load_image("images/clumb2.png", CELL_SIZE)  # Сухие цветы
 WATERED_FLOWER_ICON = load_image("images/clumb1.png", CELL_SIZE)  # Политые цветы
-HOLE_ICON = load_image("images/pit.png", CELL_SIZE)  # Яма
+OBSTACLE_ICON = load_image("images/pit.png", CELL_SIZE)  # Яма
 BASE_ICON = load_image("images/robdocst.png", CELL_SIZE)  # База

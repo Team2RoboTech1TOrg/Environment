@@ -19,15 +19,16 @@ class WateringEnv(gym.Env):
         self.inner_grid_size = self.grid_size - self.margin * 2
         self.screen = pygame.display.set_mode((const.SCREEN_SIZE, const.SCREEN_SIZE + 120))
         self.base_position = (const.BASE_COORD, const.BASE_COORD)
-        self.num_agents = num_agents#const.NUM_AGENTS
+        self.num_agents = num_agents  # const.NUM_AGENTS
         self.agents = [Agent(self, name=f'agent_{i}') for i in range(self.num_agents)]
         self.start_time = None
-        self.reward = None
+        self.total_reward = None
+        self.step_reward = None
         self.watered_status = None
         self.step_count = None
         self.position_history = None
         self.action_history = None
-        self.known_holes = None
+        self.known_obstacles = None
         self.known_flowers = None
         self.viewed_cells = None
         self.explored_cells = None
@@ -46,12 +47,12 @@ class WateringEnv(gym.Env):
         self.reset_objects_positions()
         self.watered_status = np.zeros(const.COUNT_FLOWERS)
         self.start_time = time.time()
-        self.reward = 0
+        self.total_reward = 0
+        self.step_reward = 0
         self.step_count = 0
-        self.position_history = deque(maxlen=10)
         self.action_history = deque(maxlen=5)
         self.action_history.clear()
-        self.known_holes = set()
+        self.known_obstacles = set()
         self.known_flowers = set()
         self.viewed_cells = set()
         self.explored_cells = set()
@@ -60,32 +61,27 @@ class WateringEnv(gym.Env):
         return obs, {}
 
     def step(self, actions):
+        logging.info(f"Шаг: {self.step_count}")
         obs = {}  # new
+        self.step_reward = 0
         self.step_count += 1
-
-        # if self.agent.energy < 10:  # костыль
-        #     return self._get_observation(), -100, True, False, {}
 
         # Добавили действие в общую историю
         self.action_history.append(actions)
 
-        for i, agent in enumerate(self.agents):  # new
-            new_position = agent.take_action(actions[i])
+        for i, agent in enumerate(self.agents):
+            new_position, agent_reward, terminated, truncated, info = agent.take_action(actions[i])
             obs[f"agent_{i}"] = new_position
             new_position = self.check_crash(obs, agent, new_position)
-            new_position = self.update_visited_cells(new_position, agent)
-            agent.position = new_position
-            logging.info(f"Действие: {actions[i]} - позиция: {agent.position} - {agent.name}")
-        terminated, truncated, info = self._check_termination_conditions()
+            self.step_reward += agent_reward
+        reward, terminated, truncated, info = self._check_termination_conditions()
 
         logging.info(
-            f"Шаг: {self.step_count},"
-            # f"Действие: {actions[i]} - {agent.position}, "
-            f"Награда: {self.reward}, "
+            f"Награда: {self.total_reward}, "
             f"Завершено: {terminated}, "
             f"Прервано: {truncated}"
         )
-        return obs, self.reward, terminated, truncated, {}
+        return obs, reward, terminated, truncated, {}
 
     def check_crash(self, obs: dict, agent: Agent, new_position: tuple[int, int]):
         """
@@ -97,52 +93,9 @@ class WateringEnv(gym.Env):
         """
         crashes = {pos for pos, count in Counter(obs.values()).items() if count > 1}
         if crashes:
-            self.reward -= const.PENALTY_CRASH
+            self.total_reward -= const.PENALTY_CRASH
             logging.warning(f"{crashes} агентов")
             new_position = agent.position
-        return new_position
-
-    def update_visited_cells(self, new_position: tuple[int, int], agent: Agent) -> tuple[int, int]:
-        """
-        Update explored cells, update position of agent in dependency of cells.
-        Give reward in dependency of cells.
-        :param agent:
-        :param new_position: coordinates of agent (x, y)
-        :return: coordinates of agent (x, y)
-        """
-        # Запись истории позиций для обнаружения циклов
-        self.position_history.append(new_position)
-
-        # Проверка на выход за границы внутреннего поля
-        if not ((self.margin <= new_position[0] <= self.inner_grid_size) and (
-                self.margin <= new_position[1] <= self.inner_grid_size)):
-            self.reward -= const.PENALTY_OUT_FIELD
-            logging.warning(f"Агент вышел за границы внутреннего поля: {new_position}")
-            new_position = agent.position
-        else:
-            if new_position in self.hole_positions:
-                self.reward -= const.PENALTY_HOLE
-                new_position = agent.position
-            elif new_position not in self.explored_cells:
-                self.reward += const.REWARD_EXPLORE
-                logging.info("Зашел на новую клетку")
-                self.explored_cells.add(new_position)
-                if new_position in self.target_positions:
-                    agent.energy -= const.ENERGY_CONSUMPTION_WATER
-                    agent.water_tank -= const.WATER_CONSUMPTION
-                    idx = self.target_positions.index(new_position)
-                    self.watered_status[idx] = 1
-                    logging.info("Полил цветок")
-            else:
-                if new_position == self.position_history[-2]:
-                    self.reward -= const.PENALTY_LOOP * 3
-                    logging.info(f"Штраф за 'стену' {self.position_history[-2]}")
-                elif self.position_history.count(new_position) > 2:
-                    self.reward -= const.PENALTY_LOOP * 2
-                    logging.info("Штраф за вторичное посещение клетки в последние 10 шагов")
-                # else: # неудачно работает, подумать
-                #     self.reward -= const.PENALTY_LOOP
-                #     logging.info("Штраф за вторичное посещение клетки")
         return new_position
 
     def _check_termination_conditions(self) -> tuple:
@@ -155,21 +108,27 @@ class WateringEnv(gym.Env):
 
         if self.step_count >= const.MAX_STEPS_GAME:  # костыль выхода, потом убрать
             logging.info("Достигнуто максимальное количество шагов")
+            total_reward = 0
             truncated = True
 
         elif np.all(self.watered_status == 1):
-            logging.info("Все цветы политы")
+            terminated = True
+            logging.info("Все растения опрысканы")
             for agent in self.agents:
                 agent.position = self.base_position
             logging.info("Агенты вернулись на базу")
+
             # условие по времени выполнения
             if self.step_count <= const.MIN_GAME_STEPS:
-                self.reward += const.REWARD_COMPLETION * 3
+                total_reward = self.total_reward + const.REWARD_COMPLETION * 3
             else:
-                self.reward += const.REWARD_COMPLETION
-            terminated = True
-
-        return terminated, truncated, {}
+                total_reward = self.total_reward + const.REWARD_COMPLETION
+            logging.info(f"Награда: {total_reward}")
+            self.total_reward = 0
+        else:
+            self.total_reward += self.step_reward
+            total_reward = 0
+        return total_reward, terminated, truncated, {}
 
     def render(self):
         """Render agent game"""
@@ -202,9 +161,9 @@ class WateringEnv(gym.Env):
                     icon = const.FLOWER_ICON
                 self.screen.blit(icon, (pos[1] * const.CELL_SIZE, pos[0] * const.CELL_SIZE))
 
-        for hole in self.hole_positions:
-            if hole in self.known_holes:
-                self.screen.blit(const.HOLE_ICON, (hole[1] * const.CELL_SIZE, hole[0] * const.CELL_SIZE))
+        for hole in self.obstacle_positions:
+            if hole in self.known_obstacles:
+                self.screen.blit(const.OBSTACLE_ICON, (hole[1] * const.CELL_SIZE, hole[0] * const.CELL_SIZE))
 
         # Накладываем исследование области
         for x in range(self.grid_size):
@@ -225,7 +184,7 @@ class WateringEnv(gym.Env):
 
         self.screen.blit(font.render(f"Время: {elapsed_time:.2f} сек", True, const.BLACK),
                          (10, const.SCREEN_SIZE + 10))
-        self.screen.blit(font.render(f"Очки: {int(self.reward)}", True, const.BLACK),
+        self.screen.blit(font.render(f"Очки: {int(self.total_reward)}", True, const.BLACK),
                          (10, const.SCREEN_SIZE + 40))
         # self.screen.blit(font.render(f"Энергия: {self.agent.energy}", True, const.BLACK),
         #                  (200, const.SCREEN_SIZE + 10))
@@ -233,7 +192,7 @@ class WateringEnv(gym.Env):
         #                  (200, const.SCREEN_SIZE + 40))
         self.screen.blit(font.render(f"Шаги: {self.step_count}", True, const.BLACK),
                          (400, const.SCREEN_SIZE + 10))
-        self.screen.blit(font.render(f"Обнаружено ям: {len(self.known_holes)}/{const.COUNT_HOLES}",
+        self.screen.blit(font.render(f"Обнаружено ям: {len(self.known_obstacles)}/{const.COUNT_OBSTACLES}",
                                      True, const.BLACK), (400, const.SCREEN_SIZE + 40))
         self.screen.blit(
             font.render(f"Обнаружено цветков: {len(self.known_flowers)}/{const.COUNT_FLOWERS}",
@@ -279,14 +238,14 @@ class WateringEnv(gym.Env):
         unavailable_positions = {self.base_position}
         self.target_positions = self._get_objects_positions(unavailable_positions, const.COUNT_FLOWERS)
         unavailable_positions.update(self.target_positions)
-        self.hole_positions = self._get_objects_positions(unavailable_positions, const.COUNT_HOLES)
+        self.obstacle_positions = self._get_objects_positions(unavailable_positions, const.COUNT_OBSTACLES)
 
     def _fixed_positions(self):
         """
         Get fixed positions of objects
         """
         self.target_positions = const.FIXED_FLOWER_POSITIONS.copy()
-        self.hole_positions = const.FIXED_HOLE_POSITIONS.copy()
+        self.obstacle_positions = const.FIXED_HOLE_POSITIONS.copy()
 
     def _get_available_positions(self, unavailable: set) -> list:
         """
