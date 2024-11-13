@@ -9,7 +9,7 @@ class AgentObservationSpace(gym.Space):
         self.size = size
 
         self.position_space = spaces.Box(
-            low=-self.size,
+            low=0,
             high=self.size,
             shape=(2,),
             dtype=np.int32

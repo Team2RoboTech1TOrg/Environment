@@ -70,6 +70,7 @@ class WateringEnv(gym.Env):
         current map with actual status of cells
         """
         agent_obs = [agent.get_observation() for agent in self.agents]
+        # TO DO вопрос со статусами
         max_agent_coords = np.max(np.stack([obs['coords'] for obs in agent_obs]), axis=0)
         max_coords_status = np.maximum(max_agent_coords, self.current_map)
         self.current_map = max_coords_status
@@ -166,8 +167,8 @@ class WateringEnv(gym.Env):
 
         self.screen.fill(const.GREEN)
         # Отрисовка сетки
-        for x in range(self.grid_size):  # self.margin, self.grid_size - self.margin):
-            for y in range(self.grid_size):  # self.margin, self.grid_size - self.margin):
+        for x in range(self.grid_size):
+            for y in range(self.grid_size):
                 pygame.draw.rect(
                     self.screen, const.BLACK,
                     (x * self.cell_size, y * self.cell_size, self.cell_size, self.cell_size), 1
