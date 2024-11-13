@@ -3,7 +3,6 @@ from collections import deque, Counter
 import pygame
 import gymnasium as gym
 import numpy as np
-from gymnasium import spaces
 
 from Agent import Agent
 from logger import logging
@@ -33,16 +32,22 @@ class WateringEnv(gym.Env):
         self.known_flowers = None
         self.viewed_cells = None
         self.explored_cells = None
-        action_spaces = spaces.Dict({
+        action_spaces = gym.spaces.Dict({
             f'agent_{i}': agent.action_space
             for i, agent in enumerate(self.agents)
         })
         self.action_space = convert_to_multidiscrete(action_spaces)
-        observation_spaces = {
-            f'agent_{i}': agent.observation_space
-            for i, agent in enumerate(self.agents)
-        }
-        self.observation_space = spaces.Dict(observation_spaces)
+
+        self.observation_space = gym.spaces.Dict({  # new, old - coords
+            'coords': gym.spaces.Box(low=0, high=5, shape=(self.grid_size, self.grid_size), dtype=np.int32),
+            'pos': gym.spaces.Box(
+                low=np.stack([agent.observation_space.position_space.low for agent in self.agents], axis=0),
+                high=np.stack([agent.observation_space.position_space.high for agent in self.agents], axis=0),
+                shape=(self.num_agents, 2),
+                dtype=np.int32),
+        })
+
+        print(self.observation_space)
 
     def reset(self, *, seed=None, options=None):
         self.reset_objects_positions()
@@ -58,12 +63,20 @@ class WateringEnv(gym.Env):
         self.viewed_cells = set()
         self.explored_cells = set()
         logging.info("Перезагрузка среды")
-        obs = {f"agent_{i}": agent.reset() for i, agent in enumerate(self.agents)}
-        return obs, {}
+        # obs = {'pos': np.stack([agent.reset() for agent in self.agents], axis=0)}
+        agent_obs = [agent.reset() for agent in self.agents]
+        positions = np.stack([obs['pos'] for obs in agent_obs])
+        coords = np.max(np.stack([obs['coords'] for obs in agent_obs]), axis=0)
+        obs = {'pos': positions, 'coords': coords}  # new
+        return obs, {}  # old
 
     def step(self, actions):
         logging.info(f"Шаг: {self.step_count}")
-        obs = {}  # new
+
+        agent_obs = [agent.get_observation() for agent in self.agents]
+        obs = {'pos': np.stack([obs['pos'] for obs in agent_obs]),
+               'coords': np.max(np.stack([obs['coords'] for obs in agent_obs]), axis=0)}
+
         self.step_reward = 0
         self.step_count += 1
 
@@ -72,8 +85,8 @@ class WateringEnv(gym.Env):
 
         for i, agent in enumerate(self.agents):
             new_position, agent_reward, terminated, truncated, info = agent.take_action(actions[i])
-            new_position = self.check_crash(obs, agent, new_position)
-            obs[f"agent_{i}"] = new_position
+            # new_position = self.check_crash(obs, agent, new_position)
+            obs['pos'][i] = new_position  # new ??
             self.step_reward += agent_reward
         reward, terminated, truncated, info = self._check_termination_conditions()
 

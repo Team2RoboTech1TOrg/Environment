@@ -1,10 +1,13 @@
 from collections import deque
-
 import numpy as np
 import gymnasium as gym
 
 import logging
+
+from gymnasium import spaces
+
 import const
+from AgentObservationSpace import AgentObservationSpace
 
 
 class Agent:
@@ -15,20 +18,26 @@ class Agent:
         self.water_tank = None  # Заполняем бак водой
         self.energy = None  # Полный заряд энергии
         self.position_history = None
-        self.action_space = gym.spaces.Discrete(const.COUNT_ACTIONS)
-        self.observation_space = gym.spaces.Box(
-            low=-self.env.grid_size,
-            high=self.env.grid_size,
-            shape=(2,),
-            dtype=np.float32
-        )
+        self.action_space = spaces.Discrete(const.COUNT_ACTIONS)
+        # self.observation_space = spaces.Box( #old
+        #     low=-self.env.grid_size,
+        #     high=self.env.grid_size,
+        #     shape=(2,),
+        #     dtype=np.float32
+        # )
+        self.observation_space = AgentObservationSpace(self.env.grid_size) #new
 
     def reset(self):
         self.position = self.env.base_position
         self.position_history = deque(maxlen=10)
         self.water_tank = const.WATER_CAPACITY
         self.energy = const.ENERGY_CAPACITY
-        return self.position
+        return { #new
+            'pos': self.position,
+            'coords': np.zeros((self.env.grid_size, self.env.grid_size), dtype=np.int32)
+        }
+
+        # return self.position #old
 
     def take_action(self, action):
         reward = 0
@@ -40,7 +49,7 @@ class Agent:
             return self.position, reward, True, False, {}
 
         # пока никак не используется
-        obs = self._get_observation()
+        obs = self.get_observation()
 
         if self.water_tank <= 10:  # возврат на базу за водой
             self.position = self.env.base_position
@@ -67,7 +76,7 @@ class Agent:
         logging.info(f"Действие: {action} - позиция: {self.position} - {self.name}")
         return self.position, reward, terminated, truncated, {}
 
-    def _get_observation(self):
+    def get_observation(self):
         for dx in range(-const.VIEW_RANGE, const.VIEW_RANGE + 1):
             for dy in range(-const.VIEW_RANGE, const.VIEW_RANGE + 1):
                 x, y = self.position[0] + dx, self.position[1] + dy
@@ -83,7 +92,12 @@ class Agent:
                             self.env.known_flowers.add(pos)
                             logging.debug(f"Новое известное растение: {pos}")
 
-        observation = np.array(self.position, dtype=int)
+        # observation = np.array(self.position, dtype=int) #old
+        observation =  { #new
+            'pos': self.position,
+            'coords': np.zeros((self.env.grid_size, self.env.grid_size), dtype=np.int32)
+        }
+
         return observation
 
     def __repr__(self):
