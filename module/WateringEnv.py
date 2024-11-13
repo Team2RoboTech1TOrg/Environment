@@ -5,6 +5,7 @@ import gymnasium as gym
 import numpy as np
 
 from Agent import Agent
+from SystemObservationSpace import SystemObservationSpace
 from logger import logging
 import const
 from utils import convert_to_multidiscrete, load_image
@@ -26,19 +27,18 @@ class WateringEnv(gym.Env):
         self.step_reward = None
         self.watered_status = None
         self.step_count = None
-        self.position_history = None
-        self.action_history = None
+        self.current_map = None
         self.known_obstacles = None
         self.known_flowers = None
         self.viewed_cells = None
-        self.explored_cells = None
         action_spaces = gym.spaces.Dict({
             f'agent_{i}': agent.action_space
             for i, agent in enumerate(self.agents)
         })
         self.action_space = convert_to_multidiscrete(action_spaces)
-
-        self.observation_space = gym.spaces.Dict({  # new, old - coords
+        # TO DO разобраться почему не хочет работать через класс
+        # self.observation_space = SystemObservationSpace(self.agents, self.num_agents, self.grid_size)
+        self.observation_space = gym.spaces.Dict({
             'coords': gym.spaces.Box(low=0, high=5, shape=(self.grid_size, self.grid_size), dtype=np.int32),
             'pos': gym.spaces.Box(
                 low=np.stack([agent.observation_space.position_space.low for agent in self.agents], axis=0),
@@ -47,8 +47,6 @@ class WateringEnv(gym.Env):
                 dtype=np.int32),
         })
 
-        print(self.observation_space)
-
     def reset(self, *, seed=None, options=None):
         self.reset_objects_positions()
         self.watered_status = np.zeros(const.COUNT_FLOWERS)
@@ -56,38 +54,51 @@ class WateringEnv(gym.Env):
         self.total_reward = 0
         self.step_reward = 0
         self.step_count = 0
-        self.action_history = deque(maxlen=5)
-        self.action_history.clear()
+        self.current_map = np.zeros((self.grid_size, self.grid_size), dtype=np.int32)
         self.known_obstacles = set()
         self.known_flowers = set()
         self.viewed_cells = set()
-        self.explored_cells = set()
-        logging.info("Перезагрузка среды")
-        # obs = {'pos': np.stack([agent.reset() for agent in self.agents], axis=0)}
         agent_obs = [agent.reset() for agent in self.agents]
-        positions = np.stack([obs['pos'] for obs in agent_obs])
-        coords = np.max(np.stack([obs['coords'] for obs in agent_obs]), axis=0)
-        obs = {'pos': positions, 'coords': coords}  # new
-        return obs, {}  # old
+        obs = {'pos': np.stack([obs['pos'] for obs in agent_obs]),
+               'coords': np.max(np.stack([obs['coords'] for obs in agent_obs]), axis=0)}
+        logging.info("Перезагрузка среды")
+        return obs, {}
+
+    def get_observation(self):
+        """
+        Get observation at the moment: array of agents positions and
+        current map with actual status of cells
+        """
+        agent_obs = [agent.get_observation() for agent in self.agents]
+        max_agent_coords = np.max(np.stack([obs['coords'] for obs in agent_obs]), axis=0)
+        max_coords_status = np.maximum(max_agent_coords, self.current_map)
+        self.current_map = max_coords_status
+
+        obs = {'pos': np.stack([obs['pos'] for obs in agent_obs]),
+               'coords': max_coords_status}
+        return obs
 
     def step(self, actions):
         logging.info(f"Шаг: {self.step_count}")
-
-        agent_obs = [agent.get_observation() for agent in self.agents]
-        obs = {'pos': np.stack([obs['pos'] for obs in agent_obs]),
-               'coords': np.max(np.stack([obs['coords'] for obs in agent_obs]), axis=0)}
-
+        obs = self.get_observation()
         self.step_reward = 0
         self.step_count += 1
 
-        # Добавили действие в общую историю
-        self.action_history.append(actions)
-
         for i, agent in enumerate(self.agents):
             new_position, agent_reward, terminated, truncated, info = agent.take_action(actions[i])
-            # new_position = self.check_crash(obs, agent, new_position)
-            obs['pos'][i] = new_position  # new ??
+            # new_position = self.check_crash(obs, agent, new_position) #TO DO исправить работо-сть
+            if obs['coords'][new_position[0]][new_position[1]] == 0:
+                self.step_reward += const.REWARD_EXPLORE
+                logging.info(f"{agent.name} исследовал новую клетку {new_position}")
+                obs['coords'][new_position[0]][new_position[1]] = 1
+            obs['pos'][i] = new_position
             self.step_reward += agent_reward
+
+        # TO DO подумать, может как-то иначе реализовать без списков
+        self.known_flowers = np.argwhere(obs['coords'] == 4)
+        self.known_obstacles = np.argwhere(obs['coords'] == 3)
+        self.viewed_cells = np.argwhere(obs['coords'] == 1)
+
         reward, terminated, truncated, info = self._check_termination_conditions()
 
         logging.info(
@@ -95,6 +106,7 @@ class WateringEnv(gym.Env):
             f"Завершено: {terminated}, "
             f"Прервано: {truncated}"
         )
+
         return obs, reward, terminated, truncated, {}
 
     def check_crash(self, obs: dict, agent: Agent, new_position: tuple[int, int]):
@@ -146,11 +158,11 @@ class WateringEnv(gym.Env):
 
     def render(self):
         """Render agent game"""
-        AGENT_ICON = load_image(const.AGENT, self.cell_size)  # Изображение робота
-        FLOWER_ICON = load_image(const.FLOWER, self.cell_size)  # Сухие цветы
-        WATERED_FLOWER_ICON = load_image(const.WATERED, self.cell_size)  # Политые цветы
-        OBSTACLE_ICON = load_image(const.OBSTACLE, self.cell_size)  # Яма
-        BASE_ICON = load_image(const.BASE, self.cell_size)  # База
+        agent_icon = load_image(const.AGENT, self.cell_size)  # Изображение робота
+        flower_icon = load_image(const.FLOWER, self.cell_size)  # Сухие цветы
+        watered_flower_icon = load_image(const.WATERED, self.cell_size)  # Политые цветы
+        obstacle_icon = load_image(const.OBSTACLE, self.cell_size)  # Яма
+        base_icon = load_image(const.BASE, self.cell_size)  # База
 
         self.screen.fill(const.GREEN)
         # Отрисовка сетки
@@ -169,21 +181,20 @@ class WateringEnv(gym.Env):
         pygame.draw.rect(self.screen, const.BLACK, inner_field_rect, 4)
 
         # Отрисовка базы
-        self.screen.blit(BASE_ICON,
+        self.screen.blit(base_icon,
                          (self.base_position[1] * self.cell_size, self.base_position[0] * self.cell_size))
 
-        # Рисуем цветы и ямы, которые были обнаружены
+        # Рисуем цветы и ямы
         for i, pos in enumerate(self.target_positions):
-            if pos in self.known_flowers:
+            if pos in self.known_flowers:  # добавить что были известные
                 if self.watered_status[i]:
-                    icon = WATERED_FLOWER_ICON
+                    icon = watered_flower_icon
                 else:
-                    icon = FLOWER_ICON
+                    icon = flower_icon
                 self.screen.blit(icon, (pos[1] * self.cell_size, pos[0] * self.cell_size))
-
         for hole in self.obstacle_positions:
-            if hole in self.known_obstacles:
-                self.screen.blit(OBSTACLE_ICON, (hole[1] * self.cell_size, hole[0] * self.cell_size))
+            if hole in self.known_obstacles:  # добавить что были известные
+                self.screen.blit(obstacle_icon, (hole[1] * self.cell_size, hole[0] * self.cell_size))
 
         # Накладываем исследование области
         for x in range(self.grid_size):
@@ -206,10 +217,6 @@ class WateringEnv(gym.Env):
                          (10, const.SCREEN_SIZE + 10))
         self.screen.blit(font.render(f"Очки: {int(self.total_reward)}", True, const.BLACK),
                          (10, const.SCREEN_SIZE + 40))
-        # self.screen.blit(font.render(f"Энергия: {self.agent.energy}", True, const.BLACK),
-        #                  (200, const.SCREEN_SIZE + 10))
-        # self.screen.blit(font.render(f"Вода: {self.agent.water_tank}", True, const.BLACK),
-        #                  (200, const.SCREEN_SIZE + 40))
         self.screen.blit(font.render(f"Шаги: {self.step_count}", True, const.BLACK),
                          (400, const.SCREEN_SIZE + 10))
         self.screen.blit(font.render(f"Обнаружено ям: {len(self.known_obstacles)}/{const.COUNT_OBSTACLES}",
@@ -222,7 +229,7 @@ class WateringEnv(gym.Env):
 
         # Отрисовка агента
         for agent in self.agents:
-            self.screen.blit(AGENT_ICON, (agent.position[1] * self.cell_size,
+            self.screen.blit(agent_icon, (agent.position[1] * self.cell_size,
                                           agent.position[0] * self.cell_size))
 
         pygame.display.flip()

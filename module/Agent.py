@@ -1,11 +1,9 @@
-from collections import deque
 import numpy as np
-import gymnasium as gym
 
-import logging
-
+from collections import deque
 from gymnasium import spaces
 
+import logging
 import const
 from AgentObservationSpace import AgentObservationSpace
 
@@ -14,41 +12,31 @@ class Agent:
     def __init__(self, env, name=None):
         self.name = name or f'agent_{id(self)}'
         self.env = env
-        self.position = None  # Стартовая позиция
-        self.water_tank = None  # Заполняем бак водой
-        self.energy = None  # Полный заряд энергии
+        self.position = None
+        self.water_tank = None
+        self.energy = None
         self.position_history = None
         self.action_space = spaces.Discrete(const.COUNT_ACTIONS)
-        # self.observation_space = spaces.Box( #old
-        #     low=-self.env.grid_size,
-        #     high=self.env.grid_size,
-        #     shape=(2,),
-        #     dtype=np.float32
-        # )
-        self.observation_space = AgentObservationSpace(self.env.grid_size) #new
+        self.observation_space = AgentObservationSpace(self.env.grid_size)
 
     def reset(self):
         self.position = self.env.base_position
         self.position_history = deque(maxlen=10)
         self.water_tank = const.WATER_CAPACITY
         self.energy = const.ENERGY_CAPACITY
-        return { #new
+        return {
             'pos': self.position,
             'coords': np.zeros((self.env.grid_size, self.env.grid_size), dtype=np.int32)
         }
-
-        # return self.position #old
 
     def take_action(self, action):
         reward = 0
         terminated = False
         truncated = False
 
-        # должен возвращать обсервейшн, доделать типы
         if self.energy < 10:  # костыль
             return self.position, reward, True, False, {}
 
-        # пока никак не используется
         obs = self.get_observation()
 
         if self.water_tank <= 10:  # возврат на базу за водой
@@ -71,42 +59,49 @@ class Agent:
                 self.energy -= const.ENERGY_CONSUMPTION_MOVE
             case _:
                 new_position = self.position
-        new_position, reward = self.update_visited_cells(new_position)
+        value_new_position = obs['coords'][new_position[0]][new_position[1]]
+        new_position, reward = self.update_visited_cells(new_position, value_new_position)
         self.position = new_position
         logging.info(f"Действие: {action} - позиция: {self.position} - {self.name}")
+
         return self.position, reward, terminated, truncated, {}
 
     def get_observation(self):
+        coords = np.zeros((self.env.grid_size, self.env.grid_size)) #?
+
         for dx in range(-const.VIEW_RANGE, const.VIEW_RANGE + 1):
             for dy in range(-const.VIEW_RANGE, const.VIEW_RANGE + 1):
                 x, y = self.position[0] + dx, self.position[1] + dy
                 if 0 <= x < self.env.grid_size and 0 <= y < self.env.grid_size:
                     pos = (x, y)
-                    self.env.viewed_cells.add(pos)
+                    # self.env.viewed_cells.add(pos)
+                    coords[x][y] = 1 if coords[x][y] == 0 else coords[x][y]  # viewed
+                    # coords[x][y] = 2 if coords[x][y] == 1 else coords[x][y]  # explored
                     if pos in self.env.obstacle_positions:
-                        if pos not in self.env.known_obstacles:
-                            self.env.known_obstacles.add(pos)
-                            logging.debug(f"Новое известное препятствие: {pos}")
+                        coords[x][y] = 3  # obstacle
+                        logging.debug(f"Вижу препятствие: {pos}")
+                        # if pos not in self.env.known_obstacles:
+                        #     self.env.known_obstacles.add(pos)
                     elif pos in self.env.target_positions:
-                        if pos not in self.env.known_flowers:
-                            self.env.known_flowers.add(pos)
-                            logging.debug(f"Новое известное растение: {pos}")
+                        coords[x][y] = 4  # plant
+                        logging.debug(f"Вижу растение: {pos}")
+                        # if pos not in self.env.known_flowers:
+                        #     self.env.known_flowers.add(pos)
 
-        # observation = np.array(self.position, dtype=int) #old
-        observation =  { #new
+        observation = {
             'pos': self.position,
-            'coords': np.zeros((self.env.grid_size, self.env.grid_size), dtype=np.int32)
+            'coords': coords
         }
-
         return observation
 
     def __repr__(self):
         return f'<Agent {self.name}>'
 
-    def update_visited_cells(self, new_position: tuple[int, int]) -> tuple[tuple[int, int], int]:
+    def update_visited_cells(self, new_position: tuple[int, int], value: float) -> tuple[tuple[int, int], int]:
         """
         Update explored cells, update position of agent in dependency of cells.
         Give reward in dependency of cells.
+        :param value:
         :param new_position: coordinates of agent (x, y)
         :return: coordinates of agent (x, y) and agent reward
         """
@@ -121,28 +116,24 @@ class Agent:
             logging.warning(f"Агент вышел за границы внутреннего поля: {new_position}")
             new_position = self.position
         else:
-            if new_position in self.env.obstacle_positions:
+            if value == 3:  # если в точке препятствие
                 agent_reward -= const.PENALTY_HOLE
                 new_position = self.position
-            elif new_position not in self.env.explored_cells:
-                agent_reward += const.REWARD_EXPLORE
-                logging.info("Зашел на новую клетку")
-                self.env.explored_cells.add(new_position)
-                if new_position in self.env.target_positions:
+                logging.info("Упс, препятствие!")
+            # elif value == 0:
+            elif value == 4:  # если в точке растение
+                idx = self.env.target_positions.index(new_position)
+                if self.env.watered_status[idx] == 0:  # только не опрысканное
                     self.energy -= const.ENERGY_CONSUMPTION_WATER
                     self.water_tank -= const.WATER_CONSUMPTION
-                    idx = self.env.target_positions.index(new_position)
                     self.env.watered_status[idx] = 1
                     logging.info("Опрыскал растение")
             else:
                 if len(self.position_history) > 3:
                     if new_position == self.position_history[-2]:
                         agent_reward -= const.PENALTY_LOOP * 3
-                        logging.info(f"Штраф за 'стену' {self.position_history[-2]}")
+                        logging.info(f"Штраф за второй раз в одну клетку' {self.position_history[-2]}")
                     elif self.position_history.count(new_position) > 2:
                         agent_reward -= const.PENALTY_LOOP * 2
                         logging.info(f"Штраф за вторичное посещение {new_position} в последние 10 шагов")
-                # else: # неудачно работает, подумать
-                #     agent_reward -= const.PENALTY_LOOP
-                #     logging.info("Штраф за вторичное посещение клетки")
         return new_position, agent_reward
