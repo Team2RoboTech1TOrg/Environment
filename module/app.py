@@ -42,11 +42,11 @@ def run():
         message = "Обучение модели завершено."
         logging.info(message)
         env.render_message(message)
-        model.save("ppo_watering_model")
+        model.save("spraying_scenario_model")
         time.sleep(2)
         # model = PPO.load("ppo_watering_model", print_system_info=True)
         clock = pygame.time.Clock()
-        pygame.display.set_caption("Drone Watering Flowers")
+        pygame.display.set_caption("Pesticide Spraying Scenario")
 
         obs, info = env.reset()
         step_count = 0
@@ -62,13 +62,13 @@ def run():
             step_count += 1
             if truncated:
                 obs, info = env.reset()
-                message = f"Новая игра"  # add counter games
+                message = f"Новая миссия"  # add counter games
                 env.render_message(message)
                 time.sleep(5)
                 step_count = 0
 
             if terminated:
-                message = f"Конец игры, награда: {int(reward)}, шагов: {step_count}"
+                message = f"Конец миссии, награда: {int(reward)}, шагов: {step_count}"
                 env.render_message(message)
                 # time.sleep(5)
                 break

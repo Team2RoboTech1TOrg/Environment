@@ -78,7 +78,7 @@ class WateringEnv(gym.Env):
 
         for i, agent in enumerate(self.agents):
             new_position, agent_reward, terminated, truncated, info = agent.take_action(actions[i])
-            # new_position = self.check_crash(obs, agent, new_position) #TO DO исправить работо-сть
+            new_position = self.check_crash(obs, agent, new_position) #TO DO исправить работо-сть
             if obs['coords'][new_position[0]][new_position[1]] == 0:
                 self.step_reward += const.REWARD_EXPLORE
                 logging.info(f"{agent.name} исследовал новую клетку {new_position}")
@@ -109,10 +109,12 @@ class WateringEnv(gym.Env):
         :param obs: all agents positions at the moment
         :return: agent coordinates x, y
         """
-        crashes = {pos for pos, count in Counter(obs.values()).items() if count > 1}
+        positions = [tuple(pos) for pos in obs['pos']]
+        crashes = {pos for pos, count in Counter(positions).items() if count > 2}
         if crashes:
+            crashes_readable = {tuple(map(int, pos)) for pos in crashes}
             self.total_reward -= const.PENALTY_CRASH
-            logging.warning(f"Столкнование {crashes} агентов")
+            logging.warning(f"Столкнование {crashes_readable} агентов")
             new_position = agent.position
         return new_position
 
@@ -156,6 +158,7 @@ class WateringEnv(gym.Env):
         obstacle_icon = load_image(const.OBSTACLE, self.cell_size)  # Яма
         base_icon = load_image(const.STATION, self.cell_size)  # База
         bg = pygame.image.load(const.FIELD).convert()
+        #TO DO сделать отрисовку рандомных препятствий
 
         # self.screen.fill(const.GREEN)
         # Отрисовка сетки
