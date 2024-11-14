@@ -63,13 +63,13 @@ FONT_SIZE = 24
 TITLE_SIZE = 60
 
 # изображения
-AGENT = "images/unit.png"
+AGENT = "images/drone.png"
 FLOWER = "images/bug.png"
 SPRAYED = "images/healthy_plant.png"
-OBSTACLE = "images/pit.png"
+OBSTACLE = "images/well.png"
 OBSTACLES = "/images/obstacles/"
 STATION = "images/robdocst.png"
-FIELD = "images/field.jpeg"
+FIELD = "images/field.png"
 # WELL = "images/well.jpeg"
 # TOWER = "images/tower.png"
 # POLE = "images/pole.png"
