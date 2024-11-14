@@ -7,7 +7,7 @@ CLIP_RANGE = 0.2
 N_STEPS = 4096
 COEF = 0.01
 CLIP_RANGE_VF = 0.2
-N_EPOCHS = 2
+N_EPOCHS = 1
 BATCH_SIZE = 64
 
 # Параметры экрана и сетки
@@ -19,8 +19,8 @@ MARGIN_SIZE = 1
 # Параметры игры
 NUM_AGENTS = 5 #3
 # BASE_COORD = GRID_SIZE // 2
-COUNT_FLOWERS = 10 #10
-COUNT_OBSTACLES = 5 #5
+COUNT_FLOWERS = 50 #10
+COUNT_OBSTACLES = 15 #5
 MAX_STEPS_GAME = GRID_SIZE * 100
 VIEW_RANGE = 1  # Область зрения 3x3
 WATER_CONSUMPTION = 10  # Расход воды на полив
@@ -62,15 +62,15 @@ GRAY = (169, 169, 169)
 FONT_SIZE = 24
 TITLE_SIZE = 60
 
-# Подгружаем изображения
-AGENT = "images/unit.png" # Изображение робота
-FLOWER = "images/clumb2.png"  # Сухие цветы
-WATERED = "images/clumb1.png"  # Политые цветы
-OBSTACLE = "images/pit.png"  # Яма
-BASE = "images/robdocst.png"  # База
-
-# AGENT_ICON = load_image("images/unit.png", CELL_SIZE)  # Изображение робота
-# FLOWER_ICON = load_image("images/clumb2.png", CELL_SIZE)  # Сухие цветы
-# WATERED_FLOWER_ICON = load_image("images/clumb1.png", CELL_SIZE)  # Политые цветы
-# OBSTACLE_ICON = load_image("images/pit.png", CELL_SIZE)  # Яма
-# BASE_ICON = load_image("images/robdocst.png", CELL_SIZE)  # База
+# изображения
+AGENT = "images/unit.png"
+FLOWER = "images/bug.png"
+SPRAYED = "images/healthy_plant.png"
+OBSTACLE = "images/pit.png"
+OBSTACLES = "/images/obstacles/"
+STATION = "images/robdocst.png"
+FIELD = "images/field.jpeg"
+# WELL = "images/well.jpeg"
+# TOWER = "images/tower.png"
+# POLE = "images/pole.png"
+# TRACTOR = "images/tractor.jpeg"

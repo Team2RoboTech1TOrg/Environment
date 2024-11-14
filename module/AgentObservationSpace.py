@@ -3,14 +3,12 @@ import numpy as np
 from gymnasium import spaces
 
 
-class AgentObservationSpace(gym.Space):
+class AgentObservationSpace(gym.spaces.Dict):
     def __init__(self, size: int):
-        super().__init__()
-        self.size = size
 
         self.position_space = spaces.Box(
             low=0,
-            high=self.size,
+            high=size,
             shape=(2,),
             dtype=np.int32
         )
@@ -18,14 +16,15 @@ class AgentObservationSpace(gym.Space):
         self.points_space = spaces.Box(
             low=0,
             high=5,
-            shape=(self.size, self.size),
+            shape=(size, size),
             dtype=np.int32
         )
 
-        self.observation_space = spaces.Dict({
+        observation_space = {
             'pos': self.position_space,
             'coords': self.points_space
-        })
+        }
+        super().__init__(observation_space)
 
     def get_agent_positions(self):
         return self.position_space

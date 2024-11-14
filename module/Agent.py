@@ -59,6 +59,7 @@ class Agent:
                 self.energy -= const.ENERGY_CONSUMPTION_MOVE
             case _:
                 new_position = self.position
+
         value_new_position = obs['coords'][new_position[0]][new_position[1]]
         new_position, reward = self.update_visited_cells(new_position, value_new_position)
         self.position = new_position
@@ -67,26 +68,20 @@ class Agent:
         return self.position, reward, terminated, truncated, {}
 
     def get_observation(self):
-        coords = np.zeros((self.env.grid_size, self.env.grid_size)) #?
+        coords = np.zeros((self.env.grid_size, self.env.grid_size))
 
         for dx in range(-const.VIEW_RANGE, const.VIEW_RANGE + 1):
             for dy in range(-const.VIEW_RANGE, const.VIEW_RANGE + 1):
                 x, y = self.position[0] + dx, self.position[1] + dy
                 if 0 <= x < self.env.grid_size and 0 <= y < self.env.grid_size:
                     pos = (x, y)
-                    # self.env.viewed_cells.add(pos)
-                    coords[x][y] = 1 if coords[x][y] == 0 else coords[x][y]  # viewed
-                    # coords[x][y] = 2 if coords[x][y] == 1 else coords[x][y]  # explored
+                    coords[x][y] = 1 #if coords[x][y] == 0 else coords[x][y]  # viewed
                     if pos in self.env.obstacle_positions:
                         coords[x][y] = 3  # obstacle
-                        logging.debug(f"Вижу препятствие: {pos}")
-                        # if pos not in self.env.known_obstacles:
-                        #     self.env.known_obstacles.add(pos)
+                        # logging.debug(f"Вижу препятствие: {pos}")
                     elif pos in self.env.target_positions:
                         coords[x][y] = 4  # plant
-                        logging.debug(f"Вижу растение: {pos}")
-                        # if pos not in self.env.known_flowers:
-                        #     self.env.known_flowers.add(pos)
+                        # logging.debug(f"Вижу растение: {pos}")
 
         observation = {
             'pos': self.position,
@@ -120,7 +115,6 @@ class Agent:
                 agent_reward -= const.PENALTY_HOLE
                 new_position = self.position
                 logging.info("Упс, препятствие!")
-            # elif value == 0:
             elif value == 4:  # если в точке растение
                 idx = self.env.target_positions.index(new_position)
                 if self.env.watered_status[idx] == 0:  # только не опрысканное

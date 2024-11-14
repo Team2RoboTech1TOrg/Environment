@@ -22,7 +22,7 @@ def run():
         env = WateringEnv(int(num_agents), int(grid_size))
         message = "Начало обучения модели."
         env.render_message(message)
-        pygame.display.set_caption("Drone learning")
+        pygame.display.set_caption("OS SWARM OF DRONES")
         logging.info(message)
         model = PPO(
             'MultiInputPolicy',  # 'MlpPolicy', #MultiInputPolicy

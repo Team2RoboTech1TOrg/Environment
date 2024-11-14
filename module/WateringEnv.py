@@ -36,16 +36,7 @@ class WateringEnv(gym.Env):
             for i, agent in enumerate(self.agents)
         })
         self.action_space = convert_to_multidiscrete(action_spaces)
-        # TO DO разобраться почему не хочет работать через класс
-        # self.observation_space = SystemObservationSpace(self.agents, self.num_agents, self.grid_size)
-        self.observation_space = gym.spaces.Dict({
-            'coords': gym.spaces.Box(low=0, high=5, shape=(self.grid_size, self.grid_size), dtype=np.int32),
-            'pos': gym.spaces.Box(
-                low=np.stack([agent.observation_space.position_space.low for agent in self.agents], axis=0),
-                high=np.stack([agent.observation_space.position_space.high for agent in self.agents], axis=0),
-                shape=(self.num_agents, 2),
-                dtype=np.int32),
-        })
+        self.observation_space = SystemObservationSpace(self.agents, self.num_agents, self.grid_size)
 
     def reset(self, *, seed=None, options=None):
         self.reset_objects_positions()
@@ -161,11 +152,12 @@ class WateringEnv(gym.Env):
         """Render agent game"""
         agent_icon = load_image(const.AGENT, self.cell_size)  # Изображение робота
         flower_icon = load_image(const.FLOWER, self.cell_size)  # Сухие цветы
-        watered_flower_icon = load_image(const.WATERED, self.cell_size)  # Политые цветы
+        watered_flower_icon = load_image(const.SPRAYED, self.cell_size)  # Политые цветы
         obstacle_icon = load_image(const.OBSTACLE, self.cell_size)  # Яма
-        base_icon = load_image(const.BASE, self.cell_size)  # База
+        base_icon = load_image(const.STATION, self.cell_size)  # База
+        bg = pygame.image.load(const.FIELD).convert()
 
-        self.screen.fill(const.GREEN)
+        # self.screen.fill(const.GREEN)
         # Отрисовка сетки
         for x in range(self.grid_size):
             for y in range(self.grid_size):
@@ -180,6 +172,8 @@ class WateringEnv(gym.Env):
         margin_y = (self.grid_size * self.cell_size - inner_field_size) // 2
         inner_field_rect = pygame.Rect(margin_x, margin_y, inner_field_size, inner_field_size)
         pygame.draw.rect(self.screen, const.BLACK, inner_field_rect, 4)
+        #TO DO чтоб картинка шла по границе поля, за ней фон леса или дороги поставить
+        self.screen.blit(bg, (0, 0))
 
         # Отрисовка базы
         self.screen.blit(base_icon,
