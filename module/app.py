@@ -16,7 +16,7 @@ def run():
     print("Введите количество агентов:")
     num_agents = input() or const.NUM_AGENTS
     print(f"Введите размер поля больше, чем :"
-          f"{ceil((const.COUNT_FLOWERS + const.COUNT_OBSTACLES + int(num_agents)) ** 0.5) + const.COUNT_STATION}")
+          f"{ceil((const.COUNT_TARGETS + const.COUNT_OBSTACLES + int(num_agents)) ** 0.5) + const.COUNT_STATION}")
     grid_size = input() or const.GRID_SIZE
     try:
         env = WateringEnv(int(num_agents), int(grid_size))

@@ -42,7 +42,7 @@ class WateringEnv(gym.Env):
 
     def reset(self, *, seed=None, options=None):
         self.reset_objects_positions()
-        self.done_status = np.zeros(const.COUNT_FLOWERS)
+        self.done_status = np.zeros(const.COUNT_TARGETS)
         self.start_time = time.time()
         self.total_reward = 0
         self.step_reward = 0
@@ -243,10 +243,10 @@ class WateringEnv(gym.Env):
         self.screen.blit(font.render(f"Обнаружено препятствий: {len(self.known_obstacles)}/{const.COUNT_OBSTACLES}",
                                      True, const.BLACK), (text_x2, text_y1))
         self.screen.blit(
-            font.render(f"Обнаружено цветков: {len(self.known_targets)}/{const.COUNT_FLOWERS}",
+            font.render(f"Обнаружено цветков: {len(self.known_targets)}/{const.COUNT_TARGETS}",
                         True, const.BLACK), (text_x2, text_y2))
         self.screen.blit(font.render(f"Полито цветков: {int(np.sum(self.done_status))}/"
-                                     f"{const.COUNT_FLOWERS}", True, const.BLACK),
+                                     f"{const.COUNT_TARGETS}", True, const.BLACK),
                          (text_x2, text_y3))
 
         # Отрисовка агента
@@ -286,7 +286,7 @@ class WateringEnv(gym.Env):
         Get random positions of objects
         """
         unavailable_positions = {self.base_position}
-        self.target_positions = self._get_objects_positions(unavailable_positions, const.COUNT_FLOWERS)
+        self.target_positions = self._get_objects_positions(unavailable_positions, const.COUNT_TARGETS)
         unavailable_positions.update(self.target_positions)
         self.obstacle_positions = self._get_objects_positions(unavailable_positions, const.COUNT_OBSTACLES)
 

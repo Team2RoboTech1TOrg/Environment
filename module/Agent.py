@@ -22,7 +22,7 @@ class Agent:
     def reset(self):
         self.position = self.env.base_position
         self.position_history = deque(maxlen=10)
-        self.water_tank = const.WATER_CAPACITY
+        self.water_tank = const.TANK_CAPACITY
         self.energy = const.ENERGY_CAPACITY
         return {
             'pos': self.position,
@@ -41,7 +41,7 @@ class Agent:
 
         if self.water_tank <= 10:  # возврат на базу
             self.position = self.env.base_position
-            self.water_tank = const.WATER_CAPACITY
+            self.water_tank = const.TANK_CAPACITY
 
         # Действия агента в зависимости от выбранного действия
         match action:
@@ -118,8 +118,8 @@ class Agent:
             elif value == 4:  # если в точке растение
                 idx = self.env.target_positions.index(new_position)
                 if self.env.done_status[idx] == 0:
-                    self.energy -= const.ENERGY_CONSUMPTION_WATER
-                    self.water_tank -= const.WATER_CONSUMPTION
+                    self.energy -= const.ENERGY_CONSUMPTION_DONE
+                    self.water_tank -= const.ON_TARGET_CONSUMPTION
                     self.env.done_status[idx] = 1
                     logging.info("Опрыскал растение")
             else:
