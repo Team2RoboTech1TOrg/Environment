@@ -39,7 +39,7 @@ class Agent:
 
         obs = self.get_observation()
 
-        if self.water_tank <= 10:  # возврат на базу за водой
+        if self.water_tank <= 10:  # возврат на базу
             self.position = self.env.base_position
             self.water_tank = const.WATER_CAPACITY
 
@@ -80,7 +80,7 @@ class Agent:
                         coords[x][y] = 3  # obstacle
                         # logging.debug(f"Вижу препятствие: {pos}")
                     elif pos in self.env.target_positions:
-                        coords[x][y] = 4  # plant
+                        coords[x][y] = 4  # target
                         # logging.debug(f"Вижу растение: {pos}")
 
         observation = {
@@ -117,10 +117,10 @@ class Agent:
                 logging.info("Упс, препятствие!")
             elif value == 4:  # если в точке растение
                 idx = self.env.target_positions.index(new_position)
-                if self.env.watered_status[idx] == 0:  # только не опрысканное
+                if self.env.done_status[idx] == 0:
                     self.energy -= const.ENERGY_CONSUMPTION_WATER
                     self.water_tank -= const.WATER_CONSUMPTION
-                    self.env.watered_status[idx] = 1
+                    self.env.done_status[idx] = 1
                     logging.info("Опрыскал растение")
             else:
                 if len(self.position_history) > 3:

@@ -16,7 +16,6 @@ MARGIN_SIZE = 1
 
 # Параметры игры
 NUM_AGENTS = 5 #3
-# BASE_COORD = GRID_SIZE // 2
 COUNT_FLOWERS = 50 #10
 COUNT_OBSTACLES = 15 #5
 COUNT_STATION =1
@@ -63,8 +62,8 @@ TITLE_SIZE = 60
 
 # изображения
 AGENT = "images/drone.png"
-FLOWER = "images/bad_plant.png"
-SPRAYED = "images/healthy_plant.png"
+TARGET = "images/bad_plant.png"
+DONE_TARGET = "images/healthy_plant.png"
 OBSTACLES = "./images/obstacles"
 STATION = "images/robdocst.png"
 FIELD = "images/field.png"

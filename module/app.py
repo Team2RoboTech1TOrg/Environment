@@ -20,6 +20,7 @@ def run():
     grid_size = input() or const.GRID_SIZE
     try:
         env = WateringEnv(int(num_agents), int(grid_size))
+        # TO DO вывод к модели ее гипер параметров, цвет и размер шрифта
         message = "Начало обучения модели."
         env.render_message(message)
         pygame.display.set_caption("OS SWARM OF DRONES")

@@ -27,11 +27,11 @@ class WateringEnv(gym.Env):
         self.start_time = None
         self.total_reward = None
         self.step_reward = None
-        self.watered_status = None
+        self.done_status = None
         self.step_count = None
         self.current_map = None
         self.known_obstacles = None
-        self.known_flowers = None
+        self.known_targets = None
         self.viewed_cells = None
         action_spaces = gym.spaces.Dict({
             f'agent_{i}': agent.action_space
@@ -42,14 +42,14 @@ class WateringEnv(gym.Env):
 
     def reset(self, *, seed=None, options=None):
         self.reset_objects_positions()
-        self.watered_status = np.zeros(const.COUNT_FLOWERS)
+        self.done_status = np.zeros(const.COUNT_FLOWERS)
         self.start_time = time.time()
         self.total_reward = 0
         self.step_reward = 0
         self.step_count = 1
         self.current_map = np.zeros((self.grid_size, self.grid_size), dtype=np.int32)
         self.known_obstacles = set()
-        self.known_flowers = set()
+        self.known_targets = set()
         self.viewed_cells = set()
         self.obstacle_icons = load_obstacles(const.OBSTACLES, self.cell_size, const.COUNT_OBSTACLES)
         agent_obs = [agent.reset() for agent in self.agents]
@@ -90,7 +90,7 @@ class WateringEnv(gym.Env):
             self.step_reward += agent_reward
 
         # TO DO подумать, может как-то иначе реализовать без списков
-        self.known_flowers = np.argwhere(obs['coords'] == 4)
+        self.known_targets = np.argwhere(obs['coords'] == 4)
         self.known_obstacles = np.argwhere(obs['coords'] == 3)
         self.viewed_cells = np.argwhere(obs['coords'] == 1)
 
@@ -134,7 +134,7 @@ class WateringEnv(gym.Env):
             total_reward = 0
             truncated = True
 
-        elif np.all(self.watered_status == 1):
+        elif np.all(self.done_status == 1):
             terminated = True
             logging.info("Все растения опрысканы")
             for agent in self.agents:
@@ -156,8 +156,8 @@ class WateringEnv(gym.Env):
     def render(self):
         """Render agent game"""
         agent_icon = load_image(const.AGENT, self.cell_size)
-        flower_icon = load_image(const.FLOWER, self.cell_size)
-        watered_flower_icon = load_image(const.SPRAYED, self.cell_size)
+        flower_icon = load_image(const.TARGET, self.cell_size)
+        watered_flower_icon = load_image(const.DONE_TARGET, self.cell_size)
         base_icon = load_image(const.STATION, self.cell_size)
         bg_image = pygame.image.load(const.FIELD).convert()
         bg = pygame.image.load(const.FIELD_BACKGROUND).convert()
@@ -193,8 +193,8 @@ class WateringEnv(gym.Env):
 
         # Рисуем цветы и ямы
         for i, pos in enumerate(self.target_positions):
-            if pos in self.known_flowers:
-                if self.watered_status[i]:
+            if pos in self.known_targets:
+                if self.done_status[i]:
                     icon = watered_flower_icon
                 else:
                     icon = flower_icon
@@ -243,9 +243,9 @@ class WateringEnv(gym.Env):
         self.screen.blit(font.render(f"Обнаружено препятствий: {len(self.known_obstacles)}/{const.COUNT_OBSTACLES}",
                                      True, const.BLACK), (text_x2, text_y1))
         self.screen.blit(
-            font.render(f"Обнаружено цветков: {len(self.known_flowers)}/{const.COUNT_FLOWERS}",
+            font.render(f"Обнаружено цветков: {len(self.known_targets)}/{const.COUNT_FLOWERS}",
                         True, const.BLACK), (text_x2, text_y2))
-        self.screen.blit(font.render(f"Полито цветков: {int(np.sum(self.watered_status))}/"
+        self.screen.blit(font.render(f"Полито цветков: {int(np.sum(self.done_status))}/"
                                      f"{const.COUNT_FLOWERS}", True, const.BLACK),
                          (text_x2, text_y3))
 
@@ -263,6 +263,7 @@ class WateringEnv(gym.Env):
         :param render_text: str
         :return:
         """
+        # TO DO Вывод текста если несколько срок
         self.screen.fill(const.BLACK)
         text_surf = pygame.font.SysFont(None, const.TITLE_SIZE).render(render_text, True, const.GREEN)
         self.screen.blit(text_surf, text_surf.get_rect(center=(const.SCREEN_SIZE // 2, const.SCREEN_SIZE // 2)))
