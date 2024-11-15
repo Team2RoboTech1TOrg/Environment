@@ -61,7 +61,7 @@ class Agent:
                 new_position = self.position
 
         value_new_position = obs['coords'][new_position[0]][new_position[1]]
-        new_position, reward = self.update_visited_cells(new_position, value_new_position)
+        new_position, reward = self.get_agent_rewards(new_position, value_new_position)
         self.position = new_position
         logging.info(f"Действие: {action} - позиция: {self.position} - {self.name}")
 
@@ -92,7 +92,7 @@ class Agent:
     def __repr__(self):
         return f'<Agent {self.name}>'
 
-    def update_visited_cells(self, new_position: tuple[int, int], value: float) -> tuple[tuple[int, int], int]:
+    def get_agent_rewards(self, new_position: tuple[int, int], value: float) -> tuple[tuple[int, int], int]:
         """
         Update explored cells, update position of agent in dependency of cells.
         Give reward in dependency of cells.

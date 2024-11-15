@@ -24,7 +24,7 @@ def run():
         env.render_message(message)
         pygame.display.set_caption("OS SWARM OF DRONES")
         logging.info(message)
-        policy = 'MlpPolicy' if num_agents == 1 else 'MultiInputPolicy'
+        policy = 'MultiInputPolicy' #'MlpPolicy'
         model = PPO(
             policy,
             env,

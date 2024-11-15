@@ -44,7 +44,7 @@ class WateringEnv(gym.Env):
         self.start_time = time.time()
         self.total_reward = 0
         self.step_reward = 0
-        self.step_count = 0
+        self.step_count = 1
         self.current_map = np.zeros((self.grid_size, self.grid_size), dtype=np.int32)
         self.known_obstacles = set()
         self.known_flowers = set()
@@ -74,11 +74,11 @@ class WateringEnv(gym.Env):
         logging.info(f"Шаг: {self.step_count}")
         obs = self.get_observation()
         self.step_reward = 0
-        self.step_count += 1
 
         for i, agent in enumerate(self.agents):
             new_position, agent_reward, terminated, truncated, info = agent.take_action(actions[i])
-            new_position = self.check_crash(obs, agent, new_position)  # TO DO исправить работо-сть
+            if self.step_count != 1:
+                new_position = self.check_crash(obs, agent, new_position)  # TO DO исправить работо-сть
             if obs['coords'][new_position[0]][new_position[1]] == 0:
                 self.step_reward += const.REWARD_EXPLORE
                 logging.info(f"{agent.name} исследовал новую клетку {new_position}")
@@ -92,7 +92,7 @@ class WateringEnv(gym.Env):
         self.viewed_cells = np.argwhere(obs['coords'] == 1)
 
         reward, terminated, truncated, info = self._check_termination_conditions()
-
+        self.step_count += 1
         logging.info(
             f"Награда: {self.total_reward}, "
             f"Завершено: {terminated}, "
@@ -103,19 +103,19 @@ class WateringEnv(gym.Env):
 
     def check_crash(self, obs: dict, agent: Agent, new_position: tuple[int, int]):
         """
-        Check if agents positions is same.
+        Check if agents coordinates is same with another agents.
         :param new_position: position of agent (x, y)
         :param agent: agent in process
         :param obs: all agents positions at the moment
         :return: agent coordinates x, y
         """
-        positions = [tuple(pos) for pos in obs['pos']]
-        crashes = {pos for pos, count in Counter(positions).items() if count > 2}
-        if crashes:
-            crashes_readable = {tuple(map(int, pos)) for pos in crashes}
-            self.total_reward -= const.PENALTY_CRASH
-            logging.warning(f"Столкнование {crashes_readable} агентов")
-            new_position = agent.position
+        # TO DO проверить работает ли верно = вывод конечной позиции (agent.position)
+        for i, item in enumerate(obs['pos']):
+            if i != int(agent.name.split('_')[1]) and tuple(item) == new_position:
+                self.total_reward -= const.PENALTY_CRASH
+                logging.warning(f"Столкнование {new_position} агентов")
+                print((f"Столкнование {new_position} агентов"))
+                new_position = agent.position
         return new_position
 
     def _check_termination_conditions(self) -> tuple:
