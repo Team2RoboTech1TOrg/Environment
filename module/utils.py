@@ -1,3 +1,6 @@
+import os
+import random
+
 import pygame
 from gymnasium import spaces
 
@@ -13,7 +16,13 @@ def load_image(filename: str, cell_size: int):
         return pygame.transform.scale(image, (cell_size, cell_size))
     except pygame.error as e:
         logging.error(f"Не удалось загрузить изображение {filename}: {e}")
-        return pygame.Surface((cell_size, cell_size))  # Возвращаем пустую поверхность
+        return pygame.Surface((cell_size, cell_size))
+
+
+def load_obstacles(directory, cell_size, count):
+    all_files = [os.path.join(directory, f) for f in os.listdir(directory) if f.endswith(('.png', '.jpg', '.jpeg'))]
+    selected_files = random.sample(all_files, min(count, len(all_files)))
+    return [load_image(f, cell_size) for f in selected_files]
 
 
 def convert_to_multidiscrete(action_spaces: spaces.Dict) -> spaces.MultiDiscrete:

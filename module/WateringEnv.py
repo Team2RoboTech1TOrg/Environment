@@ -1,5 +1,6 @@
 import time
-from collections import deque, Counter
+import random
+
 import pygame
 import gymnasium as gym
 import numpy as np
@@ -8,12 +9,13 @@ from Agent import Agent
 from SystemObservationSpace import SystemObservationSpace
 from logger import logging
 import const
-from utils import convert_to_multidiscrete, load_image
+from utils import convert_to_multidiscrete, load_image, load_obstacles
 
 
 class WateringEnv(gym.Env):
     def __init__(self, num_agents: int, grid_size: int):
         super(WateringEnv, self).__init__()
+        self.obstacle_icons = None
         self.grid_size = grid_size
         self.cell_size = const.SCREEN_SIZE // self.grid_size
         self.margin = const.MARGIN_SIZE
@@ -49,6 +51,7 @@ class WateringEnv(gym.Env):
         self.known_obstacles = set()
         self.known_flowers = set()
         self.viewed_cells = set()
+        self.obstacle_icons = load_obstacles(const.OBSTACLES, self.cell_size, const.COUNT_OBSTACLES)
         agent_obs = [agent.reset() for agent in self.agents]
         obs = {'pos': np.stack([obs['pos'] for obs in agent_obs]),
                'coords': np.max(np.stack([obs['coords'] for obs in agent_obs]), axis=0)}
@@ -78,7 +81,7 @@ class WateringEnv(gym.Env):
         for i, agent in enumerate(self.agents):
             new_position, agent_reward, terminated, truncated, info = agent.take_action(actions[i])
             if self.step_count != 1:
-                new_position = self.check_crash(obs, agent, new_position)  # TO DO исправить работо-сть
+                new_position = self.check_crash(obs, agent, new_position)
             if obs['coords'][new_position[0]][new_position[1]] == 0:
                 self.step_reward += const.REWARD_EXPLORE
                 logging.info(f"{agent.name} исследовал новую клетку {new_position}")
@@ -114,7 +117,7 @@ class WateringEnv(gym.Env):
             if i != int(agent.name.split('_')[1]) and tuple(item) == new_position:
                 self.total_reward -= const.PENALTY_CRASH
                 logging.warning(f"Столкнование {new_position} агентов")
-                print((f"Столкнование {new_position} агентов"))
+                # print((f"Столкнование {new_position} агентов"))
                 new_position = agent.position
         return new_position
 
@@ -152,11 +155,10 @@ class WateringEnv(gym.Env):
 
     def render(self):
         """Render agent game"""
-        agent_icon = load_image(const.AGENT, self.cell_size)  # Изображение робота
-        flower_icon = load_image(const.FLOWER, self.cell_size)  # Сухие цветы
-        watered_flower_icon = load_image(const.SPRAYED, self.cell_size)  # Политые цветы
-        obstacle_icon = load_image(const.OBSTACLE, self.cell_size)  # Яма
-        base_icon = load_image(const.STATION, self.cell_size)  # База
+        agent_icon = load_image(const.AGENT, self.cell_size)
+        flower_icon = load_image(const.FLOWER, self.cell_size)
+        watered_flower_icon = load_image(const.SPRAYED, self.cell_size)
+        base_icon = load_image(const.STATION, self.cell_size)
         bg_image = pygame.image.load(const.FIELD).convert()
         bg = pygame.image.load(const.FIELD_BACKGROUND).convert()
 
@@ -197,9 +199,11 @@ class WateringEnv(gym.Env):
                 else:
                     icon = flower_icon
                 self.screen.blit(icon, (pos[1] * self.cell_size, pos[0] * self.cell_size))
-        for hole in self.obstacle_positions:
-            if hole in self.known_obstacles:
-                self.screen.blit(obstacle_icon, (hole[1] * self.cell_size, hole[0] * self.cell_size))
+
+        for i, obstacle in enumerate(self.obstacle_positions):
+            if obstacle in self.known_obstacles:
+                barrier_icon = self.obstacle_icons[i % len(self.obstacle_icons)]
+                self.screen.blit(barrier_icon, (obstacle[1] * self.cell_size, obstacle[0] * self.cell_size))
 
         # Накладываем исследование области
         for x in range(self.grid_size):
@@ -223,21 +227,27 @@ class WateringEnv(gym.Env):
         font_size = int(status_bar_height * 0.25)  # Размер шрифта для панели статуса
         font = pygame.font.SysFont('Arial', font_size)
 
+        text_x1 = screen_width * 0.05
+        text_x2 = screen_width * 0.5
+        text_y1 = const.SCREEN_SIZE + status_bar_height * 0.1
+        text_y2 = const.SCREEN_SIZE + status_bar_height // 4 + status_bar_height * 0.1
+        text_y3 = const.SCREEN_SIZE + status_bar_height // 4 * 2 + status_bar_height * 0.1
+
         self.screen.blit(font.render(f"Время: {elapsed_time:.2f} сек", True, const.BLACK),
-                         (10, const.SCREEN_SIZE + 10))
+                         (text_x1, text_y1))
         self.screen.blit(font.render(f"Очки: {int(self.total_reward)}", True, const.BLACK),
-                         (10, const.SCREEN_SIZE + 40))
+                         (text_x1, text_y2))
         self.screen.blit(font.render(f"Шаги: {self.step_count}", True, const.BLACK),
-                         (10, const.SCREEN_SIZE + 70))
+                         (text_x1, text_y3))
 
         self.screen.blit(font.render(f"Обнаружено препятствий: {len(self.known_obstacles)}/{const.COUNT_OBSTACLES}",
-                                     True, const.BLACK), (screen_width * 0.5, const.SCREEN_SIZE + 10))
+                                     True, const.BLACK), (text_x2, text_y1))
         self.screen.blit(
             font.render(f"Обнаружено цветков: {len(self.known_flowers)}/{const.COUNT_FLOWERS}",
-                        True, const.BLACK), (screen_width * 0.5, const.SCREEN_SIZE + 40))
+                        True, const.BLACK), (text_x2, text_y2))
         self.screen.blit(font.render(f"Полито цветков: {int(np.sum(self.watered_status))}/"
                                      f"{const.COUNT_FLOWERS}", True, const.BLACK),
-                         (screen_width * 0.5, const.SCREEN_SIZE + 70))
+                         (text_x2, text_y3))
 
         # Отрисовка агента
         for agent in self.agents:
