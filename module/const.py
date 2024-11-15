@@ -1,5 +1,3 @@
-from utils import load_image
-
 # Параметры модели
 LEARNING_RATE = 0.0001
 GAMMA = 0.99
@@ -12,8 +10,8 @@ BATCH_SIZE = 64
 
 # Параметры экрана и сетки
 SCREEN_SIZE = 900
+BAR_HEIGHT = SCREEN_SIZE * 0.13
 GRID_SIZE = 20 #13
-# CELL_SIZE = SCREEN_SIZE // GRID_SIZE
 MARGIN_SIZE = 1
 
 # Параметры игры
@@ -21,6 +19,7 @@ NUM_AGENTS = 5 #3
 # BASE_COORD = GRID_SIZE // 2
 COUNT_FLOWERS = 50 #10
 COUNT_OBSTACLES = 15 #5
+COUNT_STATION =1
 MAX_STEPS_GAME = GRID_SIZE * 100
 VIEW_RANGE = 1  # Область зрения 3x3
 WATER_CONSUMPTION = 10  # Расход воды на полив
@@ -64,12 +63,13 @@ TITLE_SIZE = 60
 
 # изображения
 AGENT = "images/drone.png"
-FLOWER = "images/bug.png"
+FLOWER = "images/bad_plant.png"
 SPRAYED = "images/healthy_plant.png"
 OBSTACLE = "images/tractor.png"
 OBSTACLES = "/images/obstacles/"
 STATION = "images/robdocst.png"
 FIELD = "images/field.png"
+FIELD_BACKGROUND = "images/forest.jpg"
 # WELL = "images/well.jpeg"
 # TOWER = "images/tower.png"
 # POLE = "images/pole.png"

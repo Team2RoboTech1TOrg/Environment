@@ -16,7 +16,7 @@ def run():
     print("Введите количество агентов:")
     num_agents = input() or const.NUM_AGENTS
     print(f"Введите размер поля больше, чем :"
-          f"{ceil((const.COUNT_FLOWERS + const.COUNT_OBSTACLES + 1) ** 0.5) + 1}")
+          f"{ceil((const.COUNT_FLOWERS + const.COUNT_OBSTACLES + int(num_agents)) ** 0.5) + const.COUNT_STATION}")
     grid_size = input() or const.GRID_SIZE
     try:
         env = WateringEnv(int(num_agents), int(grid_size))
@@ -24,8 +24,9 @@ def run():
         env.render_message(message)
         pygame.display.set_caption("OS SWARM OF DRONES")
         logging.info(message)
+        policy = 'MlpPolicy' if num_agents == 1 else 'MultiInputPolicy'
         model = PPO(
-            'MultiInputPolicy',  # 'MlpPolicy', #MultiInputPolicy
+            policy,
             env,
             learning_rate=LEARNING_RATE,
             gamma=GAMMA,

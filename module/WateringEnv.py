@@ -18,7 +18,7 @@ class WateringEnv(gym.Env):
         self.cell_size = const.SCREEN_SIZE // self.grid_size
         self.margin = const.MARGIN_SIZE
         self.inner_grid_size = self.grid_size - self.margin * 2
-        self.screen = pygame.display.set_mode((const.SCREEN_SIZE, const.SCREEN_SIZE + 120))
+        self.screen = pygame.display.set_mode((const.SCREEN_SIZE, const.SCREEN_SIZE + const.BAR_HEIGHT))
         self.base_position = (self.grid_size // 2, self.grid_size // 2)
         self.num_agents = num_agents
         self.agents = [Agent(self, name=f'agent_{i}') for i in range(self.num_agents)]
@@ -78,7 +78,7 @@ class WateringEnv(gym.Env):
 
         for i, agent in enumerate(self.agents):
             new_position, agent_reward, terminated, truncated, info = agent.take_action(actions[i])
-            new_position = self.check_crash(obs, agent, new_position) #TO DO исправить работо-сть
+            new_position = self.check_crash(obs, agent, new_position)  # TO DO исправить работо-сть
             if obs['coords'][new_position[0]][new_position[1]] == 0:
                 self.step_reward += const.REWARD_EXPLORE
                 logging.info(f"{agent.name} исследовал новую клетку {new_position}")
@@ -157,10 +157,14 @@ class WateringEnv(gym.Env):
         watered_flower_icon = load_image(const.SPRAYED, self.cell_size)  # Политые цветы
         obstacle_icon = load_image(const.OBSTACLE, self.cell_size)  # Яма
         base_icon = load_image(const.STATION, self.cell_size)  # База
-        bg = pygame.image.load(const.FIELD).convert()
-        #TO DO сделать отрисовку рандомных препятствий
+        bg_image = pygame.image.load(const.FIELD).convert()
+        bg = pygame.image.load(const.FIELD_BACKGROUND).convert()
 
-        # self.screen.fill(const.GREEN)
+        full_field_size = self.grid_size * self.cell_size
+        bg = pygame.transform.smoothscale(bg, (full_field_size, full_field_size))
+
+        # TO DO сделать отрисовку рандомных препятствий
+
         # Отрисовка сетки
         for x in range(self.grid_size):
             for y in range(self.grid_size):
@@ -175,8 +179,11 @@ class WateringEnv(gym.Env):
         margin_y = (self.grid_size * self.cell_size - inner_field_size) // 2
         inner_field_rect = pygame.Rect(margin_x, margin_y, inner_field_size, inner_field_size)
         pygame.draw.rect(self.screen, const.BLACK, inner_field_rect, 4)
-        #TO DO чтоб картинка шла по границе поля, за ней фон леса или дороги поставить
+
+        # Фон общий и фон поля
         self.screen.blit(bg, (0, 0))
+        bg_image = pygame.transform.smoothscale(bg_image, (inner_field_size, inner_field_size))
+        self.screen.blit(bg_image, (margin_x, margin_y))
 
         # Отрисовка базы
         self.screen.blit(base_icon,
@@ -184,14 +191,14 @@ class WateringEnv(gym.Env):
 
         # Рисуем цветы и ямы
         for i, pos in enumerate(self.target_positions):
-            if pos in self.known_flowers:  # добавить что были известные
+            if pos in self.known_flowers:
                 if self.watered_status[i]:
                     icon = watered_flower_icon
                 else:
                     icon = flower_icon
                 self.screen.blit(icon, (pos[1] * self.cell_size, pos[0] * self.cell_size))
         for hole in self.obstacle_positions:
-            if hole in self.known_obstacles:  # добавить что были известные
+            if hole in self.known_obstacles:
                 self.screen.blit(obstacle_icon, (hole[1] * self.cell_size, hole[0] * self.cell_size))
 
         # Накладываем исследование области
@@ -203,27 +210,34 @@ class WateringEnv(gym.Env):
                     dark_overlay.fill((0, 0, 0, 200))  # Непрозрачный
                     self.screen.blit(dark_overlay, (y * self.cell_size, x * self.cell_size))
 
+        # Отрисовка панели статуса
+        screen_width, screen_height = self.screen.get_size()
+        status_bar_height = const.BAR_HEIGHT
+        status_bar_rect = pygame.Rect(0, const.SCREEN_SIZE, const.SCREEN_SIZE,
+                                      status_bar_height)
+        pygame.draw.rect(self.screen, const.WHITE, status_bar_rect)
+
         # Отрисовка времени, очков, заряда и уровня воды
         elapsed_time = time.time() - self.start_time  # Рассчитываем время
-        font = pygame.font.SysFont(None, const.FONT_SIZE)
-        status_bar_height = 120  # Высота панели статуса
-        status_bar_rect = pygame.Rect(0, const.SCREEN_SIZE, const.SCREEN_SIZE,
-                                      status_bar_height)  # Прямоугольник для панели статуса
-        pygame.draw.rect(self.screen, const.WHITE, status_bar_rect)
+
+        font_size = int(status_bar_height * 0.25)  # Размер шрифта для панели статуса
+        font = pygame.font.SysFont('Arial', font_size)
 
         self.screen.blit(font.render(f"Время: {elapsed_time:.2f} сек", True, const.BLACK),
                          (10, const.SCREEN_SIZE + 10))
         self.screen.blit(font.render(f"Очки: {int(self.total_reward)}", True, const.BLACK),
                          (10, const.SCREEN_SIZE + 40))
         self.screen.blit(font.render(f"Шаги: {self.step_count}", True, const.BLACK),
-                         (400, const.SCREEN_SIZE + 10))
-        self.screen.blit(font.render(f"Обнаружено ям: {len(self.known_obstacles)}/{const.COUNT_OBSTACLES}",
-                                     True, const.BLACK), (400, const.SCREEN_SIZE + 40))
+                         (10, const.SCREEN_SIZE + 70))
+
+        self.screen.blit(font.render(f"Обнаружено препятствий: {len(self.known_obstacles)}/{const.COUNT_OBSTACLES}",
+                                     True, const.BLACK), (screen_width * 0.5, const.SCREEN_SIZE + 10))
         self.screen.blit(
             font.render(f"Обнаружено цветков: {len(self.known_flowers)}/{const.COUNT_FLOWERS}",
-                        True, const.BLACK), (10, const.SCREEN_SIZE + 70))
+                        True, const.BLACK), (screen_width * 0.5, const.SCREEN_SIZE + 40))
         self.screen.blit(font.render(f"Полито цветков: {int(np.sum(self.watered_status))}/"
-                                     f"{const.COUNT_FLOWERS}", True, const.BLACK), (300, const.SCREEN_SIZE + 70))
+                                     f"{const.COUNT_FLOWERS}", True, const.BLACK),
+                         (screen_width * 0.5, const.SCREEN_SIZE + 70))
 
         # Отрисовка агента
         for agent in self.agents:
