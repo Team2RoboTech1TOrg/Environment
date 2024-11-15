@@ -1,6 +1,4 @@
 import time
-import random
-
 import pygame
 import gymnasium as gym
 import numpy as np
@@ -12,14 +10,14 @@ import const
 from utils import convert_to_multidiscrete, load_image, load_obstacles
 
 
-class WateringEnv(gym.Env):
-    def __init__(self, num_agents: int, grid_size: int):
-        super(WateringEnv, self).__init__()
-        self.obstacle_icons = None
+class FarmingEnv(gym.Env):
+    def __init__(self, scenario, num_agents: int, grid_size: int):
+        super(FarmingEnv, self).__init__()
         self.grid_size = grid_size
         self.cell_size = const.SCREEN_SIZE // self.grid_size
         self.margin = const.MARGIN_SIZE
         self.inner_grid_size = self.grid_size - self.margin * 2
+        self.scenario = scenario
         self.screen = pygame.display.set_mode((const.SCREEN_SIZE, const.SCREEN_SIZE + const.BAR_HEIGHT))
         self.base_position = (self.grid_size // 2, self.grid_size // 2)
         self.num_agents = num_agents
@@ -30,8 +28,9 @@ class WateringEnv(gym.Env):
         self.done_status = None
         self.step_count = None
         self.current_map = None
-        self.known_obstacles = None
-        self.known_targets = None
+        self.obstacle_icons = None
+        # self.known_obstacles = None
+        # self.known_targets = None
         self.viewed_cells = None
         action_spaces = gym.spaces.Dict({
             f'agent_{i}': agent.action_space
@@ -48,8 +47,8 @@ class WateringEnv(gym.Env):
         self.step_reward = 0
         self.step_count = 1
         self.current_map = np.zeros((self.grid_size, self.grid_size), dtype=np.int32)
-        self.known_obstacles = set()
-        self.known_targets = set()
+        # self.known_obstacles = set()
+        # self.known_targets = set()
         self.viewed_cells = set()
         self.obstacle_icons = load_obstacles(const.OBSTACLES, self.cell_size, const.COUNT_OBSTACLES)
         agent_obs = [agent.reset() for agent in self.agents]
@@ -76,33 +75,33 @@ class WateringEnv(gym.Env):
     def step(self, actions):
         logging.info(f"Шаг: {self.step_count}")
         obs = self.get_observation()
-        self.step_reward = 0
-
-        for i, agent in enumerate(self.agents):
-            new_position, agent_reward, terminated, truncated, info = agent.take_action(actions[i])
-            if self.step_count != 1:
-                new_position = self.check_crash(obs, agent, new_position)
-            if obs['coords'][new_position[0]][new_position[1]] == 0:
-                self.step_reward += const.REWARD_EXPLORE
-                logging.info(f"{agent.name} исследовал новую клетку {new_position}")
-                obs['coords'][new_position[0]][new_position[1]] = 1
-            obs['pos'][i] = new_position
-            self.step_reward += agent_reward
-
-        # TO DO подумать, может как-то иначе реализовать без списков
-        self.known_targets = np.argwhere(obs['coords'] == 4)
-        self.known_obstacles = np.argwhere(obs['coords'] == 3)
-        self.viewed_cells = np.argwhere(obs['coords'] == 1)
-
-        reward, terminated, truncated, info = self._check_termination_conditions()
-        self.step_count += 1
-        logging.info(
-            f"Награда: {self.total_reward}, "
-            f"Завершено: {terminated}, "
-            f"Прервано: {truncated}"
-        )
-
-        return obs, reward, terminated, truncated, {}
+        # self.step_reward = 0
+        #
+        # for i, agent in enumerate(self.agents):
+        #     new_position, agent_reward, terminated, truncated, info = agent.take_action(actions[i])
+        #     if self.step_count != 1:
+        #         new_position = self.check_crash(obs, agent, new_position)
+        #     if obs['coords'][new_position[0]][new_position[1]] == 0:
+        #         self.step_reward += const.REWARD_EXPLORE
+        #         logging.info(f"{agent.name} исследовал новую клетку {new_position}")
+        #         obs['coords'][new_position[0]][new_position[1]] = 1
+        #     obs['pos'][i] = new_position
+        #     self.step_reward += agent_reward
+        #
+        # # TO DO подумать, может как-то иначе реализовать без списков
+        # self.known_targets = np.argwhere(obs['coords'] == 4)
+        # self.known_obstacles = np.argwhere(obs['coords'] == 3)
+        # self.viewed_cells = np.argwhere(obs['coords'] == 1)
+        #
+        # reward, terminated, truncated, info = self._check_termination_conditions()
+        # self.step_count += 1
+        # logging.info(
+        #     f"Награда: {self.total_reward}, "
+        #     f"Завершено: {terminated}, "
+        #     f"Прервано: {truncated}"
+        # )
+        #
+        # return obs, reward, terminated, truncated, {}
 
     def check_crash(self, obs: dict, agent: Agent, new_position: tuple[int, int]):
         """
@@ -294,8 +293,8 @@ class WateringEnv(gym.Env):
         """
         Get fixed positions of objects
         """
-        self.target_positions = const.FIXED_FLOWER_POSITIONS.copy()
-        self.obstacle_positions = const.FIXED_HOLE_POSITIONS.copy()
+        self.target_positions = const.FIXED_TARGET_POSITIONS.copy()
+        self.obstacle_positions = const.FIXED_OBSTACLE_POSITIONS.copy()
 
     def _get_available_positions(self, unavailable: set) -> list:
         """

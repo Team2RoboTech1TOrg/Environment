@@ -5,7 +5,7 @@ CLIP_RANGE = 0.2
 N_STEPS = 4096
 COEF = 0.01
 CLIP_RANGE_VF = 0.2
-N_EPOCHS = 1000
+N_EPOCHS = 1
 BATCH_SIZE = 64
 
 # Параметры экрана и сетки
@@ -18,7 +18,7 @@ MARGIN_SIZE = 1
 NUM_AGENTS = 5 #3
 COUNT_TARGETS = 50 #10
 COUNT_OBSTACLES = 15 #5
-COUNT_STATION =1
+COUNT_STATION = 1
 MAX_STEPS_GAME = GRID_SIZE * 100
 VIEW_RANGE = 1  # Область зрения 3x3
 ON_TARGET_CONSUMPTION = 10  # Расход
@@ -31,22 +31,24 @@ MIN_GAME_STEPS = GRID_SIZE * GRID_SIZE * 2
 
 # Награды
 REWARD_EXPLORE = 50  # Вознаграждение за исследование новых клеток
+REWARD_DONE = 30
 REWARD_COMPLETION = (REWARD_EXPLORE * COUNT_TARGETS) * 10
 PENALTY_LOOP = 10
 PENALTY_OUT_FIELD = 20
-PENALTY_HOLE = 10
+PENALTY_OBSTACLE = 10
 PENALTY_CRASH = 30
+
 
 # Позиции цветов и ям
 # PLACEMENT_MODE = 'fixed'
 PLACEMENT_MODE = 'random'
 
-FIXED_FLOWER_POSITIONS = [
+FIXED_TARGET_POSITIONS = [
     (2, 2), (2, 8), (4, 3), (4, 7), (6, 2),
     (6, 8), (8, 4), (8, 6), (3, 5), (7, 5)
 ]
 
-FIXED_HOLE_POSITIONS = [
+FIXED_OBSTACLE_POSITIONS = [
     (1, 1), (1, 9), (3, 3), (7, 7), (9, 5)
 ]
 
@@ -57,8 +59,7 @@ GREEN = (132, 184, 56)
 BLUE = (0, 0, 255)
 RED = (255, 0, 0)
 GRAY = (169, 169, 169)
-FONT_SIZE = 24
-TITLE_SIZE = 60
+TITLE_SIZE = SCREEN_SIZE * 0.07
 
 # изображения
 AGENT = "images/drone.png"
@@ -68,7 +69,3 @@ OBSTACLES = "./images/obstacles"
 STATION = "images/robdocst.png"
 FIELD = "images/field.png"
 FIELD_BACKGROUND = "images/forest.jpg"
-# WELL = "images/well.jpeg"
-# TOWER = "images/tower.png"
-# POLE = "images/pole.png"
-# TRACTOR = "images/tractor.jpeg"

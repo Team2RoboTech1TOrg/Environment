@@ -13,7 +13,7 @@ class Agent:
         self.name = name or f'agent_{id(self)}'
         self.env = env
         self.position = None
-        self.water_tank = None
+        self.tank = None
         self.energy = None
         self.position_history = None
         self.action_space = spaces.Discrete(const.COUNT_ACTIONS)
@@ -22,7 +22,7 @@ class Agent:
     def reset(self):
         self.position = self.env.base_position
         self.position_history = deque(maxlen=10)
-        self.water_tank = const.TANK_CAPACITY
+        self.tank = const.TANK_CAPACITY
         self.energy = const.ENERGY_CAPACITY
         return {
             'pos': self.position,
@@ -39,9 +39,9 @@ class Agent:
 
         obs = self.get_observation()
 
-        if self.water_tank <= 10:  # возврат на базу
+        if self.tank <= 10:  # возврат на базу
             self.position = self.env.base_position
-            self.water_tank = const.TANK_CAPACITY
+            self.tank = const.TANK_CAPACITY
 
         # Действия агента в зависимости от выбранного действия
         match action:
@@ -75,13 +75,13 @@ class Agent:
                 x, y = self.position[0] + dx, self.position[1] + dy
                 if 0 <= x < self.env.grid_size and 0 <= y < self.env.grid_size:
                     pos = (x, y)
-                    coords[x][y] = 1 #if coords[x][y] == 0 else coords[x][y]  # viewed
+                    coords[x][y] = 1 # viewed
                     if pos in self.env.obstacle_positions:
                         coords[x][y] = 3  # obstacle
                         # logging.debug(f"Вижу препятствие: {pos}")
                     elif pos in self.env.target_positions:
                         coords[x][y] = 4  # target
-                        # logging.debug(f"Вижу растение: {pos}")
+                        # logging.debug(f"Вижу цель: {pos}")
 
         observation = {
             'pos': self.position,
@@ -112,14 +112,15 @@ class Agent:
             new_position = self.position
         else:
             if value == 3:  # если в точке препятствие
-                agent_reward -= const.PENALTY_HOLE
+                agent_reward -= const.PENALTY_OBSTACLE
                 new_position = self.position
                 logging.info("Упс, препятствие!")
             elif value == 4:  # если в точке растение
+                # как быть с наградой?
                 idx = self.env.target_positions.index(new_position)
                 if self.env.done_status[idx] == 0:
                     self.energy -= const.ENERGY_CONSUMPTION_DONE
-                    self.water_tank -= const.ON_TARGET_CONSUMPTION
+                    self.tank -= const.ON_TARGET_CONSUMPTION
                     self.env.done_status[idx] = 1
                     logging.info("Опрыскал растение")
             else:

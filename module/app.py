@@ -7,7 +7,8 @@ from stable_baselines3 import PPO
 
 import const
 from const import LEARNING_RATE, GAMMA, CLIP_RANGE, N_STEPS, COEF, MAX_STEPS_GAME, N_EPOCHS, BATCH_SIZE, CLIP_RANGE_VF
-from WateringEnv import WateringEnv
+from FarmingEnv import FarmingEnv
+from scenarios.SprayingScenario import SprayingScenario
 from config import log_dir
 from logger import logging
 
@@ -19,7 +20,8 @@ def run():
           f"{ceil((const.COUNT_TARGETS + const.COUNT_OBSTACLES + int(num_agents)) ** 0.5) + const.COUNT_STATION}")
     grid_size = input() or const.GRID_SIZE
     try:
-        env = WateringEnv(int(num_agents), int(grid_size))
+        scenario = SprayingScenario()
+        env = FarmingEnv(scenario, int(num_agents), int(grid_size))
         # TO DO вывод к модели ее гипер параметров, цвет и размер шрифта
         message = "Начало обучения модели."
         env.render_message(message)
@@ -46,13 +48,13 @@ def run():
         env.render_message(message)
         model.save("spraying_scenario_model")
         time.sleep(2)
-        # model = PPO.load("ppo_watering_model", print_system_info=True)
+        # model = PPO.load("spraying_scenario_model", print_system_info=True)
         clock = pygame.time.Clock()
         pygame.display.set_caption("Pesticide Spraying Scenario")
 
         obs, info = env.reset()
         step_count = 0
-        for _ in range(MAX_STEPS_GAME * 5):  # костыль
+        while True:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     pygame.quit()
