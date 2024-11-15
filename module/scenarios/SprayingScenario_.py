@@ -8,14 +8,29 @@ from FarmingScenario import FarmingScenario
 
 
 class SprayingScenario(FarmingScenario, ABC):
-    def __init__(self):
+    def __init__(self, num_agents: int):
         super().__init__()
-        self.step_reward = None
+        self.num_agents = num_agents
         self.known_obstacles = None
         self.known_targets = None
 
-    def render(self, mode):
+    def render(self):
         pass
+
+    def get_observation(self):
+        """
+        Get observation at the moment: array of agents positions and
+        current map with actual status of cells
+        """
+        agent_obs = [agent.get_observation() for agent in self.agents]
+        # TO DO вопрос со статусами
+        max_agent_coords = np.max(np.stack([obs['coords'] for obs in agent_obs]), axis=0)
+        max_coords_status = np.maximum(max_agent_coords, self.current_map)
+        self.current_map = max_coords_status
+
+        obs = {'pos': np.stack([obs['pos'] for obs in agent_obs]),
+               'coords': max_coords_status}
+        return obs
 
     def step(self, actions):
         self.step_reward = 0
@@ -49,7 +64,6 @@ class SprayingScenario(FarmingScenario, ABC):
         self.known_obstacles = set()
         self.known_targets = set()
         self.reset_objects_positions()
-        self.step_reward = 0
 
     def _randomize_positions(self):
         """

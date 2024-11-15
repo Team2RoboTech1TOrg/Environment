@@ -1,17 +1,25 @@
 from abc import ABC
 
 import numpy as np
+import pygame
 
 import const
 from scenarios.BaseScenario import BaseScenario
 
 
 class FarmingScenario(BaseScenario, ABC):
-    def __init__(self):
+    def __init__(self,  num_agents: int,  grid_size: int):
+        self.grid_size = grid_size
+        self.cell_size = const.SCREEN_SIZE // self.grid_size
+        self.margin = const.MARGIN_SIZE
+        self.inner_grid_size = self.grid_size - self.margin * 2
+        self.screen = pygame.display.set_mode((const.SCREEN_SIZE, const.SCREEN_SIZE + const.BAR_HEIGHT))
+        self.step_reward = None
+        self.num_agents = num_agents
         self.target_positions = None
         self.obstacle_positions = None
 
-    def render(self, mode):
+    def render(self):
         pass
 
     def step(self, action):
@@ -19,6 +27,7 @@ class FarmingScenario(BaseScenario, ABC):
 
     def reset(self):
         self.reset_objects_positions()
+        self.step_reward = 0
 
     def reset_objects_positions(self):
         """
@@ -51,8 +60,8 @@ class FarmingScenario(BaseScenario, ABC):
         :return: available positions
         """
         all_positions = [
-            (i, j) for i in range(self.env.margin, self.env.inner_grid_size + 1)
-            for j in range(self.env.margin, self.env.inner_grid_size + 1)
+            (i, j) for i in range(self.margin, self.inner_grid_size + 1)
+            for j in range(self.margin, self.inner_grid_size + 1)
         ]
         return [pos for pos in all_positions if pos not in unavailable]
 

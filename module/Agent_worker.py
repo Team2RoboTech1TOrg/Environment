@@ -9,9 +9,9 @@ from AgentObservationSpace import AgentObservationSpace
 
 
 class Agent:
-    def __init__(self, scenario, name=None):
+    def __init__(self, env, name=None):
         self.name = name or f'agent_{id(self)}'
-        self.env = scenario # CHANGE
+        self.env = env
         self.position = None
         self.tank = None
         self.energy = None

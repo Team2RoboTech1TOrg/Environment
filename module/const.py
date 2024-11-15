@@ -59,7 +59,7 @@ GREEN = (132, 184, 56)
 BLUE = (0, 0, 255)
 RED = (255, 0, 0)
 GRAY = (169, 169, 169)
-TITLE_SIZE = SCREEN_SIZE * 0.07
+TITLE_SIZE = int(SCREEN_SIZE * 0.07)
 
 # изображения
 AGENT = "images/drone.png"

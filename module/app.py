@@ -8,7 +8,8 @@ from stable_baselines3 import PPO
 import const
 from const import LEARNING_RATE, GAMMA, CLIP_RANGE, N_STEPS, COEF, MAX_STEPS_GAME, N_EPOCHS, BATCH_SIZE, CLIP_RANGE_VF
 from FarmingEnv import FarmingEnv
-from scenarios.SprayingScenario import SprayingScenario
+from scenarios.AnyScenario import SprayingScenario
+# from scenarios.SprayingScenario import SprayingScenario
 from config import log_dir
 from logger import logging
 
@@ -20,8 +21,8 @@ def run():
           f"{ceil((const.COUNT_TARGETS + const.COUNT_OBSTACLES + int(num_agents)) ** 0.5) + const.COUNT_STATION}")
     grid_size = input() or const.GRID_SIZE
     try:
-        scenario = SprayingScenario()
-        env = FarmingEnv(scenario, int(num_agents), int(grid_size))
+        scenario = SprayingScenario(int(num_agents), int(grid_size))
+        env = FarmingEnv(scenario)
         # TO DO вывод к модели ее гипер параметров, цвет и размер шрифта
         message = "Начало обучения модели."
         env.render_message(message)

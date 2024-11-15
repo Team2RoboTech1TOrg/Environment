@@ -11,6 +11,6 @@ class BaseScenario(ABC):
         pass
 
     @abstractmethod
-    def render(self, mode):
+    def render(self):
         pass
 
