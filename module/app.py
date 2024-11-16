@@ -8,8 +8,7 @@ from stable_baselines3 import PPO
 import const
 from const import LEARNING_RATE, GAMMA, CLIP_RANGE, N_STEPS, COEF, MAX_STEPS_GAME, N_EPOCHS, BATCH_SIZE, CLIP_RANGE_VF
 from FarmingEnv import FarmingEnv
-from scenarios.AnyScenario import SprayingScenario
-# from scenarios.SprayingScenario import SprayingScenario
+from scenarios.SprayingScenario import SprayingScenario
 from config import log_dir
 from logger import logging
 
@@ -20,11 +19,34 @@ def run():
     print(f"Введите размер поля больше, чем :"
           f"{ceil((const.COUNT_TARGETS + const.COUNT_OBSTACLES + int(num_agents)) ** 0.5) + const.COUNT_STATION}")
     grid_size = input() or const.GRID_SIZE
+
+    spraying_scenario = SprayingScenario(int(num_agents), int(grid_size))
+    scenarios = {
+        'spraying': spraying_scenario
+    }
+    print(f"Выберите сценарий: 1 - 'spraying'")
+    # TO DO чтоб сначала выбор сценария, потом загрузка окна
+    selected = int(input()) or 'spraying'
+    match selected:
+        case 1:
+            selected_scenario = 'spraying'
+        case _:
+            selected_scenario = 'spraying'
     try:
-        scenario = SprayingScenario(int(num_agents), int(grid_size))
-        env = FarmingEnv(scenario)
-        # TO DO вывод к модели ее гипер параметров, цвет и размер шрифта
-        message = "Начало обучения модели."
+        env = FarmingEnv(scenarios[selected_scenario])
+        hyperparameters_message = (
+            f"Гиперпараметры модели:\n\n"
+            f"learning_rate: {const.LEARNING_RATE}\n"
+            f"gamma: {const.LEARNING_RATE}\n"
+            f"clip_range: {const.CLIP_RANGE}\n"
+            f"n_steps: {const.N_STEPS}\n"
+            f"coef: {const.COEF}\n"
+            f"clip_range_vf: {const.CLIP_RANGE_VF}\n"
+            f"n_epochs: {const.N_EPOCHS}\n"
+            f"batch_size: {const.BATCH_SIZE}\n"
+        )
+
+        message = "Начало обучения модели\n\n\n" + hyperparameters_message
         env.render_message(message)
         pygame.display.set_caption("OS SWARM OF DRONES")
         logging.info(message)

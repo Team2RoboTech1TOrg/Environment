@@ -17,17 +17,25 @@ class FarmingEnv(gym.Env):
         self.start_time = None
         self.total_reward = None
         self.step_reward = None
+        self.agents = self.scenario.agents
+        self.num_agents = self.scenario.num_agents
+        self.grid_size = self.scenario.grid_size
         # self.step_count = None
-        self.action_space = self.scenario.action_space
-        self.observation_space = self.scenario.observation_space
+        action_spaces = gym.spaces.Dict({
+            f'agent_{i}': agent.action_space
+            for i, agent in enumerate(self.scenario.agents)
+        })
+        self.action_space = convert_to_multidiscrete(action_spaces)
+        self.observation_space = SystemObservationSpace(self.agents, self.num_agents,
+                                                        self.grid_size)
 
     def reset(self, *, seed=None, options=None):
         self.start_time = time.time()
-        self.total_reward = 0
-        self.step_reward = 0
-        obs = self.scenario.reset()
+        # self.total_reward = 0
+        # self.step_reward = 0
+        obs, info = self.scenario.reset()
         logging.info("Перезагрузка среды")
-        return obs, {}
+        return obs, info
 
     def get_observation(self):
         """
@@ -39,7 +47,7 @@ class FarmingEnv(gym.Env):
 
     def step(self, actions):
         # logging.info(f"Шаг: {self.step_count}")
-        obs, reward, terminated, truncated, info = self.scenario.step()
+        obs, reward, terminated, truncated, info = self.scenario.step(actions)
         return obs, reward, terminated, truncated, info
 
     def render(self):
@@ -53,4 +61,3 @@ class FarmingEnv(gym.Env):
         :return:
         """
         return self.scenario.render_message(render_text)
-

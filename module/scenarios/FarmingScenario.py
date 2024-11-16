@@ -4,11 +4,13 @@ import numpy as np
 import pygame
 
 import const
+from Agent import Agent
 from scenarios.BaseScenario import BaseScenario
+from utils import load_image
 
 
 class FarmingScenario(BaseScenario, ABC):
-    def __init__(self,  num_agents: int,  grid_size: int):
+    def __init__(self, num_agents: int, grid_size: int):
         self.grid_size = grid_size
         self.cell_size = const.SCREEN_SIZE // self.grid_size
         self.margin = const.MARGIN_SIZE
@@ -18,9 +20,10 @@ class FarmingScenario(BaseScenario, ABC):
         self.num_agents = num_agents
         self.target_positions = None
         self.obstacle_positions = None
+        self.base_position = (self.grid_size // 2, self.grid_size // 2)
+        self.agents = [Agent(self, name=f'agent_{i}') for i in range(self.num_agents)]
 
-    def render(self):
-        pass
+
 
     def step(self, action):
         pass
@@ -28,6 +31,33 @@ class FarmingScenario(BaseScenario, ABC):
     def reset(self):
         self.reset_objects_positions()
         self.step_reward = 0
+
+    def render(self):
+        base_icon = load_image(const.STATION, self.cell_size)
+        # Отрисовка базы
+        self.screen.blit(base_icon,
+                         (self.base_position[1] * self.cell_size, self.base_position[0] * self.cell_size))
+
+    def render_message(self, render_text: str):
+        """
+        Display message in the center of screen
+        :param render_text: str
+        :return:
+        """
+        self.screen.fill(const.BLACK)
+
+        font = pygame.font.Font(pygame.font.get_default_font(), int(const.SCREEN_SIZE * 0.06))
+        lines = render_text.split('\n')
+        screen_width, screen_height = self.screen.get_size()
+        y_offset = (screen_height - len(lines) * font.get_height()) // 2
+
+        for line in lines:
+            text_surface = font.render(line, True, const.GREEN)
+            text_width, text_height = font.size(line)
+            x_offset = (screen_width - text_width) // 2
+            self.screen.blit(text_surface, (x_offset, y_offset))
+            y_offset += text_height + 5
+        pygame.display.flip()
 
     def reset_objects_positions(self):
         """

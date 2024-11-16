@@ -1,4 +1,6 @@
 import time
+from abc import ABC
+
 import pygame
 import gymnasium as gym
 import numpy as np
@@ -7,21 +9,15 @@ from Agent import Agent
 from SystemObservationSpace import SystemObservationSpace
 from logger import logging
 import const
+from scenarios.FarmingScenario import FarmingScenario
 from utils import convert_to_multidiscrete, load_image, load_obstacles
 
 
-class FarmingEnv(gym.Env):
+class SprayingScenario(FarmingScenario, ABC):
     def __init__(self, num_agents: int, grid_size: int):
-        super(FarmingEnv, self).__init__()
-        self.obstacle_icons = None
+        super().__init__(num_agents, grid_size)
         self.grid_size = grid_size
-        self.cell_size = const.SCREEN_SIZE // self.grid_size
-        self.margin = const.MARGIN_SIZE
-        self.inner_grid_size = self.grid_size - self.margin * 2
-        self.screen = pygame.display.set_mode((const.SCREEN_SIZE, const.SCREEN_SIZE + const.BAR_HEIGHT))
-        self.base_position = (self.grid_size // 2, self.grid_size // 2)
-        self.num_agents = num_agents
-        self.agents = [Agent(self, name=f'agent_{i}') for i in range(self.num_agents)]
+        self.obstacle_icons = None
         self.start_time = None
         self.total_reward = None
         self.step_reward = None
@@ -31,12 +27,6 @@ class FarmingEnv(gym.Env):
         self.known_obstacles = None
         self.known_targets = None
         self.viewed_cells = None
-        action_spaces = gym.spaces.Dict({
-            f'agent_{i}': agent.action_space
-            for i, agent in enumerate(self.agents)
-        })
-        self.action_space = convert_to_multidiscrete(action_spaces)
-        self.observation_space = SystemObservationSpace(self.agents, self.num_agents, self.grid_size)
 
     def reset(self, *, seed=None, options=None):
         self.reset_objects_positions()
@@ -156,7 +146,6 @@ class FarmingEnv(gym.Env):
         agent_icon = load_image(const.AGENT, self.cell_size)
         flower_icon = load_image(const.TARGET, self.cell_size)
         watered_flower_icon = load_image(const.DONE_TARGET, self.cell_size)
-        base_icon = load_image(const.STATION, self.cell_size)
         bg_image = pygame.image.load(const.FIELD).convert()
         bg = pygame.image.load(const.FIELD_BACKGROUND).convert()
 
@@ -185,9 +174,6 @@ class FarmingEnv(gym.Env):
         bg_image = pygame.transform.smoothscale(bg_image, (inner_field_size, inner_field_size))
         self.screen.blit(bg_image, (margin_x, margin_y))
 
-        # Отрисовка базы
-        self.screen.blit(base_icon,
-                         (self.base_position[1] * self.cell_size, self.base_position[0] * self.cell_size))
 
         # Рисуем цветы и ямы
         for i, pos in enumerate(self.target_positions):
@@ -255,30 +241,6 @@ class FarmingEnv(gym.Env):
         pygame.display.flip()
         pygame.time.wait(10)
 
-    def render_message(self, render_text: str):
-        """
-        Display message in the center of screen
-        :param render_text: str
-        :return:
-        """
-        # TO DO Вывод текста если несколько срок
-        self.screen.fill(const.BLACK)
-        text_surf = pygame.font.SysFont(None, const.TITLE_SIZE).render(render_text, True, const.GREEN)
-        self.screen.blit(text_surf, text_surf.get_rect(center=(const.SCREEN_SIZE // 2, const.SCREEN_SIZE // 2)))
-        pygame.display.flip()
-
-    def reset_objects_positions(self):
-        """
-        Reset positions of objects
-        :return: function for get object's postitions
-        """
-        if const.PLACEMENT_MODE == 'random':
-            self._randomize_positions()
-        elif const.PLACEMENT_MODE == 'fixed':
-            self._fixed_positions()
-        else:
-            raise ValueError("Invalid PLACEMENT_MODE. Choose 'random' or 'fixed'.")
-
     def _randomize_positions(self):
         """
         Get random positions of objects
@@ -295,25 +257,3 @@ class FarmingEnv(gym.Env):
         self.target_positions = const.FIXED_TARGET_POSITIONS.copy()
         self.obstacle_positions = const.FIXED_OBSTACLE_POSITIONS.copy()
 
-    def _get_available_positions(self, unavailable: set) -> list:
-        """
-        Function for get available positions from all positions - unavailable
-        :param unavailable: set
-        :return: available positions
-        """
-        all_positions = [
-            (i, j) for i in range(self.margin, self.inner_grid_size + 1)
-            for j in range(self.margin, self.inner_grid_size + 1)
-        ]
-        return [pos for pos in all_positions if pos not in unavailable]
-
-    def _get_objects_positions(self, unavailable: (), size: int) -> list:
-        """
-        Get list of object's positions using unavailable positions
-        :param unavailable: set()
-        :param size: int
-        :return: list of positions [x, y]
-        """
-        available_positions = self._get_available_positions(unavailable)
-        indices = np.random.choice(len(available_positions), size=size, replace=False)
-        return [available_positions[i] for i in indices]
