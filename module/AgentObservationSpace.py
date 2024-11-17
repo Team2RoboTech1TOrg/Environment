@@ -5,7 +5,6 @@ from gymnasium import spaces
 
 class AgentObservationSpace(gym.spaces.Dict):
     def __init__(self, size: int):
-
         self.position_space = spaces.Box(
             low=0,
             high=size,
@@ -14,9 +13,9 @@ class AgentObservationSpace(gym.spaces.Dict):
         )
 
         self.points_space = spaces.Box(
-            low=0,
-            high=5,
-            shape=(size, size),
+            low=np.zeros((size, size, 2), dtype=np.int32),  # new
+            high=np.full((size, size, 2), fill_value=2, dtype=np.int32),  # new
+            # shape=(size, size),
             dtype=np.int32
         )
 

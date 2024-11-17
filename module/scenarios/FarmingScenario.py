@@ -1,3 +1,4 @@
+import time
 from abc import ABC
 
 import numpy as np
@@ -11,32 +12,26 @@ from utils import load_image
 
 class FarmingScenario(BaseScenario, ABC):
     def __init__(self, num_agents: int, grid_size: int):
+        self.start_time = None
         self.grid_size = grid_size
         self.cell_size = const.SCREEN_SIZE // self.grid_size
         self.margin = const.MARGIN_SIZE
         self.inner_grid_size = self.grid_size - self.margin * 2
-        self.screen = pygame.display.set_mode((const.SCREEN_SIZE, const.SCREEN_SIZE + const.BAR_HEIGHT))
-        self.step_reward = None
+        # self.screen = pygame.display.set_mode((const.SCREEN_SIZE, const.SCREEN_SIZE + const.BAR_HEIGHT))
+        self.screen = None  # Экран создается только при необходимости
         self.num_agents = num_agents
-        self.target_positions = None
-        self.obstacle_positions = None
         self.base_position = (self.grid_size // 2, self.grid_size // 2)
         self.agents = [Agent(self, name=f'agent_{i}') for i in range(self.num_agents)]
 
-
+    def reset(self):
+        self.reset_objects_positions()
 
     def step(self, action):
         pass
 
-    def reset(self):
-        self.reset_objects_positions()
-        self.step_reward = 0
-
     def render(self):
-        base_icon = load_image(const.STATION, self.cell_size)
-        # Отрисовка базы
-        self.screen.blit(base_icon,
-                         (self.base_position[1] * self.cell_size, self.base_position[0] * self.cell_size))
+        pass
+
 
     def render_message(self, render_text: str):
         """
@@ -44,6 +39,9 @@ class FarmingScenario(BaseScenario, ABC):
         :param render_text: str
         :return:
         """
+        if self.screen is None:
+            pygame.init()
+            self.screen = pygame.display.set_mode((const.SCREEN_SIZE, const.SCREEN_SIZE + const.BAR_HEIGHT))
         self.screen.fill(const.BLACK)
 
         font = pygame.font.Font(pygame.font.get_default_font(), int(const.SCREEN_SIZE * 0.06))

@@ -55,8 +55,7 @@ class FarmingEnv(gym.Env):
         return self.scenario.render()
 
     def render_message(self, render_text: str):
-        """
-        Display message in the center of screen
+        """        Display message in the center of screen
         :param render_text: str
         :return:
         """
