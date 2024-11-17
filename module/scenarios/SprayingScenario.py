@@ -6,6 +6,7 @@ import gymnasium as gym
 import numpy as np
 
 from Agent import Agent
+from PointStatus import PointStatus
 from SystemObservationSpace import SystemObservationSpace
 from logger import logging
 import const
@@ -67,10 +68,10 @@ class SprayingScenario(FarmingScenario, ABC):
             if self.step_count != 1:
                 new_position = self.check_crash(obs, agent, new_position)
             value_position = obs['coords'][new_position[0]][new_position[1]][0]
-            if value_position == 1 or value_position == 0:
+            if value_position == PointStatus.empty.value or value_position == PointStatus.viewed.value:
                 self.step_reward += const.REWARD_EXPLORE
                 logging.info(f"{agent.name} исследовал новую клетку {new_position}")
-                obs['coords'][new_position[0]][new_position[1]][0] = 2
+                obs['coords'][new_position[0]][new_position[1]][0] = PointStatus.visited.value
             obs['pos'][i] = new_position
             self.step_reward += agent_reward
 

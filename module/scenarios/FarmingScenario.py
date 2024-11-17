@@ -18,8 +18,7 @@ class FarmingScenario(BaseScenario, ABC):
         self.cell_size = const.SCREEN_SIZE // self.grid_size
         self.margin = const.MARGIN_SIZE
         self.inner_grid_size = self.grid_size - self.margin * 2
-        # self.screen = pygame.display.set_mode((const.SCREEN_SIZE, const.SCREEN_SIZE + const.BAR_HEIGHT))
-        self.screen = None  # Экран создается только при необходимости
+        self.screen = None  # Экран создается при необходимости
         self.num_agents = num_agents
         # TO DO реализация базы на 4 клетки (привязка к размеру поля и колву агентов)
         self.base_position = (self.grid_size // 2, self.grid_size // 2)

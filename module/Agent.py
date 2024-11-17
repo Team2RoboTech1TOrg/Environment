@@ -6,6 +6,7 @@ from gymnasium import spaces
 import logging
 import const
 from AgentObservationSpace import AgentObservationSpace
+from PointStatus import PointStatus, ObjectStatus
 
 
 class Agent:
@@ -71,19 +72,18 @@ class Agent:
         return self.position, reward, terminated, truncated, {}
 
     def get_observation(self):
-        # coords = np.zeros((self.env.grid_size, self.env.grid_size))
         coords = np.full((self.env.grid_size, self.env.grid_size, 2), fill_value=0) #new
         for dx in range(-const.VIEW_RANGE, const.VIEW_RANGE + 1):
             for dy in range(-const.VIEW_RANGE, const.VIEW_RANGE + 1):
                 x, y = self.position[0] + dx, self.position[1] + dy
                 if 0 <= x < self.env.grid_size and 0 <= y < self.env.grid_size:
                     pos = (x, y)
-                    coords[x][y][0] = 1  # viewed
+                    coords[x][y][0] = PointStatus.viewed.value
                     # logging.info(f"{self.name} увидел новую клетку {pos}")
                     if pos in self.env.obstacle_positions:
-                        coords[x][y][1] = 1  # obstacle
+                        coords[x][y][1] = ObjectStatus.obstacle.value
                     elif pos in self.env.target_positions:
-                        coords[x][y][1] = 2  # target
+                        coords[x][y][1] = ObjectStatus.target.value
 
         observation = {
             'pos': self.position,
