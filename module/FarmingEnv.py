@@ -20,7 +20,6 @@ class FarmingEnv(gym.Env):
         self.agents = self.scenario.agents
         self.num_agents = self.scenario.num_agents
         self.grid_size = self.scenario.grid_size
-        # self.step_count = None
         action_spaces = gym.spaces.Dict({
             f'agent_{i}': agent.action_space
             for i, agent in enumerate(self.scenario.agents)
@@ -30,9 +29,6 @@ class FarmingEnv(gym.Env):
                                                         self.grid_size)
 
     def reset(self, *, seed=None, options=None):
-        self.start_time = time.time()
-        # self.total_reward = 0
-        # self.step_reward = 0
         obs, info = self.scenario.reset()
         logging.info("Перезагрузка среды")
         return obs, info
@@ -46,7 +42,6 @@ class FarmingEnv(gym.Env):
         return obs
 
     def step(self, actions):
-        # logging.info(f"Шаг: {self.step_count}")
         obs, reward, terminated, truncated, info = self.scenario.step(actions)
         return obs, reward, terminated, truncated, info
 

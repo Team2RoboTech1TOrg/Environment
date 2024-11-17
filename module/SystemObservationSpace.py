@@ -14,13 +14,9 @@ class SystemObservationSpace(gym.spaces.Dict):
             shape=(num_agents, 2),
             dtype=np.int32)
 
-        # self.coords_space = gym.spaces.Box(low=np.array([0, 0], np.int32),  # new
-        #                                    high=np.array([2, 2], np.int32),  # new
-        #                                    shape=(grid_size, grid_size), dtype=np.int32)
-
         self.coords_space = gym.spaces.Box(
-            low=np.zeros((grid_size, grid_size, 2), dtype=np.int32),  # new
-            high=np.full((grid_size, grid_size, 2), fill_value=2, dtype=np.int32),  # new
+            low=np.zeros((grid_size, grid_size, 2), dtype=np.int32),
+            high=np.full((grid_size, grid_size, 2), fill_value=2, dtype=np.int32),
             dtype=np.int32
         )
 

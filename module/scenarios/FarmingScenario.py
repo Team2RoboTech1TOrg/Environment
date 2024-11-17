@@ -1,5 +1,6 @@
 import time
 from abc import ABC
+from math import ceil
 
 import numpy as np
 import pygame
@@ -20,18 +21,21 @@ class FarmingScenario(BaseScenario, ABC):
         # self.screen = pygame.display.set_mode((const.SCREEN_SIZE, const.SCREEN_SIZE + const.BAR_HEIGHT))
         self.screen = None  # Экран создается только при необходимости
         self.num_agents = num_agents
+        # TO DO реализация базы на 4 клетки (привязка к размеру поля и колву агентов)
         self.base_position = (self.grid_size // 2, self.grid_size // 2)
         self.agents = [Agent(self, name=f'agent_{i}') for i in range(self.num_agents)]
 
     def reset(self):
-        self.reset_objects_positions()
+        pass
+        # self.reset_objects_positions()
 
     def step(self, action):
         pass
 
     def render(self):
-        pass
-
+        if self.screen is None:
+            pygame.init()
+            self.screen = pygame.display.set_mode((const.SCREEN_SIZE, const.SCREEN_SIZE + const.BAR_HEIGHT))
 
     def render_message(self, render_text: str):
         """
@@ -42,16 +46,21 @@ class FarmingScenario(BaseScenario, ABC):
         if self.screen is None:
             pygame.init()
             self.screen = pygame.display.set_mode((const.SCREEN_SIZE, const.SCREEN_SIZE + const.BAR_HEIGHT))
-        self.screen.fill(const.BLACK)
+        self.screen.fill(const.GRAY)
 
-        font = pygame.font.Font(pygame.font.get_default_font(), int(const.SCREEN_SIZE * 0.06))
+        font = pygame.font.Font(pygame.font.get_default_font(), int(const.SCREEN_SIZE * 0.055))
         lines = render_text.split('\n')
         screen_width, screen_height = self.screen.get_size()
         y_offset = (screen_height - len(lines) * font.get_height()) // 2
 
-        for line in lines:
-            text_surface = font.render(line, True, const.GREEN)
-            text_width, text_height = font.size(line)
+        for i, line in enumerate(lines):
+            if i == 0:
+                font_title = pygame.font.Font(pygame.font.get_default_font(), ceil(font.get_height() * 1.2))
+                text_surface = font_title.render(line, True, const.RED)
+                text_width, text_height = font_title.size(line)
+            else:
+                text_surface = font.render(line, True, const.GREEN)
+                text_width, text_height = font.size(line)
             x_offset = (screen_width - text_width) // 2
             self.screen.blit(text_surface, (x_offset, y_offset))
             y_offset += text_height + 5

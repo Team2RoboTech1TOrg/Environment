@@ -35,10 +35,7 @@ class SprayingScenario(FarmingScenario, ABC):
         self.done_status = np.zeros(const.COUNT_TARGETS)
         self.total_reward = 0
         self.step_reward = 0
-        self.known_obstacles = set()
-        self.known_targets = set()
-        self.viewed_cells = set()
-        self.current_map = np.full((self.grid_size, self.grid_size, 2), fill_value=0) #new
+        self.current_map = np.full((self.grid_size, self.grid_size, 2), fill_value=0)  # new
         self.obstacle_icons = load_obstacles(const.OBSTACLES, self.cell_size, const.COUNT_OBSTACLES)
         agent_obs = [agent.reset() for agent in self.agents]
         obs = {'pos': np.stack([obs['pos'] for obs in agent_obs]),
@@ -69,7 +66,8 @@ class SprayingScenario(FarmingScenario, ABC):
             new_position, agent_reward, terminated, truncated, info = agent.take_action(actions[i])
             if self.step_count != 1:
                 new_position = self.check_crash(obs, agent, new_position)
-            if obs['coords'][new_position[0]][new_position[1]][0] == 1:
+            value_position = obs['coords'][new_position[0]][new_position[1]][0]
+            if value_position == 1 or value_position == 0:
                 self.step_reward += const.REWARD_EXPLORE
                 logging.info(f"{agent.name} исследовал новую клетку {new_position}")
                 obs['coords'][new_position[0]][new_position[1]][0] = 2
@@ -77,9 +75,9 @@ class SprayingScenario(FarmingScenario, ABC):
             self.step_reward += agent_reward
 
         # TO DO подумать, может как-то иначе реализовать без списков
-        self.known_targets = np.argwhere(obs['coords'][1] == 2)
-        self.known_obstacles = np.argwhere(obs['coords'][1] == 1)
-        self.viewed_cells = np.argwhere(obs['coords'][0] == 1)
+        self.known_targets = np.argwhere(self.current_map[:, :, 1] == 2)
+        self.known_obstacles = np.argwhere(self.current_map[:, :, 1] == 1)
+        self.viewed_cells = np.argwhere(self.current_map[:, :, 0] != 0)
 
         reward, terminated, truncated, info = self._check_termination_conditions()
         self.step_count += 1
@@ -125,10 +123,11 @@ class SprayingScenario(FarmingScenario, ABC):
             terminated = True
             logging.info("Все растения опрысканы")
             for agent in self.agents:
+                # TO DO позиции рандомно из базы
                 agent.position = self.base_position
             logging.info("Агенты вернулись на базу")
 
-            # условие по времени выполнения
+            # условие по времени выполнения BREAK
             if self.step_count <= const.MIN_GAME_STEPS:
                 total_reward = self.total_reward + const.REWARD_COMPLETION * 3
             else:
@@ -142,13 +141,10 @@ class SprayingScenario(FarmingScenario, ABC):
 
     def render(self):
         """Render agent game"""
-        if self.screen is None:
-            pygame.init()
-            self.screen = pygame.display.set_mode((const.SCREEN_SIZE, const.SCREEN_SIZE + const.BAR_HEIGHT))
+        target_icon = load_image(const.TARGET, self.cell_size)
+        target_done_icon = load_image(const.DONE_TARGET, self.cell_size)
         base_icon = load_image(const.STATION, self.cell_size)
         agent_icon = load_image(const.AGENT, self.cell_size)
-        flower_icon = load_image(const.TARGET, self.cell_size)
-        watered_flower_icon = load_image(const.DONE_TARGET, self.cell_size)
         bg_image = pygame.image.load(const.FIELD).convert()
         bg = pygame.image.load(const.FIELD_BACKGROUND).convert()
 
@@ -175,14 +171,13 @@ class SprayingScenario(FarmingScenario, ABC):
         bg_image = pygame.transform.smoothscale(bg_image, (inner_field_size, inner_field_size))
         self.screen.blit(bg_image, (margin_x, margin_y))
 
-
         # Рисуем цветы и ямы
         for i, pos in enumerate(self.target_positions):
             if pos in self.known_targets:
                 if self.done_status[i]:
-                    icon = watered_flower_icon
+                    icon = target_done_icon
                 else:
-                    icon = flower_icon
+                    icon = target_icon
                 self.screen.blit(icon, (pos[1] * self.cell_size, pos[0] * self.cell_size))
 
         for i, obstacle in enumerate(self.obstacle_positions):
@@ -205,13 +200,6 @@ class SprayingScenario(FarmingScenario, ABC):
         status_bar_rect = pygame.Rect(0, const.SCREEN_SIZE, const.SCREEN_SIZE,
                                       status_bar_height)
         pygame.draw.rect(self.screen, const.WHITE, status_bar_rect)
-        # Отрисовка базы
-        self.screen.blit(base_icon,
-                         (self.base_position[1] * self.cell_size, self.base_position[0] * self.cell_size))
-        # Отрисовка агента
-        for agent in self.agents:
-            self.screen.blit(agent_icon, (agent.position[1] * self.cell_size,
-                                          agent.position[0] * self.cell_size))
 
         # Отрисовка времени, очков, заряда и уровня воды
         elapsed_time = time.time() - self.start_time  # Рассчитываем время
@@ -259,4 +247,3 @@ class SprayingScenario(FarmingScenario, ABC):
         """
         self.target_positions = const.FIXED_TARGET_POSITIONS.copy()
         self.obstacle_positions = const.FIXED_OBSTACLE_POSITIONS.copy()
-

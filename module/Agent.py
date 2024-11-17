@@ -11,7 +11,8 @@ from AgentObservationSpace import AgentObservationSpace
 class Agent:
     def __init__(self, scenario, name=None):
         self.name = name or f'agent_{id(self)}'
-        self.env = scenario  # CHANGE
+        self.env = scenario
+        # TO DO позиции рандомно из базы
         self.position = None
         self.tank = None
         self.energy = None
@@ -24,12 +25,7 @@ class Agent:
         self.position_history = deque(maxlen=10)
         self.tank = const.TANK_CAPACITY
         self.energy = const.ENERGY_CAPACITY
-        coords = np.zeros((self.env.grid_size, self.env.grid_size, 2), dtype=np.int32)  # new
-        # return {
-        #     'pos': self.position,
-        #     'coords': np.zeros((self.env.grid_size, self.env.grid_size), dtype=np.int32)
-        # }
-
+        coords = np.zeros((self.env.grid_size, self.env.grid_size, 2), dtype=np.int32)
         return {
             'pos': self.position,
             'coords': coords
@@ -83,12 +79,11 @@ class Agent:
                 if 0 <= x < self.env.grid_size and 0 <= y < self.env.grid_size:
                     pos = (x, y)
                     coords[x][y][0] = 1  # viewed
+                    # logging.info(f"{self.name} увидел новую клетку {pos}")
                     if pos in self.env.obstacle_positions:
                         coords[x][y][1] = 1  # obstacle
-                        # logging.debug(f"Вижу препятствие: {pos}")
                     elif pos in self.env.target_positions:
                         coords[x][y][1] = 2  # target
-                        # logging.debug(f"Вижу цель: {pos}")
 
         observation = {
             'pos': self.position,

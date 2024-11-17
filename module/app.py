@@ -38,10 +38,11 @@ def run():
             selected_scenario = 'spraying'
     try:
         env = FarmingEnv(scenarios[selected_scenario])
+        #TO DO описать их на русском, что значат
         hyperparameters_message = (
             f"Гиперпараметры модели:\n\n"
             f"learning_rate: {const.LEARNING_RATE}\n"
-            f"gamma: {const.LEARNING_RATE}\n"
+            f"gamma: {const.GAMMA}\n"
             f"clip_range: {const.CLIP_RANGE}\n"
             f"n_steps: {const.N_STEPS}\n"
             f"coef: {const.COEF}\n"
