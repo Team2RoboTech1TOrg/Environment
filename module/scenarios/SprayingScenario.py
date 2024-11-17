@@ -145,6 +145,7 @@ class SprayingScenario(FarmingScenario, ABC):
         target_done_icon = load_image(const.DONE_TARGET, self.cell_size)
         base_icon = load_image(const.STATION, self.cell_size)
         agent_icon = load_image(const.AGENT, self.cell_size)
+
         bg_image = pygame.image.load(const.FIELD).convert()
         bg = pygame.image.load(const.FIELD_BACKGROUND).convert()
 
@@ -171,6 +172,13 @@ class SprayingScenario(FarmingScenario, ABC):
         bg_image = pygame.transform.smoothscale(bg_image, (inner_field_size, inner_field_size))
         self.screen.blit(bg_image, (margin_x, margin_y))
 
+        # Отрисовка базы
+        self.screen.blit(base_icon,
+                         (self.base_position[1] * self.cell_size, self.base_position[0] * self.cell_size))
+        # Отрисовка агента
+        for agent in self.agents:
+            self.screen.blit(agent_icon, (agent.position[1] * self.cell_size,
+                                          agent.position[0] * self.cell_size))
         # Рисуем цветы и ямы
         for i, pos in enumerate(self.target_positions):
             if pos in self.known_targets:
