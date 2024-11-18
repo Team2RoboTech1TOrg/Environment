@@ -80,7 +80,6 @@ class Agent:
                 if 0 <= x < self.env.grid_size and 0 <= y < self.env.grid_size:
                     pos = (x, y)
                     coords[x][y][0] = PointStatus.viewed.value
-                    # logging.info(f"{self.name} увидел новую клетку {pos}")
                     if pos in self.env.obstacle_positions:
                         coords[x][y][1] = ObjectStatus.obstacle.value
                     elif pos in self.env.target_positions:

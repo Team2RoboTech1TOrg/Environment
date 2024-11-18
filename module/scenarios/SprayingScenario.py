@@ -3,16 +3,14 @@ import time
 from abc import ABC
 
 import pygame
-import gymnasium as gym
 import numpy as np
 
 from Agent import Agent
 from PointStatus import PointStatus, ObjectStatus
-from SystemObservationSpace import SystemObservationSpace
 from logger import logging
 import const
 from scenarios.FarmingScenario import FarmingScenario
-from utils import convert_to_multidiscrete, load_image, load_obstacles
+from utils import load_image, load_obstacles
 
 
 class SprayingScenario(FarmingScenario, ABC):
@@ -61,10 +59,15 @@ class SprayingScenario(FarmingScenario, ABC):
         obs = self.get_observation()
         self.step_reward = 0
 
+        agent_start_times = [i * 2 for i in range(self.num_agents)]
         for i, agent in enumerate(self.agents):
-            new_position, agent_reward, terminated, truncated, info = agent.take_action(actions[i])
-            if self.step_count != 1:
-                new_position = self.check_crash(obs, agent, new_position)
+            if self.step_count >= agent_start_times[i]:
+                new_position, agent_reward, terminated, truncated, info = agent.take_action(actions[i])
+            else:
+                logging.info(f"{agent.name} ожидает вылета")
+                continue
+            # if self.step_count != 1:
+            new_position = self.check_crash(obs, agent, new_position)
             # если клетка не исследована (клетки с препятствием никогда не исследованы)
             value_position = obs['coords'][new_position[0]][new_position[1]]
             if value_position[0] in (PointStatus.empty.value, PointStatus.viewed.value):
@@ -84,22 +87,6 @@ class SprayingScenario(FarmingScenario, ABC):
         )
 
         return obs, reward, terminated, truncated, {}
-
-    def check_crash(self, obs: dict, agent: Agent, new_position: tuple[int, int]):
-        """
-        Check if agents coordinates is same with another agents.
-        :param new_position: position of agent (x, y)
-        :param agent: agent in process
-        :param obs: all agents positions at the moment
-        :return: agent coordinates x, y
-        """
-        # TO DO проверить работает ли верно = вывод конечной позиции (agent.position)
-        for i, item in enumerate(obs['pos']):
-            if i != int(agent.name.split('_')[1]) and tuple(item) == new_position:
-                self.total_reward -= const.PENALTY_CRASH
-                logging.warning(f"Столкнование {new_position} агентов")
-                new_position = agent.position
-        return new_position
 
     def _check_termination_conditions(self) -> tuple:
         """
@@ -254,16 +241,16 @@ class SprayingScenario(FarmingScenario, ABC):
         unavailable_positions.update(self.target_positions)
         self.obstacle_positions = self._get_objects_positions(unavailable_positions, const.COUNT_OBSTACLES)
         # TO DO может как-то попроще сделать?
-        while any(self._is_surrounded_by_obstacles(flower) for flower in self.target_positions):
+        while any(self._is_surrounded_by_obstacles(target) for target in self.target_positions):
             self.obstacle_positions = self._get_objects_positions(unavailable_positions, const.COUNT_OBSTACLES)
 
-    def _is_surrounded_by_obstacles(self, flower_position):
+    def _is_surrounded_by_obstacles(self, target_position):
         """
         Check if a flower is surrounded by obstacles on 3 sides.
-        :param flower_position: (x, y) position of the flower
+        :param target_position: (x, y) position of the flower
         :return: True if the flower is surrounded by obstacles on 3 sides, False otherwise
         """
-        x, y = flower_position
+        x, y = target_position
         step = 1
         surrounding_positions = [
             (x - step, y), (x + step, y), (x, y - step), (x, y + step)

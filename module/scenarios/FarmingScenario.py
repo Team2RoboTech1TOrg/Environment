@@ -1,3 +1,5 @@
+import logging
+
 import numpy as np
 import pygame
 
@@ -11,6 +13,7 @@ from scenarios.BaseScenario import BaseScenario
 
 class FarmingScenario(BaseScenario, ABC):
     def __init__(self, num_agents: int, grid_size: int):
+        self.done_status = None
         self.start_time = None
         self.total_reward = None
         self.step_reward = None
@@ -26,11 +29,38 @@ class FarmingScenario(BaseScenario, ABC):
         self.agents = [Agent(self, name=f'agent_{i}') for i in range(self.num_agents)]
 
     def reset(self):
+        # pass
+        self.reset_objects_positions()
+
+    def get_observation(self):
         pass
-        # self.reset_objects_positions()
 
     def step(self, action):
-        pass
+        obs = self.get_observation()
+        reward, terminated, truncated, info = self._check_termination_conditions()
+        return obs, reward, terminated, truncated, {}
+        # pass
+
+    def _check_termination_conditions(self):
+        total_reward = 0
+        terminated = False
+        truncated = False
+        return total_reward, terminated, truncated, {}
+
+    def check_crash(self, obs: dict, agent: Agent, new_position: tuple[int, int]):
+        """
+        Check if agents coordinates is same with another agents.
+        :param new_position: position of agent (x, y)
+        :param agent: agent in process
+        :param obs: all agents positions at the moment
+        :return: agent coordinates x, y
+        """
+        for i, item in enumerate(obs['pos']):
+            if i != int(agent.name.split('_')[1]) and tuple(item) == new_position:
+                self.total_reward -= const.PENALTY_CRASH
+                logging.warning(f"Столкнование {new_position} агентов")
+                new_position = agent.position
+        return new_position
 
     def render(self):
         if self.screen is None:
