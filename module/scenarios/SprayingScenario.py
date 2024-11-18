@@ -24,8 +24,6 @@ class SprayingScenario(FarmingScenario, ABC):
         self.done_status = None
         self.target_positions = None
         self.obstacle_positions = None
-        self.known_obstacles = None
-        self.known_targets = None
         self.current_map = None
         self.step_count = None
 
@@ -76,10 +74,6 @@ class SprayingScenario(FarmingScenario, ABC):
                 obs['coords'][new_position[0]][new_position[1]][0] = PointStatus.visited.value
             obs['pos'][i] = new_position
             self.step_reward += agent_reward
-
-        # TO DO подумать, может как-то иначе реализовать без списков
-        self.known_targets = np.argwhere(self.current_map[:, :, 1] == 2)
-        self.known_obstacles = np.argwhere(self.current_map[:, :, 1] == 1)
 
         reward, terminated, truncated, info = self._check_termination_conditions()
         self.step_count += 1
@@ -182,18 +176,23 @@ class SprayingScenario(FarmingScenario, ABC):
                          (base_start_pos[1] * self.cell_size, base_start_pos[0] * self.cell_size))
 
         # Рисуем цветы и ямы
-        for i, pos in enumerate(self.target_positions):
-            if pos in self.known_targets:
+        known_obstacles, known_targets = 0, 0
+        for i, target in enumerate(self.target_positions):
+            x, y = target
+            if self.current_map[x, y, 0] != 0:
+                known_targets += 1
                 if self.done_status[i]:
                     icon = target_done_icon
                 else:
                     icon = target_icon
-                self.screen.blit(icon, (pos[1] * self.cell_size, pos[0] * self.cell_size))
+                self.screen.blit(icon, (target[1] * self.cell_size, target[0] * self.cell_size))
 
         for i, obstacle in enumerate(self.obstacle_positions):
-            if obstacle in self.known_obstacles:
-                barrier_icon = self.obstacle_icons[i % len(self.obstacle_icons)]
-                self.screen.blit(barrier_icon, (obstacle[1] * self.cell_size, obstacle[0] * self.cell_size))
+            x, y = obstacle
+            if self.current_map[x, y, 0] != 0:
+                known_obstacles += 1
+                obstacle_icon = self.obstacle_icons[i % len(self.obstacle_icons)]
+                self.screen.blit(obstacle_icon, (obstacle[1] * self.cell_size, obstacle[0] * self.cell_size))
 
         # Накладываем исследование области
         for x in range(self.grid_size):
@@ -234,12 +233,12 @@ class SprayingScenario(FarmingScenario, ABC):
         self.screen.blit(font.render(f"Шаги: {self.step_count}", True, const.BLACK),
                          (text_x1, text_y3))
 
-        self.screen.blit(font.render(f"Обнаружено препятствий: {len(self.known_obstacles)}/{const.COUNT_OBSTACLES}",
+        self.screen.blit(font.render(f"Обнаружено препятствий: {known_obstacles}/{const.COUNT_OBSTACLES}",
                                      True, const.BLACK), (text_x2, text_y1))
         self.screen.blit(
-            font.render(f"Обнаружено цветков: {len(self.known_targets)}/{const.COUNT_TARGETS}",
+            font.render(f"Обнаружено целей: {known_targets}/{const.COUNT_TARGETS}",
                         True, const.BLACK), (text_x2, text_y2))
-        self.screen.blit(font.render(f"Полито цветков: {int(np.sum(self.done_status))}/"
+        self.screen.blit(font.render(f"Отработано целей: {int(np.sum(self.done_status))}/"
                                      f"{const.COUNT_TARGETS}", True, const.BLACK),
                          (text_x2, text_y3))
 
@@ -250,13 +249,32 @@ class SprayingScenario(FarmingScenario, ABC):
         """
         Get random positions of objects
         """
-        unavailable_positions = set(self.base_positions)#set()
-        # for dx in range(2):
-        #     for dy in range(2):
-        #         unavailable_positions.add((self.base_position[0] + dx, self.base_position[1] + dy))
+        unavailable_positions = set(self.base_positions)
         self.target_positions = self._get_objects_positions(unavailable_positions, const.COUNT_TARGETS)
         unavailable_positions.update(self.target_positions)
         self.obstacle_positions = self._get_objects_positions(unavailable_positions, const.COUNT_OBSTACLES)
+        # TO DO может как-то попроще сделать?
+        while any(self._is_surrounded_by_obstacles(flower) for flower in self.target_positions):
+            self.obstacle_positions = self._get_objects_positions(unavailable_positions, const.COUNT_OBSTACLES)
+
+    def _is_surrounded_by_obstacles(self, flower_position):
+        """
+        Check if a flower is surrounded by obstacles on 3 sides.
+        :param flower_position: (x, y) position of the flower
+        :return: True if the flower is surrounded by obstacles on 3 sides, False otherwise
+        """
+        x, y = flower_position
+        step = 1
+        surrounding_positions = [
+            (x - step, y), (x + step, y), (x, y - step), (x, y + step)
+        ]
+
+        obstacle_count = 0
+        for pos in surrounding_positions:
+            if pos in self.obstacle_positions:
+                obstacle_count += 1
+        # TO DO 4 or 3??
+        return obstacle_count == 4
 
     def _fixed_positions(self):
         """

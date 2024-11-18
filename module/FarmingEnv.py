@@ -9,9 +9,6 @@ class FarmingEnv(gym.Env):
     def __init__(self, scenario):
         super(FarmingEnv, self).__init__()
         self.scenario = scenario
-        self.start_time = None
-        self.total_reward = None
-        self.step_reward = None
         self.agents = self.scenario.agents
         self.num_agents = self.scenario.num_agents
         self.grid_size = self.scenario.grid_size

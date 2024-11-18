@@ -12,6 +12,8 @@ from scenarios.BaseScenario import BaseScenario
 class FarmingScenario(BaseScenario, ABC):
     def __init__(self, num_agents: int, grid_size: int):
         self.start_time = None
+        self.total_reward = None
+        self.step_reward = None
         self.grid_size = grid_size
         self.cell_size = const.SCREEN_SIZE // self.grid_size
         self.margin = const.MARGIN_SIZE
