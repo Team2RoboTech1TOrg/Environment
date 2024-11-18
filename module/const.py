@@ -1,13 +1,13 @@
 # Параметры модели
-from math import ceil
 
-LEARNING_RATE = 0.0001
+LEARNING_RATE = 0.001
 GAMMA = 0.99
 CLIP_RANGE = 0.2
 N_STEPS = 4096
-COEF = 0.01
+COEF = 0.001
+VF_COEF = 0.6
 CLIP_RANGE_VF = 0.2
-N_EPOCHS = 1
+N_EPOCHS = 30
 BATCH_SIZE = 64
 
 # Параметры экрана и сетки
@@ -18,9 +18,9 @@ MARGIN_SIZE = 1
 
 # Параметры игры
 NUM_AGENTS = 3
-COUNT_TARGETS = 40#ceil((GRID_SIZE ** 2) * 0.4)
+COUNT_TARGETS = 100#ceil((GRID_SIZE ** 2) * 0.4)
 COUNT_OBSTACLES = 12#ceil((GRID_SIZE ** 2) * 0.03)
-COUNT_STATION = 1
+STATION_SIZE = 2
 MAX_STEPS_GAME = (GRID_SIZE ** 2) * 10
 VIEW_RANGE = 1  # Область зрения 3x3
 ON_TARGET_CONSUMPTION = 10  # Расход
@@ -32,14 +32,13 @@ COUNT_ACTIONS = 4
 MIN_GAME_STEPS = (GRID_SIZE * GRID_SIZE // NUM_AGENTS) * 2
 
 # Награды
-REWARD_EXPLORE = 50  # Вознаграждение за исследование новых клеток
-REWARD_DONE = 30
-REWARD_COMPLETION = (REWARD_EXPLORE * COUNT_TARGETS) * 10
-PENALTY_LOOP = 10
-PENALTY_OUT_FIELD = 20
-PENALTY_OBSTACLE = 10
-PENALTY_CRASH = 30
-
+REWARD_EXPLORE = 5  # Вознаграждение за исследование новых клеток
+REWARD_DONE = 3
+REWARD_COMPLETION = (REWARD_DONE * COUNT_TARGETS) * 10
+PENALTY_LOOP = 1
+PENALTY_OUT_FIELD = 2
+PENALTY_OBSTACLE = 2
+PENALTY_CRASH = 3
 
 # Позиции цветов и ям
 # PLACEMENT_MODE = 'fixed'
@@ -55,12 +54,12 @@ FIXED_OBSTACLE_POSITIONS = [
 ]
 
 # Цвета, шрифты
-WHITE = (255, 255, 255)
+WHITE = (200, 200, 255)
 BLACK = (0, 0, 0)
 GREEN = (34, 139, 34)
 BLUE = (0, 0, 255)
 RED = (255, 69, 0)
-GRAY = (8, 6, 3)
+GRAY = (30, 30, 30)
 
 # изображения
 AGENT = "images/drone.png"

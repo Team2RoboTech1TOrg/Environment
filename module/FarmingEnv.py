@@ -1,13 +1,8 @@
-import time
-import pygame
 import gymnasium as gym
-import numpy as np
 
-from Agent import Agent
 from SystemObservationSpace import SystemObservationSpace
 from logger import logging
-import const
-from utils import convert_to_multidiscrete, load_image, load_obstacles
+from utils import convert_to_multidiscrete
 
 
 class FarmingEnv(gym.Env):

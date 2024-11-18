@@ -1,14 +1,12 @@
-import time
-from abc import ABC
-from math import ceil
-
 import numpy as np
 import pygame
+
+from abc import ABC
+from math import ceil
 
 import const
 from Agent import Agent
 from scenarios.BaseScenario import BaseScenario
-from utils import load_image
 
 
 class FarmingScenario(BaseScenario, ABC):
@@ -20,8 +18,9 @@ class FarmingScenario(BaseScenario, ABC):
         self.inner_grid_size = self.grid_size - self.margin * 2
         self.screen = None  # Экран создается при необходимости
         self.num_agents = num_agents
-        # TO DO реализация базы на 4 клетки (привязка к размеру поля и колву агентов)
-        self.base_position = (self.grid_size // 2, self.grid_size // 2)
+        base_coords = (self.margin + 1, self.grid_size // 2 - const.STATION_SIZE // 2)
+        self.base_positions = [(base_coords[0] + i, base_coords[1] + j) for i in range(const.STATION_SIZE)
+                               for j in range(const.STATION_SIZE)]
         self.agents = [Agent(self, name=f'agent_{i}') for i in range(self.num_agents)]
 
     def reset(self):

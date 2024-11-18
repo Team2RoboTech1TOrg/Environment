@@ -1,54 +1,40 @@
 import time
-from math import ceil
 
 import pygame
 import sys
 from stable_baselines3 import PPO
 
 import const
-from const import LEARNING_RATE, GAMMA, CLIP_RANGE, N_STEPS, COEF, MAX_STEPS_GAME, N_EPOCHS, BATCH_SIZE, CLIP_RANGE_VF
 from FarmingEnv import FarmingEnv
 from scenarios.SprayingScenario import SprayingScenario
 from config import log_dir
 from logger import logging
+from utils import input_screen
 
 
 def run():
-    print("Введите количество агентов:")
-    num_agents = input() or const.NUM_AGENTS
-    print(f"Введите размер поля больше, чем: "
-          f"{ceil((const.COUNT_TARGETS + const.COUNT_OBSTACLES + int(num_agents)) ** 0.5) + const.COUNT_STATION}")
-    grid_size = input() or const.GRID_SIZE
-
-    spraying_scenario = SprayingScenario(int(num_agents), int(grid_size))
+    num_agents, grid_size, selected = input_screen()
+    spraying_scenario = SprayingScenario(num_agents, grid_size)
     scenarios = {
-        'spraying': spraying_scenario
+        1: spraying_scenario  # Добавьте другие сценарии
     }
-    print(f"Выберите сценарий: 1 - 'spraying'")
+    selected_scenario = scenarios.get(selected)
+    if not selected_scenario:
+        print(f"Ошибка: сценарий с номером {selected} не найден. Выбран сценарий по умолчанию.")
+        selected_scenario = spraying_scenario
     try:
-        selected = input()
-        selected = int(selected) if selected else 1
-    except ValueError:
-        selected = 1
-
-    match selected:
-        case 1:
-            selected_scenario = 'spraying'
-        case _:
-            selected_scenario = 'spraying'
-    try:
-        env = FarmingEnv(scenarios[selected_scenario])
+        env = FarmingEnv(selected_scenario)
         #TO DO описать их на русском, что значат
         hyperparameters_message = (
             f"Гиперпараметры модели:\n\n"
-            f"learning_rate: {const.LEARNING_RATE}\n"
-            f"gamma: {const.GAMMA}\n"
-            f"clip_range: {const.CLIP_RANGE}\n"
-            f"n_steps: {const.N_STEPS}\n"
-            f"coef: {const.COEF}\n"
-            f"clip_range_vf: {const.CLIP_RANGE_VF}\n"
-            f"n_epochs: {const.N_EPOCHS}\n"
-            f"batch_size: {const.BATCH_SIZE}\n"
+            f"Темп: {const.LEARNING_RATE}\n"
+            f"Гамма: {const.GAMMA}\n"
+            f"Диапазон обрезки: {const.CLIP_RANGE}\n"
+            f"Длина эпизода: {const.N_STEPS}\n"
+            f"Энтропия: {const.COEF}\n"
+            f"Баланс ценности: {const.VF_COEF}\n"
+            f"Эпох: {const.N_EPOCHS}\n"
+            f"Размер батча: {const.BATCH_SIZE}\n"
         )
 
         message = "Начало обучения модели\n\n\n" + hyperparameters_message
@@ -59,16 +45,16 @@ def run():
         model = PPO(
             policy,
             env,
-            learning_rate=LEARNING_RATE,
-            gamma=GAMMA,
-            clip_range=CLIP_RANGE,
-            n_steps=N_STEPS,
-            ent_coef=COEF,
+            learning_rate=const.LEARNING_RATE,
+            gamma=const.GAMMA,
+            clip_range=const.CLIP_RANGE,
+            n_steps=const.N_STEPS,
+            ent_coef=const.COEF,
             verbose=1,
-            n_epochs=N_EPOCHS,
-            batch_size=BATCH_SIZE,
+            vf_coef=const.VF_COEF,
+            n_epochs=const.N_EPOCHS,
+            batch_size=const.BATCH_SIZE,
             tensorboard_log=log_dir,
-            clip_range_vf=CLIP_RANGE_VF
         )
         model.learn(total_timesteps=10000)
         message = "Обучение модели завершено."
@@ -104,7 +90,7 @@ def run():
                 env.render_message(message)
                 # time.sleep(5)
                 break
-            clock.tick(10)  # slow
+            clock.tick(15)  # slow
     except KeyboardInterrupt:
         logging.info("Прервано пользователем")
     except Exception as e:

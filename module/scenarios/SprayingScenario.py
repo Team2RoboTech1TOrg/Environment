@@ -1,3 +1,4 @@
+import random
 import time
 from abc import ABC
 
@@ -6,7 +7,7 @@ import gymnasium as gym
 import numpy as np
 
 from Agent import Agent
-from PointStatus import PointStatus
+from PointStatus import PointStatus, ObjectStatus
 from SystemObservationSpace import SystemObservationSpace
 from logger import logging
 import const
@@ -25,7 +26,6 @@ class SprayingScenario(FarmingScenario, ABC):
         self.obstacle_positions = None
         self.known_obstacles = None
         self.known_targets = None
-        self.viewed_cells = None
         self.current_map = None
         self.step_count = None
 
@@ -36,7 +36,7 @@ class SprayingScenario(FarmingScenario, ABC):
         self.done_status = np.zeros(const.COUNT_TARGETS)
         self.total_reward = 0
         self.step_reward = 0
-        self.current_map = np.full((self.grid_size, self.grid_size, 2), fill_value=0)  # new
+        self.current_map = np.full((self.grid_size, self.grid_size, 2), fill_value=0)
         self.obstacle_icons = load_obstacles(const.OBSTACLES, self.cell_size, const.COUNT_OBSTACLES)
         agent_obs = [agent.reset() for agent in self.agents]
         obs = {'pos': np.stack([obs['pos'] for obs in agent_obs]),
@@ -67,10 +67,12 @@ class SprayingScenario(FarmingScenario, ABC):
             new_position, agent_reward, terminated, truncated, info = agent.take_action(actions[i])
             if self.step_count != 1:
                 new_position = self.check_crash(obs, agent, new_position)
-            value_position = obs['coords'][new_position[0]][new_position[1]][0]
-            if value_position == PointStatus.empty.value or value_position == PointStatus.viewed.value:
-                self.step_reward += const.REWARD_EXPLORE
-                logging.info(f"{agent.name} исследовал новую клетку {new_position}")
+            # если клетка не исследована (клетки с препятствием никогда не исследованы)
+            value_position = obs['coords'][new_position[0]][new_position[1]]
+            if value_position[0] in (PointStatus.empty.value, PointStatus.viewed.value):
+                if value_position[1] != ObjectStatus.target.value:
+                    self.step_reward += const.REWARD_EXPLORE
+                    logging.info(f"{agent.name} исследовал новую клетку {new_position} + {const.REWARD_EXPLORE}")
                 obs['coords'][new_position[0]][new_position[1]][0] = PointStatus.visited.value
             obs['pos'][i] = new_position
             self.step_reward += agent_reward
@@ -78,7 +80,6 @@ class SprayingScenario(FarmingScenario, ABC):
         # TO DO подумать, может как-то иначе реализовать без списков
         self.known_targets = np.argwhere(self.current_map[:, :, 1] == 2)
         self.known_obstacles = np.argwhere(self.current_map[:, :, 1] == 1)
-        self.viewed_cells = np.argwhere(self.current_map[:, :, 0] != 0)
 
         reward, terminated, truncated, info = self._check_termination_conditions()
         self.step_count += 1
@@ -103,7 +104,6 @@ class SprayingScenario(FarmingScenario, ABC):
             if i != int(agent.name.split('_')[1]) and tuple(item) == new_position:
                 self.total_reward -= const.PENALTY_CRASH
                 logging.warning(f"Столкнование {new_position} агентов")
-                # print((f"Столкнование {new_position} агентов"))
                 new_position = agent.position
         return new_position
 
@@ -124,16 +124,17 @@ class SprayingScenario(FarmingScenario, ABC):
             terminated = True
             logging.info("Все растения опрысканы")
             for agent in self.agents:
-                # TO DO позиции рандомно из базы
-                agent.position = self.base_position
+                agent.position = random.choice(self.base_positions)
             logging.info("Агенты вернулись на базу")
+            logging.info(self.current_map)
 
-            # условие по времени выполнения BREAK
+            # условие по времени выполнения
             if self.step_count <= const.MIN_GAME_STEPS:
                 total_reward = self.total_reward + const.REWARD_COMPLETION * 3
+                logging.info(f"Увеличенная награда: {total_reward}за шагов меньше, чем {const.MIN_GAME_STEPS}")
             else:
                 total_reward = self.total_reward + const.REWARD_COMPLETION
-            logging.info(f"Награда: {total_reward}")
+                logging.info(f"Награда: {total_reward}")
             self.total_reward = 0
         else:
             self.total_reward += self.step_reward
@@ -174,12 +175,12 @@ class SprayingScenario(FarmingScenario, ABC):
         self.screen.blit(bg_image, (margin_x, margin_y))
 
         # Отрисовка базы
-        self.screen.blit(base_icon,
-                         (self.base_position[1] * self.cell_size, self.base_position[0] * self.cell_size))
-        # Отрисовка агента
-        for agent in self.agents:
-            self.screen.blit(agent_icon, (agent.position[1] * self.cell_size,
-                                          agent.position[0] * self.cell_size))
+        base_size = const.STATION_SIZE * self.cell_size
+        base_icon_scaled = pygame.transform.smoothscale(base_icon, (base_size, base_size))
+        base_start_pos = self.base_positions[0]
+        self.screen.blit(base_icon_scaled,
+                         (base_start_pos[1] * self.cell_size, base_start_pos[0] * self.cell_size))
+
         # Рисуем цветы и ямы
         for i, pos in enumerate(self.target_positions):
             if pos in self.known_targets:
@@ -197,11 +198,15 @@ class SprayingScenario(FarmingScenario, ABC):
         # Накладываем исследование области
         for x in range(self.grid_size):
             for y in range(self.grid_size):
-                pos = (x, y)
-                if pos not in self.viewed_cells:
+                if self.current_map[x, y, 0] == 0:
                     dark_overlay = pygame.Surface((self.cell_size, self.cell_size), pygame.SRCALPHA)
                     dark_overlay.fill((0, 0, 0, 200))  # Непрозрачный
                     self.screen.blit(dark_overlay, (y * self.cell_size, x * self.cell_size))
+
+        # Отрисовка агента
+        for agent in self.agents:
+            self.screen.blit(agent_icon, (agent.position[1] * self.cell_size,
+                                          agent.position[0] * self.cell_size))
 
         # Отрисовка панели статуса
         screen_width, screen_height = self.screen.get_size()
@@ -245,7 +250,10 @@ class SprayingScenario(FarmingScenario, ABC):
         """
         Get random positions of objects
         """
-        unavailable_positions = {self.base_position}
+        unavailable_positions = set(self.base_positions)#set()
+        # for dx in range(2):
+        #     for dy in range(2):
+        #         unavailable_positions.add((self.base_position[0] + dx, self.base_position[1] + dy))
         self.target_positions = self._get_objects_positions(unavailable_positions, const.COUNT_TARGETS)
         unavailable_positions.update(self.target_positions)
         self.obstacle_positions = self._get_objects_positions(unavailable_positions, const.COUNT_OBSTACLES)
