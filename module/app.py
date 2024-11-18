@@ -41,14 +41,14 @@ def run():
         #TO DO описать их на русском, что значат
         hyperparameters_message = (
             f"Гиперпараметры модели:\n\n"
-            f"learning_rate: {const.LEARNING_RATE}\n"
-            f"gamma: {const.GAMMA}\n"
-            f"clip_range: {const.CLIP_RANGE}\n"
-            f"n_steps: {const.N_STEPS}\n"
-            f"coef: {const.COEF}\n"
-            f"clip_range_vf: {const.CLIP_RANGE_VF}\n"
-            f"n_epochs: {const.N_EPOCHS}\n"
-            f"batch_size: {const.BATCH_SIZE}\n"
+            f"learning_rate (скорость обучения): {const.LEARNING_RATE}\n"
+            f"gamma (коэффициент дисконтирования): {const.GAMMA}\n"
+            f"clip_range (предел обрезки для политики): {const.CLIP_RANGE}\n"
+            f"n_steps (шаги между обновлениями): {const.N_STEPS}\n"
+            f"ent_coef (коэффициент энтропии): {const.COEF}\n"
+            f"clip_range_vf (предел обрезки для функции ценности): {const.CLIP_RANGE_VF}\n"
+            f"n_epochs (число эпох обучения): {const.N_EPOCHS}\n"
+            f"batch_size (размер батча): {const.BATCH_SIZE}\n"
         )
 
         message = "Начало обучения модели\n\n\n" + hyperparameters_message

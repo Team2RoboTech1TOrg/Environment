@@ -19,6 +19,7 @@ class FarmingScenario(BaseScenario, ABC):
         self.margin = const.MARGIN_SIZE
         self.inner_grid_size = self.grid_size - self.margin * 2
         self.screen = None  # Экран создается при необходимости
+        self.step_reward = None                       
         self.num_agents = num_agents
         # TO DO реализация базы на 4 клетки (привязка к размеру поля и колву агентов)
         self.base_position = (self.grid_size // 2, self.grid_size // 2)

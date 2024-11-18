@@ -7,7 +7,7 @@ CLIP_RANGE = 0.2
 N_STEPS = 4096
 COEF = 0.01
 CLIP_RANGE_VF = 0.2
-N_EPOCHS = 1
+N_EPOCHS = 10
 BATCH_SIZE = 64
 
 # Параметры экрана и сетки
@@ -22,7 +22,7 @@ COUNT_TARGETS = 40#ceil((GRID_SIZE ** 2) * 0.4)
 COUNT_OBSTACLES = 12#ceil((GRID_SIZE ** 2) * 0.03)
 COUNT_STATION = 1
 MAX_STEPS_GAME = (GRID_SIZE ** 2) * 10
-VIEW_RANGE = 1  # Область зрения 3x3
+VIEW_RANGE = 2  # Область зрения 3x3
 ON_TARGET_CONSUMPTION = 10  # Расход
 TANK_CAPACITY = COUNT_TARGETS * ON_TARGET_CONSUMPTION  # Максимальный запас
 ENERGY_CAPACITY = 1000  # Максимальный запас энергии
@@ -32,14 +32,22 @@ COUNT_ACTIONS = 4
 MIN_GAME_STEPS = (GRID_SIZE * GRID_SIZE // NUM_AGENTS) * 2
 
 # Награды
-REWARD_EXPLORE = 50  # Вознаграждение за исследование новых клеток
+REWARD_EXPLORE = 30  # Вознаграждение за исследование новых клеток
 REWARD_DONE = 30
 REWARD_COMPLETION = (REWARD_EXPLORE * COUNT_TARGETS) * 10
+REWARD_RETURN_BASE = 30 # keno
 PENALTY_LOOP = 10
 PENALTY_OUT_FIELD = 20
 PENALTY_OBSTACLE = 10
 PENALTY_CRASH = 30
-
+REWARD_SPRAY = 50 # keno
+DISTANCE_PENALTY_FACTOR = 1 # keno
+REWARD_PROGRESS = 5
+STEP_PENALTY = 1        
+PENALTY_NO_ENERGY = 100
+REWARD_APPROACH_TARGET = 5  # Награда за приближение к цели
+PENALTY_MOVE_AWAY = 5       # Штраф за удаление от цели
+PENALTY_IGNORE_FLOWER = 5  # Штраф за пропуск цветка
 
 # Позиции цветов и ям
 # PLACEMENT_MODE = 'fixed'

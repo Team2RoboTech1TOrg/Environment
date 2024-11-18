@@ -15,8 +15,8 @@ class SystemObservationSpace(gym.spaces.Dict):
             dtype=np.int32)
 
         self.coords_space = gym.spaces.Box(
-            low=np.zeros((grid_size, grid_size, 2), dtype=np.int32),
-            high=np.full((grid_size, grid_size, 2), fill_value=2, dtype=np.int32),
+            low=np.zeros((grid_size, grid_size, 3), dtype=np.int32),
+            high=np.full((grid_size, grid_size, 3), fill_value=2, dtype=np.int32),
             dtype=np.int32
         )
 
