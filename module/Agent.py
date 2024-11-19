@@ -1,4 +1,5 @@
 import random
+from typing import Any
 
 import numpy as np
 
@@ -64,14 +65,14 @@ class Agent:
             case 3:  # Вправо
                 new_position = (self.position[0], min(const.GRID_SIZE - 1, self.position[1] + 1))
                 self.energy -= const.ENERGY_CONSUMPTION_MOVE
-            # case 4:  # На месте
-            #     new_position = self.position
-            #     self.energy -= const.ENERGY_CONSUMPTION_MOVE
+            case 4:  # На месте
+                new_position = self.position
+                self.energy -= const.ENERGY_CONSUMPTION_MOVE
             case _:
                 new_position = self.position
 
         value_new_position = obs['coords'][new_position[0]][new_position[1]]
-        new_position, reward = self.get_agent_rewards(new_position, value_new_position)
+        new_position, reward = self.get_agent_rewards(new_position, value_new_position, action)
         self.position = new_position
         logging.info(f"Действие: {action} - позиция: {self.position} - {self.name}")
 
@@ -99,17 +100,21 @@ class Agent:
     def __repr__(self):
         return f'<Agent {self.name}>'
 
-    def get_agent_rewards(self, new_position: tuple[int, int], value: float) -> tuple[tuple[int, int], int]:
+    def get_agent_rewards(self, new_position: tuple[int, int], value: float, action: Any) -> tuple[
+            tuple[int, int], int]:
         """
         Update explored cells, update position of agent in dependency of cells.
         Give reward in dependency of cells.
+        :param action:
         :param value:
         :param new_position: coordinates of agent (x, y)
         :return: coordinates of agent (x, y) and agent reward
         """
         agent_reward = 0
         # Запись истории позиций для обнаружения циклов
-        self.position_history.append(new_position)
+        # не хранить если действие - стоять на месте
+        if action != 4:
+            self.position_history.append(new_position)
 
         if not ((self.env.margin <= new_position[0] <= self.env.inner_grid_size) and (
                 self.env.margin <= new_position[1] <= self.env.inner_grid_size)):

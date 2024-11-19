@@ -28,7 +28,7 @@ TANK_CAPACITY = COUNT_TARGETS * ON_TARGET_CONSUMPTION  # Максимальны�
 ENERGY_CAPACITY = 3000  # Максимальный запас энергии
 ENERGY_CONSUMPTION_MOVE = 1
 ENERGY_CONSUMPTION_DONE = 2
-COUNT_ACTIONS = 4
+COUNT_ACTIONS = 5
 MIN_GAME_STEPS = (GRID_SIZE * GRID_SIZE // NUM_AGENTS) * 2
 
 # Награды

@@ -34,9 +34,23 @@ class FarmingScenario(BaseScenario, ABC):
         self.agents = [Agent(self, name=f'agent_{i}') for i in range(self.num_agents)]
         self.obstacle_icons = load_obstacles(const.OBSTACLES, self.cell_size, const.COUNT_OBSTACLES)
 
-    def reset(self):
-        # pass
+    def reset(self, *, seed=None, options=None):
         self.reset_objects_positions()
+        self.step_count = 1
+        self.reward_coef = 1
+        self.total_reward = 0
+        self.step_reward = 0
+        self.done_status = np.zeros(const.COUNT_TARGETS)
+        self.current_map = np.full((self.grid_size, self.grid_size, 2), fill_value=0)
+        agent_obs = [agent.reset() for agent in self.agents]
+        obs = {'pos': np.stack([obs['pos'] for obs in agent_obs]),
+               'coords': np.max(np.stack([obs['coords'] for obs in agent_obs]), axis=0)}
+        self._reset_scenario()
+        return obs, {}
+
+    @abstractmethod
+    def _reset_scenario(self):
+        pass
 
     def get_observation(self):
         pass

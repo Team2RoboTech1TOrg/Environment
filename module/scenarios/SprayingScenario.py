@@ -1,11 +1,11 @@
 import random
 import time
 from abc import ABC
+from math import ceil
 
 import pygame
 import numpy as np
 
-from Agent import Agent
 from PointStatus import PointStatus, ObjectStatus
 from logger import logging
 import const
@@ -20,19 +20,8 @@ class SprayingScenario(FarmingScenario, ABC):
         self.target_positions = None
         self.obstacle_positions = None
 
-    def reset(self, *, seed=None, options=None):
-        self.reset_objects_positions()
+    def _reset_scenario(self, *, seed=None, options=None):
         self.start_time = time.time()
-        self.step_count = 1
-        self.reward_coef = 1
-        self.done_status = np.zeros(const.COUNT_TARGETS)
-        self.total_reward = 0
-        self.step_reward = 0
-        self.current_map = np.full((self.grid_size, self.grid_size, 2), fill_value=0)
-        agent_obs = [agent.reset() for agent in self.agents]
-        obs = {'pos': np.stack([obs['pos'] for obs in agent_obs]),
-               'coords': np.max(np.stack([obs['coords'] for obs in agent_obs]), axis=0)}
-        return obs, {}
 
     def get_observation(self):
         """
@@ -77,7 +66,7 @@ class SprayingScenario(FarmingScenario, ABC):
         reward, terminated, truncated, info = self._check_termination_conditions()
         self.step_count += 1
         logging.info(
-            f"Награда: {self.total_reward}, "
+            f"Награда: {ceil(self.total_reward)}, "
             f"Завершено: {terminated}, "
             f"Прервано: {truncated}"
         )
