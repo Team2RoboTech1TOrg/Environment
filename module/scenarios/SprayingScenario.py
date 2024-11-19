@@ -10,34 +10,28 @@ from PointStatus import PointStatus, ObjectStatus
 from logger import logging
 import const
 from scenarios.FarmingScenario import FarmingScenario
-from utils import load_image, load_obstacles
+from utils import load_image
 
 
 class SprayingScenario(FarmingScenario, ABC):
     def __init__(self, num_agents: int, grid_size: int):
         super().__init__(num_agents, grid_size)
-        self.obstacle_icons = None
-        self.total_reward = None
-        self.step_reward = None
-        self.done_status = None
+        self.start_time = None
         self.target_positions = None
         self.obstacle_positions = None
-        self.current_map = None
-        self.step_count = None
 
     def reset(self, *, seed=None, options=None):
         self.reset_objects_positions()
         self.start_time = time.time()
         self.step_count = 1
+        self.reward_coef = 1
         self.done_status = np.zeros(const.COUNT_TARGETS)
         self.total_reward = 0
         self.step_reward = 0
         self.current_map = np.full((self.grid_size, self.grid_size, 2), fill_value=0)
-        self.obstacle_icons = load_obstacles(const.OBSTACLES, self.cell_size, const.COUNT_OBSTACLES)
         agent_obs = [agent.reset() for agent in self.agents]
         obs = {'pos': np.stack([obs['pos'] for obs in agent_obs]),
                'coords': np.max(np.stack([obs['coords'] for obs in agent_obs]), axis=0)}
-        logging.info("Перезагрузка среды")
         return obs, {}
 
     def get_observation(self):
@@ -72,8 +66,10 @@ class SprayingScenario(FarmingScenario, ABC):
             value_position = obs['coords'][new_position[0]][new_position[1]]
             if value_position[0] in (PointStatus.empty.value, PointStatus.viewed.value):
                 if value_position[1] != ObjectStatus.target.value:
-                    self.step_reward += const.REWARD_EXPLORE
-                    logging.info(f"{agent.name} исследовал новую клетку {new_position} + {const.REWARD_EXPLORE}")
+                    self.reward_coef *= 1.01
+                    reward = const.REWARD_EXPLORE * self.reward_coef
+                    self.step_reward += reward
+                    logging.info(f"{agent.name} исследовал новую клетку {new_position} + {reward}")
                 obs['coords'][new_position[0]][new_position[1]][0] = PointStatus.visited.value
             obs['pos'][i] = new_position
             self.step_reward += agent_reward
@@ -100,7 +96,7 @@ class SprayingScenario(FarmingScenario, ABC):
             logging.info("Достигнуто максимальное количество шагов")
             total_reward = 0
             truncated = True
-
+        #TO DO если у всех агентов закончился заряд
         elif np.all(self.done_status == 1):
             terminated = True
             logging.info("Все растения опрысканы")
@@ -119,41 +115,15 @@ class SprayingScenario(FarmingScenario, ABC):
             self.total_reward = 0
         else:
             self.total_reward += self.step_reward
-            total_reward = 0
+            total_reward = self.total_reward#0 ??? проверить как лучше будет работать
         return total_reward, terminated, truncated, {}
 
-    def render(self):
+    def _render_scenario(self):
         """Render agent game"""
         target_icon = load_image(const.TARGET, self.cell_size)
         target_done_icon = load_image(const.DONE_TARGET, self.cell_size)
         base_icon = load_image(const.STATION, self.cell_size)
         agent_icon = load_image(const.AGENT, self.cell_size)
-
-        bg_image = pygame.image.load(const.FIELD).convert()
-        bg = pygame.image.load(const.FIELD_BACKGROUND).convert()
-
-        full_field_size = self.grid_size * self.cell_size
-        bg = pygame.transform.smoothscale(bg, (full_field_size, full_field_size))
-
-        # Отрисовка сетки
-        for x in range(self.grid_size):
-            for y in range(self.grid_size):
-                pygame.draw.rect(
-                    self.screen, const.BLACK,
-                    (x * self.cell_size, y * self.cell_size, self.cell_size, self.cell_size), 1
-                )
-
-        # Отрисовка границы внутреннего поля (устанавливаем цвет и толщину линии)
-        inner_field_size = self.inner_grid_size * self.cell_size
-        margin_x = (self.grid_size * self.cell_size - inner_field_size) // 2
-        margin_y = (self.grid_size * self.cell_size - inner_field_size) // 2
-        inner_field_rect = pygame.Rect(margin_x, margin_y, inner_field_size, inner_field_size)
-        pygame.draw.rect(self.screen, const.BLACK, inner_field_rect, 4)
-
-        # Фон общий и фон поля
-        self.screen.blit(bg, (0, 0))
-        bg_image = pygame.transform.smoothscale(bg_image, (inner_field_size, inner_field_size))
-        self.screen.blit(bg_image, (margin_x, margin_y))
 
         # Отрисовка базы
         base_size = const.STATION_SIZE * self.cell_size
@@ -194,14 +164,10 @@ class SprayingScenario(FarmingScenario, ABC):
             self.screen.blit(agent_icon, (agent.position[1] * self.cell_size,
                                           agent.position[0] * self.cell_size))
 
-        # Отрисовка панели статуса
+        # Отрисовка времени, очков, заряда и уровня воды
+
         screen_width, screen_height = self.screen.get_size()
         status_bar_height = const.BAR_HEIGHT
-        status_bar_rect = pygame.Rect(0, const.SCREEN_SIZE, const.SCREEN_SIZE,
-                                      status_bar_height)
-        pygame.draw.rect(self.screen, const.WHITE, status_bar_rect)
-
-        # Отрисовка времени, очков, заряда и уровня воды
         elapsed_time = time.time() - self.start_time  # Рассчитываем время
 
         font_size = int(status_bar_height * 0.25)  # Размер шрифта для панели статуса

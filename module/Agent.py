@@ -13,6 +13,7 @@ from PointStatus import PointStatus, ObjectStatus
 
 class Agent:
     def __init__(self, scenario, name=None):
+        self.reward_coef = None
         self.name = name or f'agent_{id(self)}'
         self.env = scenario
         self.position = None
@@ -24,6 +25,7 @@ class Agent:
 
     def reset(self):
         self.position = random.choice(self.env.base_positions)
+        self.reward_coef = 1
         logging.info(f"Позиция {self.name} стартовая {self.position}")
         self.position_history = deque(maxlen=10)
         self.tank = const.TANK_CAPACITY
@@ -62,6 +64,9 @@ class Agent:
             case 3:  # Вправо
                 new_position = (self.position[0], min(const.GRID_SIZE - 1, self.position[1] + 1))
                 self.energy -= const.ENERGY_CONSUMPTION_MOVE
+            # case 4:  # На месте
+            #     new_position = self.position
+            #     self.energy -= const.ENERGY_CONSUMPTION_MOVE
             case _:
                 new_position = self.position
 
@@ -123,8 +128,10 @@ class Agent:
                     self.energy -= const.ENERGY_CONSUMPTION_DONE
                     self.tank -= const.ON_TARGET_CONSUMPTION
                     self.env.done_status[idx] = 1
-                    agent_reward += const.REWARD_DONE
-                    logging.info(f"Опрыскал растение {self.name} + награда {const.REWARD_DONE}")
+                    self.reward_coef *= 1.03
+                    reward = const.REWARD_DONE * self.reward_coef
+                    agent_reward += reward
+                    logging.info(f"Опрыскал растение {self.name} + награда {reward}")
             else:
                 if len(self.position_history) > 3:
                     pos_counter = self.position_history.count(new_position)

@@ -1,22 +1,27 @@
 import logging
-
 import numpy as np
 import pygame
 
-from abc import ABC
+from abc import ABC, abstractmethod
 from math import ceil
 
 import const
 from Agent import Agent
 from scenarios.BaseScenario import BaseScenario
+from utils import load_obstacles
 
 
 class FarmingScenario(BaseScenario, ABC):
     def __init__(self, num_agents: int, grid_size: int):
         self.done_status = None
-        self.start_time = None
+        self.current_map = None
+        # self.start_time = None
+        self.reward_coef = None
+        self.obstacle_icons = None
         self.total_reward = None
         self.step_reward = None
+        self.step_count = None
+        self.total_reward = None
         self.grid_size = grid_size
         self.cell_size = const.SCREEN_SIZE // self.grid_size
         self.margin = const.MARGIN_SIZE
@@ -27,6 +32,7 @@ class FarmingScenario(BaseScenario, ABC):
         self.base_positions = [(base_coords[0] + i, base_coords[1] + j) for i in range(const.STATION_SIZE)
                                for j in range(const.STATION_SIZE)]
         self.agents = [Agent(self, name=f'agent_{i}') for i in range(self.num_agents)]
+        self.obstacle_icons = load_obstacles(const.OBSTACLES, self.cell_size, const.COUNT_OBSTACLES)
 
     def reset(self):
         # pass
@@ -66,6 +72,39 @@ class FarmingScenario(BaseScenario, ABC):
         if self.screen is None:
             pygame.init()
             self.screen = pygame.display.set_mode((const.SCREEN_SIZE, const.SCREEN_SIZE + const.BAR_HEIGHT))
+
+        bg = pygame.image.load(const.FIELD_BACKGROUND).convert()
+        full_field_size = self.grid_size * self.cell_size
+        bg = pygame.transform.smoothscale(bg, (full_field_size, full_field_size))
+        bg_image = pygame.image.load(const.FIELD).convert()
+
+        # Отрисовка сетки
+        for x in range(self.grid_size):
+            for y in range(self.grid_size):
+                pygame.draw.rect(
+                    self.screen, const.BLACK,
+                    (x * self.cell_size, y * self.cell_size, self.cell_size, self.cell_size), 1
+                )
+        # Отрисовка границы внутреннего поля (устанавливаем цвет и толщину линии)
+        inner_field_size = self.inner_grid_size * self.cell_size
+        margin_x = (self.grid_size * self.cell_size - inner_field_size) // 2
+        margin_y = (self.grid_size * self.cell_size - inner_field_size) // 2
+        inner_field_rect = pygame.Rect(margin_x, margin_y, inner_field_size, inner_field_size)
+        pygame.draw.rect(self.screen, const.BLACK, inner_field_rect, 4)
+
+        self.screen.blit(bg, (0, 0))
+        bg_image = pygame.transform.smoothscale(bg_image, (inner_field_size, inner_field_size))
+        self.screen.blit(bg_image, (margin_x, margin_y))
+
+        # Отрисовка панели статуса
+        status_bar_rect = pygame.Rect(0, const.SCREEN_SIZE, const.SCREEN_SIZE,
+                                      const.BAR_HEIGHT)
+        pygame.draw.rect(self.screen, const.WHITE, status_bar_rect)
+        self._render_scenario()
+
+    @abstractmethod
+    def _render_scenario(self):
+        pass
 
     def render_message(self, render_text: str):
         """
