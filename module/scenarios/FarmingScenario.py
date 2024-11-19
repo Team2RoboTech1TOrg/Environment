@@ -7,6 +7,7 @@ from math import ceil
 
 import const
 from Agent import Agent
+from PointStatus import PointStatus, ObjectStatus
 from scenarios.BaseScenario import BaseScenario
 from utils import load_obstacles
 
@@ -37,7 +38,6 @@ class FarmingScenario(BaseScenario, ABC):
     def reset(self, *, seed=None, options=None):
         self.reset_objects_positions()
         self.step_count = 1
-        self.reward_coef = 1
         self.total_reward = 0
         self.step_reward = 0
         self.done_status = np.zeros(const.COUNT_TARGETS)
@@ -45,6 +45,10 @@ class FarmingScenario(BaseScenario, ABC):
         agent_obs = [agent.reset() for agent in self.agents]
         obs = {'pos': np.stack([obs['pos'] for obs in agent_obs]),
                'coords': np.max(np.stack([obs['coords'] for obs in agent_obs]), axis=0)}
+        # базу сразу пишем, как посещенную и отмечаем в объектах
+        for base_pos in self.base_positions:
+            obs['coords'][base_pos[0]][base_pos[1]][0] = PointStatus.visited.value
+            obs['coords'][base_pos[0]][base_pos[1]][1] = ObjectStatus.base.value
         self._reset_scenario()
         return obs, {}
 
@@ -53,19 +57,61 @@ class FarmingScenario(BaseScenario, ABC):
         pass
 
     def get_observation(self):
+        obs = self._get_scenario_obs()
+        return obs
+
+    @abstractmethod
+    def _get_scenario_obs(self):
         pass
 
     def step(self, action):
+        terminated, truncated = False, False
+        terminated_list, truncated_list = [], []
+        logging.info(f"Шаг: {self.step_count}")
         obs = self.get_observation()
-        reward, terminated, truncated, info = self._check_termination_conditions()
-        return obs, reward, terminated, truncated, {}
-        # pass
+        self.step_reward = 0
 
+        agent_start_times = [i * 2 for i in range(self.num_agents)]
+        for i, agent in enumerate(self.agents):
+            if self.step_count >= agent_start_times[i]:
+                new_position, agent_reward, terminated, truncated, info = agent.take_action(action[i])
+                terminated_list.append(terminated)
+                truncated_list.append(truncated)
+            else:
+                logging.info(f"{agent.name} ожидает вылета")
+                continue
+
+            new_position = self.check_crash(obs, agent, new_position)
+            logging.info(f"obs old {obs['pos'][i]}")
+            obs, system_reward = self._get_system_reward(obs, new_position, agent)
+            obs['pos'][i] = new_position
+            logging.info(f"obs new {obs['pos'][i]}")
+            self.step_reward += system_reward
+            self.step_reward += agent_reward
+
+        reward, terminated, truncated, info = self._check_termination_conditions()
+
+        # если у всех агентов закончился заряд
+        if all(terminated_list):
+            terminated = True
+        elif all(truncated_list):
+            truncated = True
+
+        self.step_count += 1
+        logging.info(
+            f"Награда: {ceil(self.total_reward)}, "
+            f"Завершено: {terminated}, "
+            f"Прервано: {truncated}"
+        )
+        return obs, reward, terminated, truncated, {}
+
+    @abstractmethod
+    def _get_system_reward(self, obs, new_position, agent):
+        pass
+
+    @abstractmethod
     def _check_termination_conditions(self):
-        total_reward = 0
-        terminated = False
-        truncated = False
-        return total_reward, terminated, truncated, {}
+        pass
 
     def check_crash(self, obs: dict, agent: Agent, new_position: tuple[int, int]):
         """
@@ -75,6 +121,7 @@ class FarmingScenario(BaseScenario, ABC):
         :param obs: all agents positions at the moment
         :return: agent coordinates x, y
         """
+        # TO DO чтоб на базе не было столкновений
         for i, item in enumerate(obs['pos']):
             if i != int(agent.name.split('_')[1]) and tuple(item) == new_position:
                 self.total_reward -= const.PENALTY_CRASH

@@ -22,8 +22,9 @@ class SprayingScenario(FarmingScenario, ABC):
 
     def _reset_scenario(self, *, seed=None, options=None):
         self.start_time = time.time()
+        self.reward_coef = 1
 
-    def get_observation(self):
+    def _get_scenario_obs(self):
         """
         Get observation at the moment: array of agents positions and
         current map with actual status of cells
@@ -37,41 +38,24 @@ class SprayingScenario(FarmingScenario, ABC):
                'coords': max_coords_status}
         return obs
 
-    def step(self, actions):
-        logging.info(f"Шаг: {self.step_count}")
-        obs = self.get_observation()
-        self.step_reward = 0
-
-        agent_start_times = [i * 2 for i in range(self.num_agents)]
-        for i, agent in enumerate(self.agents):
-            if self.step_count >= agent_start_times[i]:
-                new_position, agent_reward, terminated, truncated, info = agent.take_action(actions[i])
-            else:
-                logging.info(f"{agent.name} ожидает вылета")
-                continue
-            # if self.step_count != 1:
-            new_position = self.check_crash(obs, agent, new_position)
-            # если клетка не исследована (клетки с препятствием никогда не исследованы)
-            value_position = obs['coords'][new_position[0]][new_position[1]]
-            if value_position[0] in (PointStatus.empty.value, PointStatus.viewed.value):
-                if value_position[1] != ObjectStatus.target.value:
-                    self.reward_coef *= 1.01
-                    reward = const.REWARD_EXPLORE * self.reward_coef
-                    self.step_reward += reward
-                    logging.info(f"{agent.name} исследовал новую клетку {new_position} + {reward}")
-                obs['coords'][new_position[0]][new_position[1]][0] = PointStatus.visited.value
-            obs['pos'][i] = new_position
-            self.step_reward += agent_reward
-
-        reward, terminated, truncated, info = self._check_termination_conditions()
-        self.step_count += 1
-        logging.info(
-            f"Награда: {ceil(self.total_reward)}, "
-            f"Завершено: {terminated}, "
-            f"Прервано: {truncated}"
-        )
-
-        return obs, reward, terminated, truncated, {}
+    def _get_system_reward(self, obs, new_position, agent):
+        """
+        If cell is not explored, it had status - viewed or empty.
+        And in this case cell is not target.
+        :param obs:
+        :param new_position:
+        :param agent:
+        :return: observation full and reward for scenario
+        """
+        reward = 0
+        value_position = obs['coords'][new_position[0]][new_position[1]]
+        if value_position[0] in (PointStatus.empty.value, PointStatus.viewed.value):
+            if value_position[1] != ObjectStatus.target.value:
+                self.reward_coef *= 1.01
+                reward = const.REWARD_EXPLORE * self.reward_coef
+                logging.info(f"{agent.name} исследовал новую клетку {new_position} + {round(reward, 2)}")
+            obs['coords'][new_position[0]][new_position[1]][0] = PointStatus.visited.value
+        return obs, reward
 
     def _check_termination_conditions(self) -> tuple:
         """
@@ -85,14 +69,14 @@ class SprayingScenario(FarmingScenario, ABC):
             logging.info("Достигнуто максимальное количество шагов")
             total_reward = 0
             truncated = True
-        #TO DO если у всех агентов закончился заряд
+
         elif np.all(self.done_status == 1):
             terminated = True
             logging.info("Все растения опрысканы")
             for agent in self.agents:
                 agent.position = random.choice(self.base_positions)
             logging.info("Агенты вернулись на базу")
-            logging.info(self.current_map)
+            # logging.info(self.current_map)
 
             # условие по времени выполнения
             if self.step_count <= const.MIN_GAME_STEPS:
@@ -101,10 +85,10 @@ class SprayingScenario(FarmingScenario, ABC):
             else:
                 total_reward = self.total_reward + const.REWARD_COMPLETION
                 logging.info(f"Награда: {total_reward}")
-            self.total_reward = 0
+            # self.total_reward = 0
         else:
             self.total_reward += self.step_reward
-            total_reward = self.total_reward#0 ??? проверить как лучше будет работать
+            total_reward = 0# self.total_reward VS 0 проверить как лучше будет работать
         return total_reward, terminated, truncated, {}
 
     def _render_scenario(self):
@@ -154,7 +138,6 @@ class SprayingScenario(FarmingScenario, ABC):
                                           agent.position[0] * self.cell_size))
 
         # Отрисовка времени, очков, заряда и уровня воды
-
         screen_width, screen_height = self.screen.get_size()
         status_bar_height = const.BAR_HEIGHT
         elapsed_time = time.time() - self.start_time  # Рассчитываем время
@@ -192,6 +175,7 @@ class SprayingScenario(FarmingScenario, ABC):
         Get random positions of objects
         """
         unavailable_positions = set(self.base_positions)
+        #TO DO позиции вокруг базы по 1 клетке нельзя препятствия + это учесть при запросе размера поля
         self.target_positions = self._get_objects_positions(unavailable_positions, const.COUNT_TARGETS)
         unavailable_positions.update(self.target_positions)
         self.obstacle_positions = self._get_objects_positions(unavailable_positions, const.COUNT_OBSTACLES)

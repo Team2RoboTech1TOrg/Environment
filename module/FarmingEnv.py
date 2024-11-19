@@ -1,6 +1,6 @@
 import gymnasium as gym
 
-from SystemObservationSpace import SystemObservationSpace
+from spaces.SystemObservationSpace import SystemObservationSpace
 from logger import logging
 from utils import convert_to_multidiscrete
 

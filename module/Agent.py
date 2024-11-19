@@ -8,7 +8,7 @@ from gymnasium import spaces
 
 import logging
 import const
-from AgentObservationSpace import AgentObservationSpace
+from spaces.AgentObservationSpace import AgentObservationSpace
 from PointStatus import PointStatus, ObjectStatus
 
 
@@ -42,14 +42,15 @@ class Agent:
         terminated = False
         truncated = False
 
-        if self.energy < 10:  # костыль
-            return self.position, reward, True, False, {}
-
-        obs = self.get_observation()
+        if self.energy < 10:
+            self.position = random.choice(self.env.base_positions)
+            return self.position, reward, False, True, {}
 
         if self.tank <= 10:  # возврат на базу
-            self.position = self.env.base_position
+            self.position = random.choice(self.env.base_positions)
             self.tank = const.TANK_CAPACITY
+
+        obs = self.get_observation()
 
         # Действия агента в зависимости от выбранного действия
         match action:
@@ -74,8 +75,7 @@ class Agent:
         value_new_position = obs['coords'][new_position[0]][new_position[1]]
         new_position, reward = self.get_agent_rewards(new_position, value_new_position, action)
         self.position = new_position
-        logging.info(f"Действие: {action} - позиция: {self.position} - {self.name}")
-
+        logging.info(f"{self.name} действие: {action} - позиция: {self.position}")
         return self.position, reward, terminated, truncated, {}
 
     def get_observation(self):
@@ -111,7 +111,6 @@ class Agent:
         :return: coordinates of agent (x, y) and agent reward
         """
         agent_reward = 0
-        # Запись истории позиций для обнаружения циклов
         # не хранить если действие - стоять на месте
         if action != 4:
             self.position_history.append(new_position)
@@ -136,7 +135,7 @@ class Agent:
                     self.reward_coef *= 1.03
                     reward = const.REWARD_DONE * self.reward_coef
                     agent_reward += reward
-                    logging.info(f"Опрыскал растение {self.name} + награда {reward}")
+                    logging.info(f"{self.name} выполнена задача {new_position}, награда {round(reward, 2)}")
             else:
                 if len(self.position_history) > 3:
                     pos_counter = self.position_history.count(new_position)

@@ -74,7 +74,7 @@ def run():
                     pygame.quit()
                     sys.exit()
             action, _ = model.predict(obs)
-            pygame.time.wait(15)
+            pygame.time.wait(10)
             obs, reward, terminated, truncated, info = env.step(action)
             env.render()
             step_count += 1
@@ -86,10 +86,9 @@ def run():
                 step_count = 0
 
             if terminated:
-                message = f"Конец миссии, награда: {int(reward)}, шагов: {step_count}"
+                message = f"Конец миссии\n\n награда: {int(reward)}\n шагов: {step_count}"
                 env.render_message(message)
-                # time.sleep(5)
-                break
+                time.sleep(15)
             clock.tick(15)  # slow
     except KeyboardInterrupt:
         logging.info("Прервано пользователем")
