@@ -9,20 +9,19 @@ import const
 from Agent import Agent
 from PointStatus import PointStatus, ObjectStatus
 from scenarios.BaseScenario import BaseScenario
-from utils import load_obstacles
+from utils import load_obstacles, load_image
 
 
 class FarmingScenario(BaseScenario, ABC):
     def __init__(self, num_agents: int, grid_size: int):
+        self.name = None
         self.done_status = None
         self.current_map = None
-        # self.start_time = None
         self.reward_coef = None
-        self.obstacle_icons = None
+        self.dinamic_coef = None
         self.total_reward = None
         self.step_reward = None
         self.step_count = None
-        self.total_reward = None
         self.grid_size = grid_size
         self.cell_size = const.SCREEN_SIZE // self.grid_size
         self.margin = const.MARGIN_SIZE
@@ -40,7 +39,7 @@ class FarmingScenario(BaseScenario, ABC):
         self.step_count = 1
         self.total_reward = 0
         self.step_reward = 0
-        self.done_status = np.zeros(const.COUNT_TARGETS)
+        self.done_status = np.zeros(self.inner_grid_size ** 2 - const.COUNT_OBSTACLES - const.STATION_SIZE * 2)
         self.current_map = np.full((self.grid_size, self.grid_size, 2), fill_value=0)
         agent_obs = [agent.reset() for agent in self.agents]
         obs = {'pos': np.stack([obs['pos'] for obs in agent_obs]),
@@ -65,7 +64,6 @@ class FarmingScenario(BaseScenario, ABC):
         pass
 
     def step(self, action):
-        terminated, truncated = False, False
         terminated_list, truncated_list = [], []
         logging.info(f"Шаг: {self.step_count}")
         obs = self.get_observation()
@@ -135,9 +133,11 @@ class FarmingScenario(BaseScenario, ABC):
             self.screen = pygame.display.set_mode((const.SCREEN_SIZE, const.SCREEN_SIZE + const.BAR_HEIGHT))
 
         bg = pygame.image.load(const.FIELD_BACKGROUND).convert()
+        base_icon = load_image(const.STATION, self.cell_size)
+        bg_image = pygame.image.load(const.FIELD).convert()
+
         full_field_size = self.grid_size * self.cell_size
         bg = pygame.transform.smoothscale(bg, (full_field_size, full_field_size))
-        bg_image = pygame.image.load(const.FIELD).convert()
 
         # Отрисовка сетки
         for x in range(self.grid_size):
@@ -146,7 +146,7 @@ class FarmingScenario(BaseScenario, ABC):
                     self.screen, const.BLACK,
                     (x * self.cell_size, y * self.cell_size, self.cell_size, self.cell_size), 1
                 )
-        # Отрисовка границы внутреннего поля (устанавливаем цвет и толщину линии)
+        # Отрисовка границы внутреннего поля
         inner_field_size = self.inner_grid_size * self.cell_size
         margin_x = (self.grid_size * self.cell_size - inner_field_size) // 2
         margin_y = (self.grid_size * self.cell_size - inner_field_size) // 2
@@ -161,6 +161,13 @@ class FarmingScenario(BaseScenario, ABC):
         status_bar_rect = pygame.Rect(0, const.SCREEN_SIZE, const.SCREEN_SIZE,
                                       const.BAR_HEIGHT)
         pygame.draw.rect(self.screen, const.WHITE, status_bar_rect)
+
+        # Отрисовка базы
+        base_size = const.STATION_SIZE * self.cell_size
+        base_icon_scaled = pygame.transform.smoothscale(base_icon, (base_size, base_size))
+        base_start_pos = self.base_positions[0]
+        self.screen.blit(base_icon_scaled,
+                         (base_start_pos[1] * self.cell_size, base_start_pos[0] * self.cell_size))
         self._render_scenario()
 
     @abstractmethod
@@ -222,7 +229,7 @@ class FarmingScenario(BaseScenario, ABC):
 
     def _get_available_positions(self, unavailable: set) -> list:
         """
-        Function for get available positions from all positions - unavailable
+        Function for get available positions from all positions - unavailable.
         :param unavailable: set
         :return: available positions
         """
@@ -234,7 +241,7 @@ class FarmingScenario(BaseScenario, ABC):
 
     def _get_objects_positions(self, unavailable: (), size: int) -> list:
         """
-        Get list of object's positions using unavailable positions
+        Get list of object's positions using unavailable positions.
         :param unavailable: set()
         :param size: int
         :return: list of positions [x, y]
@@ -242,3 +249,6 @@ class FarmingScenario(BaseScenario, ABC):
         available_positions = self._get_available_positions(unavailable)
         indices = np.random.choice(len(available_positions), size=size, replace=False)
         return [available_positions[i] for i in indices]
+
+    def __repr__(self):
+        return f'scenario_{self.name}'

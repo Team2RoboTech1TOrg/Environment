@@ -19,7 +19,7 @@ MARGIN_SIZE = 1
 # Параметры игры
 NUM_AGENTS = 3
 COUNT_TARGETS = 10#0#ceil((GRID_SIZE ** 2) * 0.4)
-COUNT_OBSTACLES = 1#2#ceil((GRID_SIZE ** 2) * 0.03)
+COUNT_OBSTACLES = 3#12#ceil((GRID_SIZE ** 2) * 0.03)
 STATION_SIZE = 2
 MAX_STEPS_GAME = (GRID_SIZE ** 2) * 5
 VIEW_RANGE = 1  # Область зрения 3x3
@@ -63,8 +63,9 @@ GRAY = (30, 30, 30)
 
 # изображения
 AGENT = "images/drone.png"
-TARGET = "images/bad_plant.png"
-DONE_TARGET = "images/healthy_plant.png"
+TARGET_SPRAY = "images/bad_plant.png"
+DONE_TARGET_SPRAY = "images/healthy_plant.png"
+DONE_TARGET_EXPLORE = "images/explored.png"
 OBSTACLES = "./images/obstacles"
 STATION = "images/robdocst.png"
 FIELD = "images/field.png"

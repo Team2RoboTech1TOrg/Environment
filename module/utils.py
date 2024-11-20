@@ -68,7 +68,9 @@ def input_screen():
 
     inputs = ["Введите количество агентов:",
               "Введите размер поля (минимум):",
-              "Выберите сценарий (1 - spraying):"]
+              "Выберите сценарий:"
+              " 1 - spraying"
+              " 2 - exploration"]
     input_boxes = [pygame.Rect(150, 150 + i * 80, 300, 40) for i in range(len(inputs))]
     input_values = ["", "", ""]
 
@@ -129,6 +131,7 @@ def input_screen():
         num_agents = int(input_values[0]) if input_values[0] else const.NUM_AGENTS
         grid_size = int(input_values[1]) if input_values[1] else const.GRID_SIZE
         if grid_size < grid_size_min:
+            # TO DO не работает при 2 агентах и 6 клетках
             raise ValueError(f"Размер поля должен быть больше, чем {grid_size_min}")
         selected_scenario = int(input_values[2]) if input_values[2] else 1
     except ValueError as e:

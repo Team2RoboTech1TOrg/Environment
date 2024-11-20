@@ -6,6 +6,7 @@ from stable_baselines3 import PPO
 
 import const
 from FarmingEnv import FarmingEnv
+from scenarios.ExplorationScenario import ExplorationScenario
 from scenarios.SprayingScenario import SprayingScenario
 from config import log_dir
 from logger import logging
@@ -14,17 +15,19 @@ from utils import input_screen
 
 def run():
     num_agents, grid_size, selected = input_screen()
+    # TO DO сделать например словарь сценариев отдельно
     spraying_scenario = SprayingScenario(num_agents, grid_size)
+    exploration_scenario = ExplorationScenario(num_agents, grid_size)
     scenarios = {
-        1: spraying_scenario  # Добавьте другие сценарии
+        1: spraying_scenario,  # Добавьте другие сценарии
+        2: exploration_scenario
     }
     selected_scenario = scenarios.get(selected)
     if not selected_scenario:
         print(f"Ошибка: сценарий с номером {selected} не найден. Выбран сценарий по умолчанию.")
-        selected_scenario = spraying_scenario
+        selected_scenario = exploration_scenario
     try:
         env = FarmingEnv(selected_scenario)
-        #TO DO описать их на русском, что значат
         hyperparameters_message = (
             f"Гиперпараметры модели:\n\n"
             f"Темп: {const.LEARNING_RATE}\n"
@@ -60,12 +63,11 @@ def run():
         message = "Обучение модели завершено."
         logging.info(message)
         env.render_message(message)
-        model.save("spraying_scenario_model")
+        model.save(f"{selected_scenario}_model")
         time.sleep(2)
         # model = PPO.load("spraying_scenario_model", print_system_info=True)
         clock = pygame.time.Clock()
-        pygame.display.set_caption("Pesticide Spraying Scenario")
-
+        pygame.display.set_caption(selected_scenario.__str__())
         obs, info = env.reset()
         step_count = 0
         while True:
@@ -88,7 +90,8 @@ def run():
             if terminated:
                 message = f"Конец миссии\n\n награда: {int(reward)}\n шагов: {step_count}"
                 env.render_message(message)
-                time.sleep(15)
+                time.sleep(5)
+                break
             clock.tick(15)  # slow
     except KeyboardInterrupt:
         logging.info("Прервано пользователем")

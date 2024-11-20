@@ -12,18 +12,16 @@ from scenarios.FarmingScenario import FarmingScenario
 from utils import load_image
 
 
-class SprayingScenario(FarmingScenario, ABC):
+class ExplorationScenario(FarmingScenario, ABC):
     def __init__(self, num_agents: int, grid_size: int):
         super().__init__(num_agents, grid_size)
         self.start_time = None
-        self.name = 'spraying'
+        self.name = 'exploration'
         self.target_positions = None
         self.obstacle_positions = None
 
     def _reset_scenario(self, *, seed=None, options=None):
         self.start_time = time.time()
-        self.reward_coef = 1
-        self.dinamic_coef = 0.01
 
     def _get_scenario_obs(self):
         """
@@ -48,15 +46,7 @@ class SprayingScenario(FarmingScenario, ABC):
         :param agent:
         :return: observation full and reward for scenario
         """
-        reward = 0
-        value_position = obs['coords'][new_position[0]][new_position[1]]
-        if value_position[0] in (PointStatus.empty.value, PointStatus.viewed.value):
-            if value_position[1] != ObjectStatus.target.value:
-                self.reward_coef *= self.dinamic_coef
-                reward = const.REWARD_EXPLORE * self.reward_coef
-                logging.info(f"{agent.name} исследовал новую клетку {new_position} + {round(reward, 2)}")
-            obs['coords'][new_position[0]][new_position[1]][0] = PointStatus.visited.value
-        return obs, reward
+        return obs, 0
 
     def _check_termination_conditions(self) -> tuple:
         """
@@ -94,8 +84,7 @@ class SprayingScenario(FarmingScenario, ABC):
 
     def _render_scenario(self):
         """Render agent game"""
-        target_icon = load_image(const.TARGET_SPRAY, self.cell_size)
-        target_done_icon = load_image(const.DONE_TARGET_SPRAY, self.cell_size)
+        target_done_icon = load_image(const.DONE_TARGET_EXPLORE, self.cell_size)
         agent_icon = load_image(const.AGENT, self.cell_size)
 
         known_obstacles, known_targets = 0, 0
@@ -103,8 +92,8 @@ class SprayingScenario(FarmingScenario, ABC):
             x, y = target
             if self.current_map[x, y, 0] != 0:
                 known_targets += 1
-                icon = target_done_icon if self.done_status[i] else target_icon
-                self.screen.blit(icon, (y * self.cell_size, x * self.cell_size))
+                if self.done_status[i]:
+                    self.screen.blit(target_done_icon, (y * self.cell_size, x * self.cell_size))
 
         for i, obstacle in enumerate(self.obstacle_positions):
             x, y = obstacle
@@ -150,10 +139,10 @@ class SprayingScenario(FarmingScenario, ABC):
         self.screen.blit(font.render(f"Обнаружено препятствий: {known_obstacles}/{const.COUNT_OBSTACLES}",
                                      True, const.BLACK), (text_x2, text_y1))
         self.screen.blit(
-            font.render(f"Обнаружено целей: {known_targets}/{const.COUNT_TARGETS}",
+            font.render(f"Обнаружено целей: {known_targets}/{len(self.target_positions)}",
                         True, const.BLACK), (text_x2, text_y2))
         self.screen.blit(font.render(f"Отработано целей: {int(np.sum(self.done_status))}/"
-                                     f"{const.COUNT_TARGETS}", True, const.BLACK),
+                                     f"{len(self.target_positions)}", True, const.BLACK),
                          (text_x2, text_y3))
 
         pygame.display.flip()
@@ -164,31 +153,17 @@ class SprayingScenario(FarmingScenario, ABC):
         """
         unavailable_positions = set(self.base_positions)
         # TO DO позиции вокруг базы по 1 клетке нельзя препятствия + это учесть при запросе размера поля
-        self.target_positions = self._get_objects_positions(unavailable_positions, const.COUNT_TARGETS)
-        unavailable_positions.update(self.target_positions)
+
+        # TO DO  проверка, чтоб они не стояли вокруг пустой клетки
         self.obstacle_positions = self._get_objects_positions(unavailable_positions, const.COUNT_OBSTACLES)
+        unavailable_positions.update(self.obstacle_positions)
 
-        while any(self._is_surrounded_by_obstacles(target) for target in self.target_positions):
-            self.obstacle_positions = self._get_objects_positions(unavailable_positions, const.COUNT_OBSTACLES)
-
-    def _is_surrounded_by_obstacles(self, target_position):
-        """
-        Check if a flower is surrounded by obstacles on 3 sides.
-        :param target_position: (x, y) position of the flower
-        :return: True if the flower is surrounded by obstacles on 3 sides, False otherwise
-        """
-        x, y = target_position
-        step = 1
-        surrounding_positions = [
-            (x - step, y), (x + step, y), (x, y - step), (x, y + step)
-        ]
-        obstacle_count = sum(pos in self.obstacle_positions for pos in surrounding_positions)
-        # TO DO 4 or 3??
-        return obstacle_count == 4
+        self.target_positions = self._get_available_positions(unavailable_positions)
 
     def _fixed_positions(self):
         """
         Get fixed positions of objects
         """
-        self.target_positions = const.FIXED_TARGET_POSITIONS
         self.obstacle_positions = const.FIXED_OBSTACLE_POSITIONS
+        self.target_positions = self._get_objects_positions(
+            const.FIXED_TARGET_POSITIONS, self.inner_grid_size * 2 - const.STATION_SIZE * 2)
