@@ -10,7 +10,7 @@ from scenarios.ExplorationScenario import ExplorationScenario
 from scenarios.SprayingScenario import SprayingScenario
 from config import log_dir
 from logger import logging
-from utils import input_screen
+from render.menu_render import input_screen
 
 
 def run():

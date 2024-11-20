@@ -8,6 +8,7 @@ import numpy as np
 from PointStatus import PointStatus, ObjectStatus
 from logger import logging
 import const
+from render.menu_render import render_text
 from scenarios.FarmingScenario import FarmingScenario
 from utils import load_image
 
@@ -129,22 +130,17 @@ class ExplorationScenario(FarmingScenario, ABC):
         text_y2 = text_y1 + status_bar_height // 4
         text_y3 = text_y1 + status_bar_height // 4 * 2
 
-        self.screen.blit(font.render(f"Время: {elapsed_time:.2f} сек", True, const.BLACK),
-                         (text_x1, text_y1))
-        self.screen.blit(font.render(f"Очки: {int(self.total_reward)}", True, const.BLACK),
-                         (text_x1, text_y2))
-        self.screen.blit(font.render(f"Шаги: {self.step_count}", True, const.BLACK),
-                         (text_x1, text_y3))
-
-        self.screen.blit(font.render(f"Обнаружено препятствий: {known_obstacles}/{const.COUNT_OBSTACLES}",
-                                     True, const.BLACK), (text_x2, text_y1))
-        self.screen.blit(
-            font.render(f"Обнаружено целей: {known_targets}/{len(self.target_positions)}",
-                        True, const.BLACK), (text_x2, text_y2))
-        self.screen.blit(font.render(f"Отработано целей: {int(np.sum(self.done_status))}/"
-                                     f"{len(self.target_positions)}", True, const.BLACK),
-                         (text_x2, text_y3))
-
+        color = const.BLACK
+        count_targets = len(self.target_positions)
+        render_text(self.screen, f"Время: {elapsed_time:.2f} сек", font, color, text_x1, text_y1)
+        render_text(self.screen, f"Очки: {int(self.total_reward)}", font, color, text_x1, text_y2)
+        render_text(self.screen, f"Шагов: {self.step_count}", font, color, text_x1, text_y3)
+        render_text(self.screen, f"Обнаружено препятствий: {known_obstacles}/{const.COUNT_OBSTACLES}", font, color,
+                    text_x2, text_y1)
+        render_text(self.screen, f"Обнаружено целей: {known_targets}/{count_targets}", font, color,
+                    text_x2, text_y2)
+        render_text(self.screen, f"Отработано целей: {int(np.sum(self.done_status))}/{count_targets}", font, color,
+                    text_x2, text_y3)
         pygame.display.flip()
 
     def _randomize_positions(self):
