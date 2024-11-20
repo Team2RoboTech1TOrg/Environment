@@ -32,7 +32,7 @@ class Agent:
         self.reward_coef = 1
         self.dinamic_coef = 1.03
         logging.info(f"Позиция {self.name} стартовая {self.position}")
-        self.position_history = deque(maxlen=10)
+        self.position_history = deque(maxlen=self.env.inner_grid_size)
         self.tank = const.TANK_CAPACITY
         self.energy = const.ENERGY_CAPACITY
         coords = np.zeros((self.env.grid_size, self.env.grid_size, 2), dtype=np.int32)

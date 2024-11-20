@@ -50,8 +50,7 @@ def input_screen():
         try:
             # Рассчитываем минимальный размер поля, если количество агентов введено
             num_agents = int(input_values[0]) if input_values[0].isdigit() else const.NUM_AGENTS
-            grid_size_min = ceil(
-                (const.COUNT_TARGETS + const.COUNT_OBSTACLES + num_agents) ** 0.5) + const.STATION_SIZE
+            grid_size_min = ceil(num_agents * 3 ** 0.5) + const.STATION_SIZE * 2
         except ValueError:
             grid_size_min = 0  # Если ввод некорректный
 
@@ -95,7 +94,6 @@ def input_screen():
         num_agents = int(input_values[0]) if input_values[0] else const.NUM_AGENTS
         grid_size = int(input_values[1]) if input_values[1] else const.GRID_SIZE
         if grid_size < grid_size_min:
-            # TO DO не работает при 2 агентах и 6 клетках and 1st scenario
             raise ValueError(f"Размер поля должен быть больше, чем {grid_size_min}")
         selected_scenario = int(input_values[2]) if input_values[2] else 1
     except ValueError as e:

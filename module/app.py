@@ -19,7 +19,7 @@ def run():
     spraying_scenario = SprayingScenario(num_agents, grid_size)
     exploration_scenario = ExplorationScenario(num_agents, grid_size)
     scenarios = {
-        1: spraying_scenario,  # Добавьте другие сценарии
+        1: spraying_scenario,
         2: exploration_scenario
     }
     selected_scenario = scenarios.get(selected)
@@ -59,8 +59,8 @@ def run():
             batch_size=const.BATCH_SIZE,
             tensorboard_log=log_dir,
         )
-        model.learn(total_timesteps=10000)
-        message = "Обучение модели завершено."
+        model.learn(total_timesteps=const.TIME)
+        message = "Обучение модели\nзавершено."
         logging.info(message)
         env.render_message(message)
         model.save(f"{selected_scenario}_model")

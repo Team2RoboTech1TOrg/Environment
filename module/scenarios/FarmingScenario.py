@@ -131,12 +131,12 @@ class FarmingScenario(BaseScenario, ABC):
         if self.screen is None:
             pygame.init()
             self.screen = pygame.display.set_mode((const.SCREEN_SIZE, const.SCREEN_SIZE + const.BAR_HEIGHT))
-
+        cell = self.cell_size
         bg = pygame.image.load(const.FIELD_BACKGROUND).convert()
-        base_icon = load_image(const.STATION, self.cell_size)
+        base_icon = load_image(const.STATION, cell)
         bg_image = pygame.image.load(const.FIELD).convert()
 
-        full_field_size = self.grid_size * self.cell_size
+        full_field_size = self.grid_size * cell
         bg = pygame.transform.smoothscale(bg, (full_field_size, full_field_size))
 
         # Отрисовка сетки
@@ -144,12 +144,12 @@ class FarmingScenario(BaseScenario, ABC):
             for y in range(self.grid_size):
                 pygame.draw.rect(
                     self.screen, const.BLACK,
-                    (x * self.cell_size, y * self.cell_size, self.cell_size, self.cell_size), 1
+                    (x * cell, y * cell, cell, cell), 1
                 )
         # Отрисовка границы внутреннего поля
         inner_field_size = self.inner_grid_size * self.cell_size
-        margin_x = (self.grid_size * self.cell_size - inner_field_size) // 2
-        margin_y = (self.grid_size * self.cell_size - inner_field_size) // 2
+        margin_x = (self.grid_size * cell - inner_field_size) // 2
+        margin_y = (self.grid_size * cell - inner_field_size) // 2
         inner_field_rect = pygame.Rect(margin_x, margin_y, inner_field_size, inner_field_size)
         pygame.draw.rect(self.screen, const.BLACK, inner_field_rect, 4)
 
@@ -167,7 +167,7 @@ class FarmingScenario(BaseScenario, ABC):
         base_icon_scaled = pygame.transform.smoothscale(base_icon, (base_size, base_size))
         base_start_pos = self.base_positions[0]
         self.screen.blit(base_icon_scaled,
-                         (base_start_pos[1] * self.cell_size, base_start_pos[0] * self.cell_size))
+                         (base_start_pos[1] * cell, base_start_pos[0] * cell))
         self._render_scenario()
 
     @abstractmethod

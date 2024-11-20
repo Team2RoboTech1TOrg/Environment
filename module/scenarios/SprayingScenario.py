@@ -95,9 +95,10 @@ class SprayingScenario(FarmingScenario, ABC):
 
     def _render_scenario(self):
         """Render agent game"""
-        target_icon = load_image(const.TARGET_SPRAY, self.cell_size)
-        target_done_icon = load_image(const.DONE_TARGET_SPRAY, self.cell_size)
-        agent_icon = load_image(const.AGENT, self.cell_size)
+        cell = self.cell_size
+        target_icon = load_image(const.TARGET_SPRAY, cell)
+        target_done_icon = load_image(const.DONE_TARGET_SPRAY, cell)
+        agent_icon = load_image(const.AGENT, cell)
 
         known_obstacles, known_targets = 0, 0
         for i, target in enumerate(self.target_positions):
@@ -105,27 +106,27 @@ class SprayingScenario(FarmingScenario, ABC):
             if self.current_map[x, y, 0] != 0:
                 known_targets += 1
                 icon = target_done_icon if self.done_status[i] else target_icon
-                self.screen.blit(icon, (y * self.cell_size, x * self.cell_size))
+                self.screen.blit(icon, (y * cell, x * cell))
 
         for i, obstacle in enumerate(self.obstacle_positions):
             x, y = obstacle
             if self.current_map[x, y, 0] != 0:
                 known_obstacles += 1
                 obstacle_icon = self.obstacle_icons[i % len(self.obstacle_icons)]
-                self.screen.blit(obstacle_icon, (y * self.cell_size, x * self.cell_size))
+                self.screen.blit(obstacle_icon, (y * cell, x * cell))
 
         # Накладываем исследование области
         for x in range(self.grid_size):
             for y in range(self.grid_size):
                 if self.current_map[x, y, 0] == 0:
-                    dark_overlay = pygame.Surface((self.cell_size, self.cell_size), pygame.SRCALPHA)
+                    dark_overlay = pygame.Surface((cell, cell), pygame.SRCALPHA)
                     dark_overlay.fill((0, 0, 0, 200))  # Непрозрачный
-                    self.screen.blit(dark_overlay, (y * self.cell_size, x * self.cell_size))
+                    self.screen.blit(dark_overlay, (y * cell, x * cell))
 
         # Отрисовка агента
         for agent in self.agents:
-            self.screen.blit(agent_icon, (agent.position[1] * self.cell_size,
-                                          agent.position[0] * self.cell_size))
+            self.screen.blit(agent_icon, (agent.position[1] * cell,
+                                          agent.position[0] * cell))
 
         # Отрисовка времени, очков, заряда и уровня воды
         screen_width, screen_height = self.screen.get_size()
