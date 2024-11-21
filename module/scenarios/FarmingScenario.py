@@ -15,6 +15,21 @@ from utils import load_obstacles, load_image
 class FarmingScenario(BaseScenario, ABC):
     def __init__(self, num_agents: int, grid_size: int):
         self.name = None
+        self.screen_size = const.SCREEN_SIZE
+        self.grid_size = grid_size
+        self.cell_size = self.screen_size // self.grid_size
+        self.margin = const.MARGIN_SIZE
+        self.inner_grid_size = self.grid_size - self.margin * 2
+        self.screen = None  # Экран создается при необходимости
+        self.num_agents = num_agents
+        self.count_targets = None
+        self.count_obstacles = ceil(self.grid_size ** 2 * const.OBSTACLE_PERCENT)
+        self.base_size = const.STATION_SIZE
+        base_coords = (self.margin + 1, self.grid_size // 2 - self.base_size // 2)
+        self.base_positions = [(base_coords[0] + i, base_coords[1] + j) for i in range(self.base_size)
+                               for j in range(self.base_size)]
+        self.agents = [Agent(self, name=f'agent_{i}') for i in range(self.num_agents)]
+        self.obstacle_icons = load_obstacles(const.OBSTACLES, self.cell_size, self.count_obstacles)
         self.done_status = None
         self.current_map = None
         self.reward_coef = None
@@ -22,26 +37,13 @@ class FarmingScenario(BaseScenario, ABC):
         self.total_reward = None
         self.step_reward = None
         self.step_count = None
-        self.grid_size = grid_size
-        self.cell_size = const.SCREEN_SIZE // self.grid_size
-        self.margin = const.MARGIN_SIZE
-        self.inner_grid_size = self.grid_size - self.margin * 2
-        self.screen = None  # Экран создается при необходимости
-        self.num_agents = num_agents
-        self.count_targets = None
-        self.count_obstacles = ceil(self.grid_size ** 2 * const.OBSTACLE_PERCENT)
-        base_coords = (self.margin + 1, self.grid_size // 2 - const.STATION_SIZE // 2)
-        self.base_positions = [(base_coords[0] + i, base_coords[1] + j) for i in range(const.STATION_SIZE)
-                               for j in range(const.STATION_SIZE)]
-        self.agents = [Agent(self, name=f'agent_{i}') for i in range(self.num_agents)]
-        self.obstacle_icons = load_obstacles(const.OBSTACLES, self.cell_size, self.count_obstacles)
 
     def reset(self, *, seed=None, options=None):
         self.reset_objects_positions()
         self.step_count = 1
         self.total_reward = 0
         self.step_reward = 0
-        self.done_status = np.zeros(self.inner_grid_size ** 2 - self.count_obstacles - const.STATION_SIZE * 2)
+        self.done_status = np.zeros(self.inner_grid_size ** 2 - self.count_obstacles - self.base_size * 2)
         self.current_map = np.full((self.grid_size, self.grid_size, 2), fill_value=0)
         agent_obs = [agent.reset() for agent in self.agents]
         obs = {'pos': np.stack([obs['pos'] for obs in agent_obs]),
@@ -132,7 +134,7 @@ class FarmingScenario(BaseScenario, ABC):
     def render(self):
         if self.screen is None:
             pygame.init()
-            self.screen = pygame.display.set_mode((const.SCREEN_SIZE, const.SCREEN_SIZE + const.BAR_HEIGHT))
+            self.screen = pygame.display.set_mode((self.screen_size, self.screen_size + const.BAR_HEIGHT))
         cell = self.cell_size
         bg = pygame.image.load(const.FIELD_BACKGROUND).convert()
         base_icon = load_image(const.STATION, cell)
@@ -160,12 +162,12 @@ class FarmingScenario(BaseScenario, ABC):
         self.screen.blit(bg_image, (margin_x, margin_y))
 
         # Отрисовка панели статуса
-        status_bar_rect = pygame.Rect(0, const.SCREEN_SIZE, const.SCREEN_SIZE,
+        status_bar_rect = pygame.Rect(0, self.screen_size, self.screen_size,
                                       const.BAR_HEIGHT)
         pygame.draw.rect(self.screen, const.WHITE, status_bar_rect)
 
         # Отрисовка базы
-        base_size = const.STATION_SIZE * self.cell_size
+        base_size = self.base_size * self.cell_size
         base_icon_scaled = pygame.transform.smoothscale(base_icon, (base_size, base_size))
         base_start_pos = self.base_positions[0]
         self.screen.blit(base_icon_scaled,
@@ -184,10 +186,10 @@ class FarmingScenario(BaseScenario, ABC):
         """
         if self.screen is None:
             pygame.init()
-            self.screen = pygame.display.set_mode((const.SCREEN_SIZE, const.SCREEN_SIZE + const.BAR_HEIGHT))
+            self.screen = pygame.display.set_mode((self.screen_size, self.screen_size + const.BAR_HEIGHT))
         self.screen.fill(const.GRAY)
 
-        font = pygame.font.Font(pygame.font.get_default_font(), int(const.SCREEN_SIZE * 0.055))
+        font = pygame.font.Font(pygame.font.get_default_font(), int(self.screen_size * 0.055))
         lines = render_text.split('\n')
         screen_width, screen_height = self.screen.get_size()
         y_offset = (screen_height - len(lines) * font.get_height()) // 2

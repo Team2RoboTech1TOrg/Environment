@@ -1,16 +1,14 @@
 # Параметры модели
-from math import ceil
-
-TIME = 100#_000
+TIME = 50_000
 LEARNING_RATE = 0.0001
-GAMMA = 0.99
+GAMMA = 0.95
 CLIP_RANGE = 0.2
 N_STEPS = 4096
 COEF = 0.001
-VF_COEF = 0.5
+VF_COEF = 0.4
 CLIP_RANGE_VF = 0.2
 N_EPOCHS = 30
-BATCH_SIZE = 64
+BATCH_SIZE = 128
 
 # Параметры экрана и сетки
 SCREEN_SIZE = 900
@@ -25,7 +23,7 @@ NUM_AGENTS = 3
 TARGET_PERCENT = 0.45
 OBSTACLE_PERCENT = 0.05
 STATION_SIZE = 2
-MAX_STEPS_GAME = (GRID_SIZE ** 2) * 5
+MAX_STEPS_GAME = (GRID_SIZE ** 2) * 5 #add to class
 VIEW_RANGE = 1  # Область зрения 3x3
 ON_TARGET_CONSUMPTION = 10  # Расход
 TANK_CAPACITY = 20 * ON_TARGET_CONSUMPTION  # Как-то продумать его
@@ -33,7 +31,7 @@ ENERGY_CAPACITY = 3000  # Максимальный запас энергии
 ENERGY_CONSUMPTION_MOVE = 1
 ENERGY_CONSUMPTION_DONE = 2
 COUNT_ACTIONS = 5
-MIN_GAME_STEPS = (GRID_SIZE * GRID_SIZE // NUM_AGENTS) * 2
+MIN_GAME_STEPS = (GRID_SIZE * GRID_SIZE // NUM_AGENTS) * 2 # add to class
 
 # Награды
 REWARD_EXPLORE = 2  # Вознаграждение за исследование новых клеток
@@ -61,10 +59,10 @@ FIXED_OBSTACLE_POSITIONS = [
 WHITE = (200, 200, 255)
 BLACK = (0, 0, 0)
 GREEN = (34, 139, 34)
-BLUE = (0, 0, 255)
 RED = (255, 69, 0)
 GRAY = (30, 30, 30)
 LIGHT_GRAY = (100, 100, 100)
+FONT = 'Arial'
 
 # изображения
 AGENT = "images/drone.png"

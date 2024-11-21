@@ -2,7 +2,7 @@ import time
 
 import pygame
 import sys
-from stable_baselines3 import PPO
+from stable_baselines3 import PPO, DDPG
 
 import const
 from FarmingEnv import FarmingEnv

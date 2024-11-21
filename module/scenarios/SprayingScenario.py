@@ -55,8 +55,8 @@ class SprayingScenario(FarmingScenario, ABC):
         value_position = obs['coords'][new_position[0]][new_position[1]]
         if value_position[0] in (PointStatus.empty.value, PointStatus.viewed.value):
             if value_position[1] != ObjectStatus.target.value:
-                self.reward_coef *= self.dinamic_coef
-                reward = const.REWARD_EXPLORE * self.reward_coef
+                # self.reward_coef *= self.dinamic_coef
+                reward = const.REWARD_EXPLORE# * self.reward_coef
                 logging.info(f"{agent.name} исследовал новую клетку {new_position} + {round(reward, 2)}")
             obs['coords'][new_position[0]][new_position[1]][0] = PointStatus.visited.value
         return obs, reward
@@ -140,7 +140,7 @@ class SprayingScenario(FarmingScenario, ABC):
 
         text_x1 = screen_width * 0.05
         text_x2 = screen_width * 0.5
-        text_y1 = const.SCREEN_SIZE + status_bar_height * 0.1
+        text_y1 = self.screen_size + status_bar_height * 0.1
         text_y2 = text_y1 + status_bar_height // 4
         text_y3 = text_y1 + status_bar_height // 4 * 2
 

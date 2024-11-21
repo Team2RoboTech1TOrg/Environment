@@ -5,6 +5,7 @@ from abc import ABC
 import pygame
 import numpy as np
 
+from PointStatus import PointStatus
 from logger import logging
 import const
 from render.menu_render import render_text
@@ -46,6 +47,9 @@ class ExplorationScenario(FarmingScenario, ABC):
         :param agent:
         :return: observation full and reward for scenario
         """
+        value_position = obs['coords'][new_position[0]][new_position[1]]
+        if value_position[0] in (PointStatus.empty.value, PointStatus.viewed.value):
+            obs['coords'][new_position[0]][new_position[1]][0] = PointStatus.visited.value
         return obs, 0
 
     def _check_termination_conditions(self) -> tuple:
@@ -122,11 +126,11 @@ class ExplorationScenario(FarmingScenario, ABC):
         elapsed_time = time.time() - self.start_time  # Рассчитываем время
 
         font_size = int(status_bar_height * 0.25)  # Размер шрифта для панели статуса
-        font = pygame.font.SysFont('Arial', font_size)
+        font = pygame.font.SysFont(const.FONT, font_size)
 
         text_x1 = screen_width * 0.05
         text_x2 = screen_width * 0.5
-        text_y1 = const.SCREEN_SIZE + status_bar_height * 0.1
+        text_y1 = self.screen_size + status_bar_height * 0.1
         text_y2 = text_y1 + status_bar_height // 4
         text_y3 = text_y1 + status_bar_height // 4 * 2
 
@@ -160,4 +164,4 @@ class ExplorationScenario(FarmingScenario, ABC):
         """
         self.obstacle_positions = const.FIXED_OBSTACLE_POSITIONS
         self.target_positions = self._get_objects_positions(
-            const.FIXED_TARGET_POSITIONS, self.inner_grid_size * 2 - const.STATION_SIZE * 2)
+            const.FIXED_TARGET_POSITIONS, self.inner_grid_size * 2 - self.base_size * 2)

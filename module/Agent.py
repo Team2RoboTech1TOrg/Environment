@@ -134,8 +134,8 @@ class Agent:
                     self.energy -= const.ENERGY_CONSUMPTION_DONE
                     self.tank -= const.ON_TARGET_CONSUMPTION
                     self.env.done_status[idx] = 1
-                    self.reward_coef *= self.dinamic_coef
-                    agent_reward += const.REWARD_DONE * self.reward_coef
+                    # self.reward_coef *= self.dinamic_coef
+                    agent_reward += const.REWARD_DONE# * self.reward_coef
                     logging.info(f"{self} выполнена задача {new_position}, награда {round(agent_reward, 2)}")
             else:
                 if len(self.position_history) > 3:
