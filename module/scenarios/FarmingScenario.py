@@ -28,18 +28,20 @@ class FarmingScenario(BaseScenario, ABC):
         self.inner_grid_size = self.grid_size - self.margin * 2
         self.screen = None  # Экран создается при необходимости
         self.num_agents = num_agents
+        self.count_targets = None
+        self.count_obstacles = ceil(self.grid_size ** 2 * const.OBSTACLE_PERCENT)
         base_coords = (self.margin + 1, self.grid_size // 2 - const.STATION_SIZE // 2)
         self.base_positions = [(base_coords[0] + i, base_coords[1] + j) for i in range(const.STATION_SIZE)
                                for j in range(const.STATION_SIZE)]
         self.agents = [Agent(self, name=f'agent_{i}') for i in range(self.num_agents)]
-        self.obstacle_icons = load_obstacles(const.OBSTACLES, self.cell_size, const.COUNT_OBSTACLES)
+        self.obstacle_icons = load_obstacles(const.OBSTACLES, self.cell_size, self.count_obstacles)
 
     def reset(self, *, seed=None, options=None):
         self.reset_objects_positions()
         self.step_count = 1
         self.total_reward = 0
         self.step_reward = 0
-        self.done_status = np.zeros(self.inner_grid_size ** 2 - const.COUNT_OBSTACLES - const.STATION_SIZE * 2)
+        self.done_status = np.zeros(self.inner_grid_size ** 2 - self.count_obstacles - const.STATION_SIZE * 2)
         self.current_map = np.full((self.grid_size, self.grid_size, 2), fill_value=0)
         agent_obs = [agent.reset() for agent in self.agents]
         obs = {'pos': np.stack([obs['pos'] for obs in agent_obs]),
@@ -249,6 +251,18 @@ class FarmingScenario(BaseScenario, ABC):
         available_positions = self._get_available_positions(unavailable)
         indices = np.random.choice(len(available_positions), size=size, replace=False)
         return [available_positions[i] for i in indices]
+
+    def get_restricted_area_around_base(self) -> set:
+        """
+        Get all positions around base.
+        """
+        restricted_positions = {
+            (x + dx, y + dy) for x, y in self.base_positions
+            for dx in range(-1, 2)
+            for dy in range(-1, 2)
+            if 0 <= x + dx < self.grid_size and 0 <= y + dy < self.grid_size
+        }
+        return restricted_positions
 
     def __repr__(self):
         return f'scenario_{self.name}'

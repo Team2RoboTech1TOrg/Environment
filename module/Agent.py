@@ -61,11 +61,11 @@ class Agent:
             case 0:  # Вверх
                 new_position = (max(0, self.position[0] - 1), self.position[1])
             case 1:  # Вниз
-                new_position = (min(const.GRID_SIZE - 1, self.position[0] + 1), self.position[1])
+                new_position = (min(self.env.grid_size - 1, self.position[0] + 1), self.position[1])
             case 2:  # Влево
                 new_position = (self.position[0], max(0, self.position[1] - 1))
             case 3:  # Вправо
-                new_position = (self.position[0], min(const.GRID_SIZE - 1, self.position[1] + 1))
+                new_position = (self.position[0], min(self.env.grid_size - 1, self.position[1] + 1))
             case 4:  # На месте
                 new_position = self.position
             case _:

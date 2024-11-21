@@ -26,21 +26,25 @@ def render_text(screen: Surface, text: Any, font: pygame.font, color: tuple[int,
 # TO DO убрать магические числа
 def input_screen():
     """Pygame box for choosing number of agents, grid size and scenario"""
+    """Pygame box for choosing number of agents, grid size, and scenario"""
     pygame.init()
-    screen = pygame.display.set_mode((600, 400))
+    screen = pygame.display.set_mode((600, 600))
     pygame.display.set_caption("Ввод параметров сценария")
     font = pygame.font.Font(None, 36)
     small_font = pygame.font.Font(None, 24)
+    clock = pygame.time.Clock()
 
     inputs = ["Введите количество агентов:",
               "Введите размер поля (минимум):",
-              "Выберите сценарий:"
-              " 1 - spraying"
-              " 2 - exploration"]
+              "Выберите сценарий:"]
     input_boxes = [pygame.Rect(150, 150 + i * 80, 300, 40) for i in range(len(inputs))]
-    # scenarios = ["spraying", "exploration"]
-    # dropdown = Dropdown(450, 390, 100, 50, scenarios)
-    input_values = ["", "", ""]
+    input_values = ["", "", "1"]  # По умолчанию выбран сценарий 1
+
+    # Данные для выпадающего списка
+    scenarios = ["1 - spraying", "2 - exploration"]
+    dropdown_open = False
+    dropdown_scroll_offset = 0  # Смещение прокрутки списка
+    dropdown_visible_count = 3  # Количество видимых опций в списке
 
     active_box = 0
     finished = False
@@ -48,9 +52,10 @@ def input_screen():
     while not finished:
         screen.fill(const.GRAY)
         try:
-            # Рассчитываем минимальный размер поля, если количество агентов введено
+            # расчет исходя из доли объектов, кол-ва агентов, отступа и ширины базы
             num_agents = int(input_values[0]) if input_values[0].isdigit() else const.NUM_AGENTS
-            grid_size_min = ceil(num_agents * 3 ** 0.5) + const.STATION_SIZE * 2
+            grid_size_min = ceil((num_agents + const.STATION_SIZE * 2 + const.MARGIN_SIZE * 2) / (
+                        const.OBSTACLE_PERCENT + const.TARGET_PERCENT))
         except ValueError:
             grid_size_min = 0  # Если ввод некорректный
 
@@ -59,20 +64,48 @@ def input_screen():
                 pygame.quit()
                 sys.exit()
             if event.type == pygame.MOUSEBUTTONDOWN:
-                for i, box in enumerate(input_boxes):
-                    if box.collidepoint(event.pos):
-                        active_box = i
+                if event.button == 1:  # Обрабатываем только левый клик мыши
+                    if dropdown_open:
+                        # Если список открыт, проверяем, кликнул ли пользователь в него
+                        dropdown_box = pygame.Rect(150, input_boxes[2].bottom, 300, 40 * dropdown_visible_count)
+                        if dropdown_box.collidepoint(event.pos):
+                            # Определяем индекс выбранного элемента
+                            clicked_index = (event.pos[1] - input_boxes[2].bottom) // 40 + dropdown_scroll_offset
+                            if 0 <= clicked_index < len(scenarios):
+                                input_values[2] = str(clicked_index + 1)  # Сохраняем выбор
+                        dropdown_open = False  # Закрываем список, если клик не внутри
+
+                    else:
+                        # Проверяем клик в другие поля ввода
+                        for i, box in enumerate(input_boxes):
+                            if box.collidepoint(event.pos):
+                                active_box = i
+                                if i == 2:  # Открыть список при клике на поле сценария
+                                    dropdown_open = True
+                                    dropdown_scroll_offset = 0  # Сбрасываем прокрутку
+                                else:
+                                    dropdown_open = False  # Закрываем список при клике вне него
+
             if event.type == pygame.KEYDOWN:
-                if active_box < len(inputs):  # Убедиться, что активная коробка существует
+                if active_box < len(inputs) and not dropdown_open:  # Ввод текста только в закрытом состоянии списка
                     if event.key == pygame.K_BACKSPACE:
                         input_values[active_box] = input_values[active_box][:-1]
-                    elif event.key == pygame.K_RETURN:  # Перейти к следующему полю ввода
+                    elif event.key == pygame.K_RETURN:  # Переход к следующему полю
                         active_box += 1
                         if active_box >= len(inputs):
                             finished = True
                     else:
                         input_values[active_box] += event.unicode
-            # dropdown.handle_event(event) #new
+
+            if event.type == pygame.MOUSEWHEEL:
+                if dropdown_open:
+                    # Прокрутка выпадающего списка
+                    dropdown_scroll_offset -= event.y
+                    dropdown_scroll_offset = max(0,
+                                                 min(dropdown_scroll_offset, len(scenarios) - dropdown_visible_count))
+                # Не добавляем действия при прокрутке колеса мыши, если выпадающий список не открыт
+                else:
+                    pass  # Игнорируем другие действия для прокрутки
 
         # Отрисовка подсказок и полей ввода
         for i, text in enumerate(inputs):
@@ -80,11 +113,25 @@ def input_screen():
                 text = f"Введите размер поля (от {grid_size_min}):"
 
             # Отображаем текст с выравниванием
-            render_text(screen, text, small_font, (200, 200, 200), 150, 120 + i * 80)
+            render_text(screen, text, small_font, const.WHITE, 150, 120 + i * 80)
             color = const.WHITE if i == active_box else const.BLACK
             pygame.draw.rect(screen, color, input_boxes[i], 2)
             render_text(screen, input_values[i], font, const.WHITE, input_boxes[i].x + 5, input_boxes[i].y + 5)
-        # dropdown.draw(screen) # new
+
+        # Отрисовка выпадающего списка
+        if dropdown_open:
+            dropdown_box = pygame.Rect(150, input_boxes[2].bottom, 300, 40 * dropdown_visible_count)
+            pygame.draw.rect(screen, const.LIGHT_GRAY, dropdown_box)
+            pygame.draw.rect(screen, const.BLACK, dropdown_box, 2)  # Граница списка
+
+            # Отображаем видимые элементы
+            visible_scenarios = scenarios[dropdown_scroll_offset:dropdown_scroll_offset + dropdown_visible_count]
+            for i, scenario in enumerate(visible_scenarios):
+                option_box = pygame.Rect(150, input_boxes[2].bottom + i * 40, 300, 40)
+                pygame.draw.rect(screen, const.LIGHT_GRAY, option_box)
+                pygame.draw.rect(screen, const.BLACK, option_box, 1)
+                render_text(screen, scenario, small_font, const.WHITE, option_box.x + 5, option_box.y + 5)
+
         pygame.display.flip()
         pygame.time.Clock().tick(30)
     pygame.quit()

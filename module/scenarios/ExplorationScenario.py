@@ -131,15 +131,15 @@ class ExplorationScenario(FarmingScenario, ABC):
         text_y3 = text_y1 + status_bar_height // 4 * 2
 
         color = const.BLACK
-        count_targets = len(self.target_positions)
+        # count_targets = len(self.target_positions)
         render_text(self.screen, f"Время: {elapsed_time:.2f} сек", font, color, text_x1, text_y1)
         render_text(self.screen, f"Очки: {int(self.total_reward)}", font, color, text_x1, text_y2)
         render_text(self.screen, f"Шагов: {self.step_count}", font, color, text_x1, text_y3)
-        render_text(self.screen, f"Обнаружено препятствий: {known_obstacles}/{const.COUNT_OBSTACLES}", font, color,
+        render_text(self.screen, f"Обнаружено препятствий: {known_obstacles}/{self.count_obstacles}", font, color,
                     text_x2, text_y1)
-        render_text(self.screen, f"Обнаружено целей: {known_targets}/{count_targets}", font, color,
+        render_text(self.screen, f"Обнаружено целей: {known_targets}/{self.count_targets}", font, color,
                     text_x2, text_y2)
-        render_text(self.screen, f"Отработано целей: {int(np.sum(self.done_status))}/{count_targets}", font, color,
+        render_text(self.screen, f"Отработано целей: {int(np.sum(self.done_status))}/{self.count_targets}", font, color,
                     text_x2, text_y3)
         pygame.display.flip()
 
@@ -147,14 +147,12 @@ class ExplorationScenario(FarmingScenario, ABC):
         """
         Get random positions of objects
         """
-        unavailable_positions = set(self.base_positions)
-        # TO DO позиции вокруг базы по 1 клетке нельзя препятствия + это учесть при запросе размера поля
-
+        unavailable_positions = self.get_restricted_area_around_base()
         # TO DO  проверка, чтоб они не стояли вокруг пустой клетки
-        self.obstacle_positions = self._get_objects_positions(unavailable_positions, const.COUNT_OBSTACLES)
+        self.obstacle_positions = self._get_objects_positions(unavailable_positions, self.count_obstacles)
         unavailable_positions.update(self.obstacle_positions)
-
         self.target_positions = self._get_available_positions(unavailable_positions)
+        self.count_targets = len(self.target_positions)
 
     def _fixed_positions(self):
         """

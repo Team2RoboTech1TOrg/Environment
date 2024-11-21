@@ -1,6 +1,7 @@
 import random
 import time
 from abc import ABC
+from math import ceil
 
 import pygame
 import numpy as np
@@ -20,6 +21,7 @@ class SprayingScenario(FarmingScenario, ABC):
         self.name = 'spraying'
         self.target_positions = None
         self.obstacle_positions = None
+        self.count_targets = ceil(self.grid_size ** 2 * const.TARGET_PERCENT)
 
     def _reset_scenario(self, *, seed=None, options=None):
         self.start_time = time.time()
@@ -146,12 +148,12 @@ class SprayingScenario(FarmingScenario, ABC):
         render_text(self.screen, f"Время: {elapsed_time:.2f} сек", font, color, text_x1, text_y1)
         render_text(self.screen, f"Очки: {int(self.total_reward)}", font, color, text_x1, text_y2)
         render_text(self.screen, f"Шагов: {self.step_count}", font, color, text_x1, text_y3)
-        render_text(self.screen, f"Обнаружено препятствий: {known_obstacles}/{const.COUNT_OBSTACLES}", font, color,
+        render_text(self.screen, f"Обнаружено препятствий: {known_obstacles}/{self.count_obstacles}", font, color,
                     text_x2, text_y1)
-        render_text(self.screen, f"Обнаружено целей: {known_targets}/{const.COUNT_TARGETS}", font, color,
+        render_text(self.screen, f"Обнаружено целей: {known_targets}/{self.count_targets}", font, color,
                     text_x2, text_y2)
         render_text(self.screen,
-                    f"Отработано целей: {int(np.sum(self.done_status))}/{const.COUNT_TARGETS}", font, color,
+                    f"Отработано целей: {int(np.sum(self.done_status))}/{self.count_targets}", font, color,
                     text_x2, text_y3)
         pygame.display.flip()
 
@@ -159,14 +161,13 @@ class SprayingScenario(FarmingScenario, ABC):
         """
         Get random positions of objects
         """
-        unavailable_positions = set(self.base_positions)
-        # TO DO позиции вокруг базы по 1 клетке нельзя препятствия + это учесть при запросе размера поля
-        self.target_positions = self._get_objects_positions(unavailable_positions, const.COUNT_TARGETS)
+        unavailable_positions = self.get_restricted_area_around_base()
+        self.target_positions = self._get_objects_positions(unavailable_positions, self.count_targets)
         unavailable_positions.update(self.target_positions)
-        self.obstacle_positions = self._get_objects_positions(unavailable_positions, const.COUNT_OBSTACLES)
+        self.obstacle_positions = self._get_objects_positions(unavailable_positions, self.count_obstacles)
 
         while any(self._is_surrounded_by_obstacles(target) for target in self.target_positions):
-            self.obstacle_positions = self._get_objects_positions(unavailable_positions, const.COUNT_OBSTACLES)
+            self.obstacle_positions = self._get_objects_positions(unavailable_positions, self.count_obstacles)
 
     def _is_surrounded_by_obstacles(self, target_position):
         """
@@ -180,8 +181,7 @@ class SprayingScenario(FarmingScenario, ABC):
             (x - step, y), (x + step, y), (x, y - step), (x, y + step)
         ]
         obstacle_count = sum(pos in self.obstacle_positions for pos in surrounding_positions)
-        # TO DO 4 or 3??
-        return obstacle_count == 4
+        return obstacle_count == 3
 
     def _fixed_positions(self):
         """
