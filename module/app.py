@@ -11,21 +11,17 @@ from scenarios.SprayingScenario import SprayingScenario
 from config import log_dir
 from logger import logging
 from render.menu_render import input_screen
+from scenarios.scenarios_dict import get_dict_scenarios
 
 
 def run():
     num_agents, grid_size, selected = input_screen()
-    # TO DO сделать например словарь сценариев отдельно
-    spraying_scenario = SprayingScenario(num_agents, grid_size)
-    exploration_scenario = ExplorationScenario(num_agents, grid_size)
-    scenarios = {
-        1: spraying_scenario,
-        2: exploration_scenario
-    }
+    scenarios = get_dict_scenarios(num_agents, grid_size)
     selected_scenario = scenarios.get(selected)
+
     if not selected_scenario:
         print(f"Ошибка: сценарий с номером {selected} не найден. Выбран сценарий по умолчанию.")
-        selected_scenario = exploration_scenario
+        selected_scenario = scenarios[1]
     try:
         env = FarmingEnv(selected_scenario)
         hyperparameters_message = (
