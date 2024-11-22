@@ -1,13 +1,13 @@
 # Параметры модели
-TIME = 250000
+TIME = 100000
 LEARNING_RATE = 0.001
 GAMMA = 0.95
 CLIP_RANGE = 0.2
 N_STEPS = 4096
 COEF = 0.001
 VF_COEF = 0.4
-CLIP_RANGE_VF = 0.2
-N_EPOCHS = 300
+CLIP_RANGE_VF = 0.1#2
+N_EPOCHS = 30#0
 BATCH_SIZE = 128
 
 # Параметры экрана и сетки
