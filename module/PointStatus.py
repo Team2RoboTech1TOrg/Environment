@@ -10,6 +10,6 @@ class PointStatus(enum.Enum):
 class ObjectStatus(enum.Enum):
     empty = 0
     obstacle = 1
-    target = 2
+    plant = 2
     base = 3
 

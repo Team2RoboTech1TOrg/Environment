@@ -22,7 +22,11 @@ class FarmingScenario(BaseScenario, ABC):
         self.screen = None  # Экран создается при необходимости
         self.num_agents = num_agents
         self.count_targets = None
+        self.target_positions = None
         self.count_obstacles = ceil(self.grid_size ** 2 * const.OBSTACLE_PERCENT)
+        self.obstacle_positions = None
+        self.count_plants = ceil(self.grid_size ** 2 * const.TARGET_PERCENT)
+        self.plants_positions = None
         self.base_size = const.STATION_SIZE
         base_coords = (self.margin + 1, self.grid_size // 2 - self.base_size // 2)
         self.base_positions = [(base_coords[0] + i, base_coords[1] + j) for i in range(self.base_size)
@@ -42,7 +46,7 @@ class FarmingScenario(BaseScenario, ABC):
         self.step_count = 1
         self.total_reward = 0
         self.step_reward = 0
-        self.done_status = np.zeros(self.inner_grid_size ** 2 - self.count_obstacles - self.base_size * 2)
+        self.done_status = np.zeros(self.count_targets)#inner_grid_size ** 2 - self.count_obstacles - self.base_size * 2)
         self.current_map = np.full((self.grid_size, self.grid_size, 2), fill_value=0)
         agent_obs = [agent.reset() for agent in self.agents]
         obs = {'pos': np.stack([obs['pos'] for obs in agent_obs]),
@@ -74,8 +78,10 @@ class FarmingScenario(BaseScenario, ABC):
 
         agent_start_times = [i * 2 for i in range(self.num_agents)]
         for i, agent in enumerate(self.agents):
+            logging.info(f"obs old {obs['pos'][i]}")
             if self.step_count >= agent_start_times[i]:
                 new_position, agent_reward, terminated, truncated, info = agent.take_action(action[i])
+                logging.info(f"pos after action {new_position}")
                 terminated_list.append(terminated)
                 truncated_list.append(truncated)
             else:
@@ -83,10 +89,10 @@ class FarmingScenario(BaseScenario, ABC):
                 continue
 
             new_position = self.check_crash(obs, agent, new_position)
-            logging.info(f"obs old {obs['pos'][i]}")
+            logging.info(f"pos after crash {new_position}")
             obs, system_reward = self._get_system_reward(obs, new_position, agent)
             obs['pos'][i] = new_position
-            logging.info(f"obs new {obs['pos'][i]}")
+            logging.info(f"obs after check sys{obs['pos'][i]}")
             self.step_reward += system_reward
             self.step_reward += agent_reward
 

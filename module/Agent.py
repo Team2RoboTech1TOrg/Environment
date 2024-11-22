@@ -78,7 +78,7 @@ class Agent:
 
         value_new_position = obs['coords'][new_position[0]][new_position[1]]
         # если не таргет, отмечаем посещение клетки
-        if value_new_position[1] != ObjectStatus.target.value:
+        if value_new_position[1] != ObjectStatus.plant.value:
             obs['coords'][new_position[0]][new_position[1]][0] = PointStatus.visited.value
         new_position, reward = self.get_agent_rewards(new_position, value_new_position[1], action)
         self.position = new_position
@@ -88,17 +88,13 @@ class Agent:
 
     def get_observation(self) -> dict[str, ndarray]:
         coords = np.full((self.env.grid_size, self.env.grid_size, 2), fill_value=0)
-        view = const.VIEW_RANGE
-        for dx in range(-view, view + 1):
-            for dy in range(-view, view + 1):
-                x, y = self.position[0] + dx, self.position[1] + dy
-                if 0 <= x < self.env.grid_size and 0 <= y < self.env.grid_size:
-                    coords[x][y][0] = PointStatus.viewed.value
-                    pos = (x, y)
-                    if pos in self.env.obstacle_positions:
-                        coords[x][y][1] = ObjectStatus.obstacle.value
-                    elif pos in self.env.target_positions:
-                        coords[x][y][1] = ObjectStatus.target.value
+        for pos in self.get_review():
+            x, y = pos
+            coords[x][y][0] = PointStatus.viewed.value
+            if pos in self.env.obstacle_positions:
+                coords[x][y][1] = ObjectStatus.obstacle.value
+            elif pos in self.env.plants_positions:
+                coords[x][y][1] = ObjectStatus.plant.value
 
         observation = {
             'pos': self.position,
@@ -107,7 +103,7 @@ class Agent:
         return observation
 
     def __repr__(self):
-        return f'Agent_{self.name}'
+        return f'{self.name}'
 
     def get_agent_rewards(self, new_position: tuple[int, int], value: float, action: Any) -> tuple[
             tuple[int, int], int]:
@@ -137,15 +133,15 @@ class Agent:
             new_position = self.position
             logging.info(
                 f"Упс, препятствие! {self} - штраф {const.PENALTY_OBSTACLE}, вернулся на {new_position}")
-        elif value == ObjectStatus.target.value:
-            idx = self.env.target_positions.index(new_position)
-            if self.env.done_status[idx] == 0:
-                self.energy -= const.ENERGY_CONSUMPTION_DONE
-                self.tank -= const.ON_TARGET_CONSUMPTION
-                self.env.done_status[idx] = 1
-                # self.reward_coef *= self.dinamic_coef
-                agent_reward += const.REWARD_DONE  # * self.reward_coef
-                logging.info(f"{self} выполнена задача {new_position}, награда {round(agent_reward, 2)}")
+        elif value == ObjectStatus.plant.value:
+            if not self.explorator:
+                idx = self.env.target_positions.index(new_position)
+                if self.env.done_status[idx] == 0:
+                    self.energy -= const.ENERGY_CONSUMPTION_DONE
+                    self.tank -= const.ON_TARGET_CONSUMPTION
+                    self.env.done_status[idx] = 1
+                    agent_reward += const.REWARD_DONE
+                    logging.info(f"{self} выполнена задача {new_position}, награда {round(agent_reward, 2)}")
 
         return new_position, agent_reward
 
@@ -171,3 +167,13 @@ class Agent:
                 f"Штраф {self} за мнократное посещение {new_position}"
                 f" в последние {len(self.position_history)} шагов")
         return reward
+
+    def get_review(self) -> list[tuple[int, int]]:
+        review = []
+        view = const.VIEW_RANGE
+        for dx in range(-view, view + 1):
+            for dy in range(-view, view + 1):
+                x, y = self.position[0] + dx, self.position[1] + dy
+                if 0 <= x < self.env.grid_size and 0 <= y < self.env.grid_size:
+                    review.append((x, y))
+        return review

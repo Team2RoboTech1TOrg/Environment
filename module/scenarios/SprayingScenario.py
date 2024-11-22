@@ -19,9 +19,7 @@ class SprayingScenario(FarmingScenario, ABC):
         super().__init__(num_agents, grid_size)
         self.start_time = None
         self.name = 'spraying'
-        self.target_positions = None
-        self.obstacle_positions = None
-        self.count_targets = ceil(self.grid_size ** 2 * const.TARGET_PERCENT)
+        self.count_targets = self.count_plants
 
     def _reset_scenario(self, *, seed=None, options=None):
         self.start_time = time.time()
@@ -54,9 +52,8 @@ class SprayingScenario(FarmingScenario, ABC):
         reward = 0
         value_position = obs['coords'][new_position[0]][new_position[1]]
         if value_position[0] == PointStatus.viewed.value:
-            if value_position[1] != ObjectStatus.target.value:
-                # self.reward_coef *= self.dinamic_coef
-                reward = const.REWARD_EXPLORE# * self.reward_coef
+            if value_position[1] != ObjectStatus.plant.value:
+                reward = const.REWARD_EXPLORE
                 logging.info(f"{agent.name} исследовал новую клетку {new_position} + {round(reward, 2)}")
             obs['coords'][new_position[0]][new_position[1]][0] = PointStatus.visited.value
         return obs, reward
@@ -168,6 +165,8 @@ class SprayingScenario(FarmingScenario, ABC):
 
         while any(self._is_surrounded_by_obstacles(target) for target in self.target_positions):
             self.obstacle_positions = self._get_objects_positions(unavailable_positions, self.count_obstacles)
+
+        self.plants_positions = self.target_positions
 
     def _is_surrounded_by_obstacles(self, target_position):
         """

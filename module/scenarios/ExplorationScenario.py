@@ -19,9 +19,7 @@ class ExplorationScenario(FarmingScenario, ABC):
         super().__init__(num_agents, grid_size)
         self.start_time = None
         self.name = 'exploration'
-        self.target_positions = None
-        self.obstacle_positions = None
-        self.plants_positions = None
+        self.count_targets = self.inner_grid_size ** 2 - self.base_size * 2 - self.count_obstacles
 
     def _reset_scenario(self, *, seed=None, options=None):
         self.start_time = time.time()
@@ -49,10 +47,18 @@ class ExplorationScenario(FarmingScenario, ABC):
         :param agent:
         :return: observation full and reward for scenario
         """
-        value_position = obs['coords'][new_position[0]][new_position[1]]
-        if value_position[0] in (PointStatus.empty.value, PointStatus.viewed.value):
-            obs['coords'][new_position[0]][new_position[1]][0] = PointStatus.visited.value
-        return obs, 0
+        reward = 0
+        # TO DO есть проблема: откуда-то берутся клетки со статусом пустые
+        for pos in agent.get_review():
+            x, y = pos
+            if obs['coords'][x][y][0] == PointStatus.viewed.value:
+                if (x, y) in self.target_positions:
+                    idx = self.target_positions.index((x, y))
+                    if self.done_status[idx] == 0:
+                        self.done_status[idx] = 1
+                        reward = const.REWARD_EXPLORE
+                        logging.info(f"{agent.name} исследовал новую клетку {x, y} + {round(reward, 2)}")
+        return obs, reward
 
     def _check_termination_conditions(self) -> tuple:
         """
@@ -96,11 +102,11 @@ class ExplorationScenario(FarmingScenario, ABC):
         agent_icon = load_image(const.AGENT, cell)
 
         known_obstacles, known_targets = 0, 0
-        for i, target in enumerate(self.plants_positions):
-            x, y = target
+        for i, flower in enumerate(self.plants_positions):
+            x, y = flower
             if self.current_map[x, y, 0] != 0:
                 self.screen.blit(plant, (y * cell, x * cell))
-
+                    
         for i, target in enumerate(self.target_positions):
             x, y = target
             if self.current_map[x, y, 0] != 0:
@@ -160,15 +166,15 @@ class ExplorationScenario(FarmingScenario, ABC):
         Get random positions of objects
         """
         unavailable_positions = self.get_restricted_area_around_base()
-        # TO DO  проверка, чтоб они не стояли вокруг пустой клетки
+        # TO DO  проверка, чтоб препятствия не стояли вокруг клетки
         self.obstacle_positions = self._get_objects_positions(unavailable_positions, self.count_obstacles)
+
+        # растения могут быть и у базы, поэтому обновление списка
+        unavailable_positions = set(self.base_positions)
         unavailable_positions.update(self.obstacle_positions)
 
-        count_plants = ceil(self.grid_size ** 2 * const.TARGET_PERCENT)
-        self.plants_positions = self._get_objects_positions(unavailable_positions, count_plants)
-
+        self.plants_positions = self._get_objects_positions(unavailable_positions, self.count_plants)
         self.target_positions = self._get_available_positions(unavailable_positions)
-        self.count_targets = len(self.target_positions)
 
     def _fixed_positions(self):
         """

@@ -74,7 +74,7 @@ class Agent:
 
         value_new_position = obs['coords'][new_position[0]][new_position[1]]
         # если не таргет, отмечаем посещение клетки
-        if value_new_position[1] != ObjectStatus.target.value:
+        if value_new_position[1] != ObjectStatus.plant.value:
             obs['coords'][new_position[0]][new_position[1]][0] = PointStatus.visited.value
         new_position, reward = self.get_agent_rewards(new_position, value_new_position[1], action)
         self.position = new_position
@@ -94,7 +94,7 @@ class Agent:
                     if pos in self.env.obstacle_positions:
                         coords[x][y][1] = ObjectStatus.obstacle.value
                     elif pos in self.env.target_positions:
-                        coords[x][y][1] = ObjectStatus.target.value
+                        coords[x][y][1] = ObjectStatus.plant.value
 
         observation = {
             'pos': self.position,
@@ -131,7 +131,7 @@ class Agent:
                 new_position = self.position
                 logging.info(
                     f"Упс, препятствие! {self} - штраф {const.PENALTY_OBSTACLE}, вернулся на {new_position}")
-            elif value == ObjectStatus.target.value:
+            elif value == ObjectStatus.plant.value:
                 idx = self.env.target_positions.index(new_position)
                 if self.env.done_status[idx] == 0:
                     self.energy -= const.ENERGY_CONSUMPTION_DONE
