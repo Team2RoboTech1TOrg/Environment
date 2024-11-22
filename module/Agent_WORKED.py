@@ -73,7 +73,10 @@ class Agent:
         self.energy -= const.ENERGY_CONSUMPTION_MOVE
 
         value_new_position = obs['coords'][new_position[0]][new_position[1]]
-        new_position, reward = self.get_agent_rewards(new_position, value_new_position, action)
+        # если не таргет, отмечаем посещение клетки
+        if value_new_position[1] != ObjectStatus.target.value:
+            obs['coords'][new_position[0]][new_position[1]][0] = PointStatus.visited.value
+        new_position, reward = self.get_agent_rewards(new_position, value_new_position[1], action)
         self.position = new_position
 
         logging.info(f"{self.name} действие: {action} - позиция: {self.position}")
@@ -123,19 +126,19 @@ class Agent:
             logging.warning(f"{self} вышел за границы внутреннего поля: {new_position}")
             new_position = self.position
         else:
-            if value[1] == ObjectStatus.obstacle.value:
+            if value == ObjectStatus.obstacle.value:
                 agent_reward -= const.PENALTY_OBSTACLE
                 new_position = self.position
                 logging.info(
                     f"Упс, препятствие! {self} - штраф {const.PENALTY_OBSTACLE}, вернулся на {new_position}")
-            elif value[1] == ObjectStatus.target.value:
+            elif value == ObjectStatus.target.value:
                 idx = self.env.target_positions.index(new_position)
                 if self.env.done_status[idx] == 0:
                     self.energy -= const.ENERGY_CONSUMPTION_DONE
                     self.tank -= const.ON_TARGET_CONSUMPTION
                     self.env.done_status[idx] = 1
                     # self.reward_coef *= self.dinamic_coef
-                    agent_reward += const.REWARD_DONE# * self.reward_coef
+                    agent_reward += const.REWARD_DONE  # * self.reward_coef
                     logging.info(f"{self} выполнена задача {new_position}, награда {round(agent_reward, 2)}")
             else:
                 if len(self.position_history) > 3:
@@ -145,8 +148,12 @@ class Agent:
                         logging.info(f"Штраф {self} за второй раз в одну клетку' {self.position_history[-2]}")
                     elif 4 >= pos_counter > 2:
                         agent_reward -= const.PENALTY_LOOP * 3
-                        logging.info(f"Штраф {self} за вторичное посещение {new_position} в последние 10 шагов")
-                    elif pos_counter >= 4:
+                        logging.info(
+                            f"Штраф {self} за вторичное посещение {new_position}"
+                            f" в последние {self.env.inner_grid_size} шагов")
+                    elif pos_counter > 4:
                         agent_reward -= const.PENALTY_LOOP * 5
-                        logging.info(f"Штраф {self} за мнократное посещение {new_position} в последние 10 шагов")
+                        logging.info(
+                            f"Штраф {self} за мнократное посещение {new_position}"
+                            f" в последние {self.env.inner_grid_size} шагов")
         return new_position, agent_reward

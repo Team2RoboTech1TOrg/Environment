@@ -1,6 +1,7 @@
 import random
 import time
 from abc import ABC
+from math import ceil
 
 import pygame
 import numpy as np
@@ -20,6 +21,7 @@ class ExplorationScenario(FarmingScenario, ABC):
         self.name = 'exploration'
         self.target_positions = None
         self.obstacle_positions = None
+        self.plants_positions = None
 
     def _reset_scenario(self, *, seed=None, options=None):
         self.start_time = time.time()
@@ -90,9 +92,15 @@ class ExplorationScenario(FarmingScenario, ABC):
         """Render agent game"""
         cell = self.cell_size
         target_done_icon = load_image(const.DONE_TARGET_EXPLORE, cell)
+        plant = load_image(const.DONE_TARGET_SPRAY, cell)
         agent_icon = load_image(const.AGENT, cell)
 
         known_obstacles, known_targets = 0, 0
+        for i, target in enumerate(self.plants_positions):
+            x, y = target
+            if self.current_map[x, y, 0] != 0:
+                self.screen.blit(plant, (y * cell, x * cell))
+
         for i, target in enumerate(self.target_positions):
             x, y = target
             if self.current_map[x, y, 0] != 0:
@@ -155,6 +163,10 @@ class ExplorationScenario(FarmingScenario, ABC):
         # TO DO  проверка, чтоб они не стояли вокруг пустой клетки
         self.obstacle_positions = self._get_objects_positions(unavailable_positions, self.count_obstacles)
         unavailable_positions.update(self.obstacle_positions)
+
+        count_plants = ceil(self.grid_size ** 2 * const.TARGET_PERCENT)
+        self.plants_positions = self._get_objects_positions(unavailable_positions, count_plants)
+
         self.target_positions = self._get_available_positions(unavailable_positions)
         self.count_targets = len(self.target_positions)
 

@@ -4,7 +4,6 @@ import pygame
 
 from abc import ABC, abstractmethod
 from math import ceil
-
 import const
 from Agent import Agent
 from PointStatus import PointStatus, ObjectStatus

@@ -1,5 +1,5 @@
 # Параметры модели
-TIME = 50#_000
+TIME = 50000
 LEARNING_RATE = 0.0001
 GAMMA = 0.95
 CLIP_RANGE = 0.2

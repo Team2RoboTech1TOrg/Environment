@@ -53,9 +53,7 @@ class SprayingScenario(FarmingScenario, ABC):
         """
         reward = 0
         value_position = obs['coords'][new_position[0]][new_position[1]]
-        if value_position[0] in (PointStatus.empty.value, PointStatus.viewed.value):
-            if value_position[1] == ObjectStatus.obstacle.value:
-                print('aa')
+        if value_position[0] == PointStatus.viewed.value:
             if value_position[1] != ObjectStatus.target.value:
                 # self.reward_coef *= self.dinamic_coef
                 reward = const.REWARD_EXPLORE# * self.reward_coef
