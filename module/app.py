@@ -2,12 +2,10 @@ import time
 
 import pygame
 import sys
-from stable_baselines3 import PPO, DDPG
+from stable_baselines3 import PPO
 
 import const
-from FarmingEnv import FarmingEnv
-from scenarios.ExplorationScenario import ExplorationScenario
-from scenarios.SprayingScenario import SprayingScenario
+from environments.FarmingEnv import FarmingEnv
 from config import log_dir
 from logger import logging
 from render.menu_render import input_screen
