@@ -48,16 +48,19 @@ class ExplorationScenario(FarmingScenario, ABC):
         :return: observation full and reward for scenario
         """
         reward = 0
-        # TO DO есть проблема: откуда-то берутся клетки со статусом пустые
+        if obs['coords'][new_position[0]][new_position[0]] == PointStatus.viewed.value:
+            obs['coords'][new_position[0]][new_position[0]] = PointStatus.visited.value
+
+        # что видит агент в данной позиции
         for pos in agent.get_review():
             x, y = pos
-            if obs['coords'][x][y][0] == PointStatus.viewed.value:
-                if (x, y) in self.target_positions:
-                    idx = self.target_positions.index((x, y))
-                    if self.done_status[idx] == 0:
-                        self.done_status[idx] = 1
-                        reward = const.REWARD_EXPLORE
-                        logging.info(f"{agent.name} исследовал новую клетку {x, y} + {round(reward, 2)}")
+            # if obs['coords'][x][y][0] == PointStatus.viewed.value:
+            if (x, y) in self.target_positions:
+                idx = self.target_positions.index((x, y))
+                if self.done_status[idx] == 0:
+                    self.done_status[idx] = 1
+                    reward = const.REWARD_EXPLORE
+                    logging.info(f"{agent.name} исследовал новую клетку {x, y} + {round(reward, 2)}")
         return obs, reward
 
     def _check_termination_conditions(self) -> tuple:
@@ -106,7 +109,7 @@ class ExplorationScenario(FarmingScenario, ABC):
             x, y = flower
             if self.current_map[x, y, 0] != 0:
                 self.screen.blit(plant, (y * cell, x * cell))
-                    
+
         for i, target in enumerate(self.target_positions):
             x, y = target
             if self.current_map[x, y, 0] != 0:
