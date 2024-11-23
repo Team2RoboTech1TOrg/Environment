@@ -157,12 +157,12 @@ class Agent:
             reward -= const.PENALTY_LOOP
             logging.warning(f"Штраф {self} за второй раз в одну клетку' {self.position_history[-2]}")
         elif 4 >= pos_counter > 2:
-            reward -= const.PENALTY_LOOP * 2
+            reward -= const.PENALTY_LOOP * 1.1
             logging.warning(
                 f"Штраф {self} за вторичное посещение {new_position}"
                 f" в последние {len(self.position_history)} шагов")
         elif pos_counter > 4:
-            reward -= const.PENALTY_LOOP * 5
+            reward -= const.PENALTY_LOOP * 1.2
             logging.warning(
                 f"Штраф {self} за мнократное посещение {new_position}"
                 f" в последние {len(self.position_history)} шагов")

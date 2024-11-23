@@ -74,22 +74,25 @@ class SprayingScenario(FarmingScenario, ABC):
         elif np.all(self.done_status == 1):
             terminated = True
             logging.info("Все растения опрысканы")
-            for agent in self.agents:
-                agent.position = random.choice(self.base_positions)
+            [setattr(agent, 'position', random.choice(self.base_positions)) for agent in self.agents]
             logging.info("Агенты вернулись на базу")
-            # logging.info(self.current_map)
 
             # условие по времени выполнения
             if self.step_count <= const.MIN_GAME_STEPS:
-                total_reward = self.total_reward + const.REWARD_COMPLETION * 3
+                self.total_reward += const.REWARD_COMPLETION * 1.2
+                total_reward = self.total_reward
                 logging.info(f"Увеличенная награда: {total_reward}за шагов меньше, чем {const.MIN_GAME_STEPS}")
+
             else:
-                total_reward = self.total_reward + const.REWARD_COMPLETION
+                self.total_reward += const.REWARD_COMPLETION
+                total_reward = self.total_reward
                 logging.info(f"Награда: {total_reward}")
             # self.total_reward = 0
+
         else:
             self.total_reward += self.step_reward
-            total_reward = 0  # self.total_reward VS 0 проверить как лучше будет работать
+            total_reward = self.total_reward  # VS 0 проверить как лучше будет работать
+
         return total_reward, terminated, truncated, {}
 
     def _render_scenario(self):

@@ -1,13 +1,13 @@
 # Параметры модели
-TIME = 100000
+TIME = 50000
 LEARNING_RATE = 0.001
 GAMMA = 0.95
 CLIP_RANGE = 0.2
 N_STEPS = 4096
 COEF = 0.001
-VF_COEF = 0.4
-CLIP_RANGE_VF = 0.1#2
-N_EPOCHS = 30#0
+VF_COEF = 0.5
+CLIP_RANGE_VF = 0.2
+N_EPOCHS = 40#0
 BATCH_SIZE = 128
 
 # Параметры экрана и сетки
@@ -34,13 +34,13 @@ COUNT_ACTIONS = 5
 MIN_GAME_STEPS = (GRID_SIZE * GRID_SIZE // NUM_AGENTS) * 2 # add to class
 
 # Награды
-REWARD_EXPLORE = 2  # Вознаграждение за исследование новых клеток
-REWARD_DONE = REWARD_EXPLORE * 1.5
-REWARD_COMPLETION = REWARD_DONE * 10
+REWARD_EXPLORE = 3  # Вознаграждение за исследование новых клеток
+REWARD_DONE = REWARD_EXPLORE * 1.2
+REWARD_COMPLETION = REWARD_DONE * 100
 PENALTY_LOOP = 1
 PENALTY_OUT_FIELD = 1
-PENALTY_OBSTACLE = 2
-PENALTY_CRASH = 3
+PENALTY_OBSTACLE = 1.2
+PENALTY_CRASH = 1.3
 
 # Позиции цветов и ям
 # PLACEMENT_MODE = 'fixed'

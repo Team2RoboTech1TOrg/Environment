@@ -79,22 +79,22 @@ class ExplorationScenario(FarmingScenario, ABC):
         elif np.all(self.done_status == 1):
             terminated = True
             logging.info("Все растения опрысканы")
-            for agent in self.agents:
-                agent.position = random.choice(self.base_positions)
+            [setattr(agent, 'position', random.choice(self.base_positions)) for agent in self.agents]
             logging.info("Агенты вернулись на базу")
-            # logging.info(self.current_map)
 
             # условие по времени выполнения
             if self.step_count <= const.MIN_GAME_STEPS:
-                total_reward = self.total_reward + const.REWARD_COMPLETION * 3
+                self.total_reward += const.REWARD_COMPLETION * 1.2
+                total_reward = self.total_reward
                 logging.info(f"Увеличенная награда: {total_reward}за шагов меньше, чем {const.MIN_GAME_STEPS}")
             else:
-                total_reward = self.total_reward + const.REWARD_COMPLETION
+                self.total_reward += const.REWARD_COMPLETION
+                total_reward = self.total_reward
                 logging.info(f"Награда: {total_reward}")
             # self.total_reward = 0
         else:
             self.total_reward += self.step_reward
-            total_reward = 0  # self.total_reward VS 0 проверить как лучше будет работать
+            total_reward = self.total_reward# VS 0 проверить как лучше будет работать
         return total_reward, terminated, truncated, {}
 
     def _render_scenario(self):
@@ -158,10 +158,10 @@ class ExplorationScenario(FarmingScenario, ABC):
         render_text(self.screen, f"Шагов: {self.step_count}", font, color, text_x1, text_y3)
         render_text(self.screen, f"Обнаружено препятствий: {known_obstacles}/{self.count_obstacles}", font, color,
                     text_x2, text_y1)
-        render_text(self.screen, f"Обнаружено целей: {known_targets}/{self.count_targets}", font, color,
-                    text_x2, text_y2)
+        # render_text(self.screen, f"Обнаружено целей: {known_targets}/{self.count_targets}", font, color,
+        #             text_x2, text_y2)
         render_text(self.screen, f"Отработано целей: {int(np.sum(self.done_status))}/{self.count_targets}", font, color,
-                    text_x2, text_y3)
+                    text_x2, text_y2)
         pygame.display.flip()
 
     def _randomize_positions(self):
