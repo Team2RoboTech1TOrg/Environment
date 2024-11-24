@@ -56,7 +56,7 @@ def input_screen():
         # расчет исходя из доли объектов, кол-ва агентов, отступа и ширины базы
         num_agents = int(input_values[0]) if input_values[0].isdigit() else c.NUM_AGENTS
         grid_size_min = ceil((num_agents + c.STATION_SIZE * 2 + c.MARGIN_SIZE * 2) / (
-                    c.OBSTACLE_PERCENT + c.TARGET_PERCENT))
+                    1 - (c.OBSTACLE_PERCENT + c.TARGET_PERCENT)))
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:

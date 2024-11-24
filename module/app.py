@@ -8,6 +8,7 @@ import const
 from environments.FarmingEnv import FarmingEnv
 from config import log_dir
 from logger import logging
+from logger_csv import log_to_csv
 from render.menu_render import input_screen
 from scenarios.scenarios_dict import get_dict_scenarios
 
@@ -38,7 +39,7 @@ def run():
         env.render_message(message)
         pygame.display.set_caption("OS SWARM OF DRONES")
         logging.info(message)
-        policy = 'MultiInputPolicy' #'MlpPolicy'
+        policy = 'MultiInputPolicy'  # 'MlpPolicy'
         model = PPO(
             policy,
             env,
@@ -64,6 +65,7 @@ def run():
         pygame.display.set_caption(selected_scenario.__str__())
         obs, info = env.reset()
         step_count = 0
+        mission = 1
         while True:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -72,6 +74,7 @@ def run():
             action, _ = model.predict(obs)
             pygame.time.wait(10)
             obs, reward, terminated, truncated, info = env.step(action)
+            log_to_csv(mission, step_count, int(reward), info['done'])
             env.render()
             step_count += 1
             if truncated:
@@ -80,13 +83,15 @@ def run():
                 env.render_message(message)
                 time.sleep(5)
                 step_count = 0
-
             if terminated:
                 message = f"Конец миссии\n\n награда: {int(reward)}\n шагов: {step_count}"
                 env.render_message(message)
                 time.sleep(5)
-                break
+                # break #убрать при  while True
+                obs, info = env.reset()  # only for log
+                step_count = 0  # for log
             clock.tick(15)  # slow
+            mission += 1
     except KeyboardInterrupt:
         logging.info("Прервано пользователем")
     except Exception as e:

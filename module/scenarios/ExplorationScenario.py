@@ -23,6 +23,7 @@ class ExplorationScenario(FarmingScenario, ABC):
 
     def _reset_scenario(self, *, seed=None, options=None):
         self.start_time = time.time()
+        self.reward_coef = 1 #new
 
     def _get_scenario_obs(self):
         """
@@ -51,6 +52,8 @@ class ExplorationScenario(FarmingScenario, ABC):
         if obs['coords'][new_position[0]][new_position[0]][0] == PointStatus.viewed.value:
             obs['coords'][new_position[0]][new_position[0]][0] = PointStatus.visited.value
 
+        self.reward_coef *= 1.001 #new
+
         # что видит агент в данной позиции
         for pos in agent.get_review():
             x, y = pos
@@ -59,7 +62,8 @@ class ExplorationScenario(FarmingScenario, ABC):
                 idx = self.target_positions.index((x, y))
                 if self.done_status[idx] == 0:
                     self.done_status[idx] = 1
-                    reward = const.REWARD_EXPLORE
+                    # reward = const.REWARD_EXPLORE
+                    reward = const.REWARD_EXPLORE * self.reward_coef
                     logging.info(f"{agent.name} исследовал новую клетку {x, y} + {round(reward, 2)}")
         return obs, reward
 

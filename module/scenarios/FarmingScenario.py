@@ -7,6 +7,7 @@ from math import ceil
 import const
 from Agent import Agent
 from PointStatus import PointStatus, ObjectStatus
+from logger_csv import log_to_csv
 from scenarios.BaseScenario import BaseScenario
 from utils import load_obstacles, load_image
 
@@ -104,13 +105,16 @@ class FarmingScenario(BaseScenario, ABC):
         elif all(truncated_list):
             truncated = True
 
+        # log_to_csv(self.step_count, self.total_reward, int(sum(self.done_status)))
+        info = {"done": int(sum(self.done_status))}
+
         self.step_count += 1
         logging.info(
             f"Награда: {ceil(self.total_reward)}, "
             f"Завершено: {terminated}, "
             f"Прервано: {truncated}"
         )
-        return obs, reward, terminated, truncated, {}
+        return obs, reward, terminated, truncated, info
 
     @abstractmethod
     def _get_system_reward(self, obs, new_position, agent):
