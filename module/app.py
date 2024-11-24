@@ -67,7 +67,6 @@ def run():
         step_count = 0
         log_status = False
         mission = 1
-        # logging.info("Достигнуто максимальное количество шагов в миссии. ")
         while True: # depends of log status
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -80,7 +79,8 @@ def run():
                 log_to_csv(mission, step_count, int(reward), info['done'])
             env.render()
             step_count += 1
-            if truncated:
+            if truncated or step_count > const.MAX_STEPS_GAME:
+                logging.info("Достигнуто максимальное количество шагов в миссии. ")
                 obs, info = env.reset()
                 message = f"Новая миссия"  # add counter games
                 env.render_message(message)
