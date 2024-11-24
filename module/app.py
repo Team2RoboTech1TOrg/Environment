@@ -72,9 +72,10 @@ def run():
                     pygame.quit()
                     sys.exit()
             action, _ = model.predict(obs)
+            print(action)
             pygame.time.wait(10)
             obs, reward, terminated, truncated, info = env.step(action)
-            log_to_csv(mission, step_count, int(reward), info['done'], action)
+            log_to_csv(mission, step_count, int(reward), info['done'])
             env.render()
             step_count += 1
             if truncated:
