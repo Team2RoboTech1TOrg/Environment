@@ -37,7 +37,6 @@ class FarmingScenario(BaseScenario, ABC):
         self.done_status = None
         self.current_map = None
         self.reward_coef = None
-        self.dinamic_coef = None
         self.total_reward = None
         self.step_reward = None
         self.step_count = None
@@ -47,7 +46,7 @@ class FarmingScenario(BaseScenario, ABC):
         self.step_count = 1
         self.total_reward = 0
         self.step_reward = 0
-        self.done_status = np.zeros(self.count_targets)#inner_grid_size ** 2 - self.count_obstacles - self.base_size * 2)
+        self.done_status = np.zeros(self.count_targets)
         self.current_map = np.full((self.grid_size, self.grid_size, 2), fill_value=0)
         agent_obs = [agent.reset() for agent in self.agents]
         obs = {'pos': np.stack([obs['pos'] for obs in agent_obs]),

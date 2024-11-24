@@ -16,7 +16,6 @@ from PointStatus import PointStatus, ObjectStatus
 
 class Agent:
     def __init__(self, scenario, name=None):
-        self.dinamic_coef = None
         self.reward_coef = None
         self.name = name or id(self)
         self.env = scenario
@@ -33,7 +32,6 @@ class Agent:
             self.explorator = True
         self.position = random.choice(self.env.base_positions)
         self.reward_coef = 1
-        self.dinamic_coef = 1.03
         self.position_history = deque(maxlen=10)#self.env.inner_grid_size)
         self.tank = const.TANK_CAPACITY
         self.energy = const.ENERGY_CAPACITY

@@ -65,17 +65,19 @@ def run():
         pygame.display.set_caption(selected_scenario.__str__())
         obs, info = env.reset()
         step_count = 0
+        log_status = False
         mission = 1
-        while True:
+        # logging.info("Достигнуто максимальное количество шагов в миссии. ")
+        while True: # depends of log status
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     pygame.quit()
                     sys.exit()
             action, _ = model.predict(obs)
-            print(action)
             pygame.time.wait(10)
             obs, reward, terminated, truncated, info = env.step(action)
-            log_to_csv(mission, step_count, int(reward), info['done'])
+            if log_status:
+                log_to_csv(mission, step_count, int(reward), info['done'])
             env.render()
             step_count += 1
             if truncated:
@@ -89,10 +91,12 @@ def run():
                 message = f"Конец миссии\n\n награда: {int(reward)}\n шагов: {step_count}"
                 env.render_message(message)
                 time.sleep(5)
-                # break #убрать при  while True
-                obs, info = env.reset()  # only for log
-                step_count = 0  # for log
-                mission += 1  # for log
+                if log_status:
+                    obs, info = env.reset()
+                    step_count = 0
+                    mission += 1
+                else:
+                    break
             clock.tick(15)  # slow
     except KeyboardInterrupt:
         logging.info("Прервано пользователем")

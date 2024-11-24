@@ -62,8 +62,8 @@ class ExplorationScenario(FarmingScenario, ABC):
                 idx = self.target_positions.index((x, y))
                 if self.done_status[idx] == 0:
                     self.done_status[idx] = 1
-                    # reward = const.REWARD_EXPLORE
-                    reward = const.REWARD_EXPLORE * self.reward_coef
+                    reward = const.REWARD_EXPLORE
+                    # reward = const.REWARD_EXPLORE * self.reward_coef
                     logging.info(f"{agent.name} исследовал новую клетку {x, y} + {round(reward, 2)}")
         return obs, reward
 
@@ -75,12 +75,12 @@ class ExplorationScenario(FarmingScenario, ABC):
         terminated = False
         truncated = False
 
-        if self.step_count >= const.MAX_STEPS_GAME:
-            logging.info("Достигнуто максимальное количество шагов в миссии. ")
-            total_reward = 0
-            truncated = True
+        # if self.step_count >= const.MAX_STEPS_GAME:
+        #     logging.info("Достигнуто максимальное количество шагов в миссии. ")
+        #     total_reward = 0
+        #     truncated = True
 
-        elif np.all(self.done_status == 1):
+        if np.all(self.done_status == 1):
             terminated = True
             logging.info("Все растения опрысканы")
             [setattr(agent, 'position', random.choice(self.base_positions)) for agent in self.agents]
