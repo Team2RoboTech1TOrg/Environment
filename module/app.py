@@ -74,7 +74,7 @@ def run():
             action, _ = model.predict(obs)
             pygame.time.wait(10)
             obs, reward, terminated, truncated, info = env.step(action)
-            log_to_csv(mission, step_count, int(reward), info['done'])
+            log_to_csv(mission, step_count, int(reward), info['done'], action)
             env.render()
             step_count += 1
             if truncated:
@@ -83,6 +83,7 @@ def run():
                 env.render_message(message)
                 time.sleep(5)
                 step_count = 0
+                mission += 1
             if terminated:
                 message = f"Конец миссии\n\n награда: {int(reward)}\n шагов: {step_count}"
                 env.render_message(message)
@@ -90,8 +91,8 @@ def run():
                 # break #убрать при  while True
                 obs, info = env.reset()  # only for log
                 step_count = 0  # for log
+                mission += 1  # for log
             clock.tick(15)  # slow
-            mission += 1
     except KeyboardInterrupt:
         logging.info("Прервано пользователем")
     except Exception as e:
