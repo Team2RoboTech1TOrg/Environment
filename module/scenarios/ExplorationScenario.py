@@ -19,7 +19,7 @@ class ExplorationScenario(FarmingScenario, ABC):
         super().__init__(num_agents, grid_size)
         self.start_time = None
         self.name = 'exploration'
-        self.count_targets = self.inner_grid_size ** 2 - self.base_size * 2 - self.count_obstacles
+        self.count_targets = self.inner_grid_size ** 2 #- self.base_size * 2 - self.count_obstacles
 
     def _reset_scenario(self, *, seed=None, options=None):
         self.start_time = time.time()
@@ -52,12 +52,11 @@ class ExplorationScenario(FarmingScenario, ABC):
         if obs['coords'][new_position[0]][new_position[0]][0] == PointStatus.viewed.value:
             obs['coords'][new_position[0]][new_position[0]][0] = PointStatus.visited.value
 
-        self.reward_coef *= 1.001 #new
+        self.reward_coef *= 0.99 #new
 
         # что видит агент в данной позиции
         for pos in agent.get_review():
             x, y = pos
-            # if obs['coords'][x][y][0] == PointStatus.viewed.value:
             if (x, y) in self.target_positions:
                 idx = self.target_positions.index((x, y))
                 if self.done_status[idx] == 0:
@@ -75,12 +74,12 @@ class ExplorationScenario(FarmingScenario, ABC):
         terminated = False
         truncated = False
 
-        # if self.step_count >= const.MAX_STEPS_GAME:
-        #     logging.info("Достигнуто максимальное количество шагов в миссии. ")
-        #     total_reward = 0
-        #     truncated = True
+        if self.step_count >= const.MAX_STEPS_GAME:
+            logging.info("Достигнуто максимальное количество шагов в миссии. ")
+            total_reward = 0
+            truncated = True
 
-        if np.all(self.done_status == 1):
+        elif np.all(self.done_status == 1):
             terminated = True
             logging.info("Все растения опрысканы")
             [setattr(agent, 'position', random.choice(self.base_positions)) for agent in self.agents]
@@ -172,16 +171,14 @@ class ExplorationScenario(FarmingScenario, ABC):
         """
         Get random positions of objects
         """
+
+        self.target_positions = self._get_available_positions(set())
         unavailable_positions = self.get_restricted_area_around_base()
         # TO DO  проверка, чтоб препятствия не стояли вокруг клетки
         self.obstacle_positions = self._get_objects_positions(unavailable_positions, self.count_obstacles)
-
-        # растения могут быть и у базы, поэтому обновление списка
-        unavailable_positions = set(self.base_positions)
         unavailable_positions.update(self.obstacle_positions)
 
         self.plants_positions = self._get_objects_positions(unavailable_positions, self.count_plants)
-        self.target_positions = self._get_available_positions(unavailable_positions)
 
     def _fixed_positions(self):
         """

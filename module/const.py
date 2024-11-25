@@ -7,7 +7,7 @@ N_STEPS = 4096
 COEF = 0.001
 VF_COEF = 0.5
 CLIP_RANGE_VF = 0.2
-N_EPOCHS = 50#0
+N_EPOCHS = 50#0#0
 BATCH_SIZE = 256#128
 
 # Параметры экрана и сетки
@@ -18,20 +18,18 @@ MARGIN_SIZE = 1
 
 # Параметры игры
 NUM_AGENTS = 3
-# COUNT_TARGETS = ceil(GRID_SIZE ** 2 * 0.45)
-# COUNT_OBSTACLES = ceil(GRID_SIZE ** 2 * 0.05)
 TARGET_PERCENT = 0.45
 OBSTACLE_PERCENT = 0.05
 STATION_SIZE = 2
-MAX_STEPS_GAME = (GRID_SIZE ** 2) * 5 #add to class
+MAX_STEPS_GAME = (GRID_SIZE ** 2) * 10 #add to class
 VIEW_RANGE = 1  # Область зрения 3x3
 ON_TARGET_CONSUMPTION = 10  # Расход
 TANK_CAPACITY = 20 * ON_TARGET_CONSUMPTION  # Как-то продумать его
-ENERGY_CAPACITY = 3000  # Максимальный запас энергии
+ENERGY_CAPACITY = 5000  # Максимальный запас энергии
 ENERGY_CONSUMPTION_MOVE = 1
 ENERGY_CONSUMPTION_DONE = 2
 COUNT_ACTIONS = 5
-MIN_GAME_STEPS = (GRID_SIZE * GRID_SIZE // NUM_AGENTS) * 2 # add to class
+MIN_GAME_STEPS = (GRID_SIZE ** 2 // NUM_AGENTS) * 8# add to class
 
 # Награды
 REWARD_EXPLORE = 3  # Вознаграждение за исследование новых клеток

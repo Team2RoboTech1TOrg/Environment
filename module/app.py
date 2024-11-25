@@ -79,8 +79,7 @@ def run():
                 log_to_csv(mission, step_count, int(reward), info['done'])
             env.render()
             step_count += 1
-            if truncated or step_count > const.MAX_STEPS_GAME:
-                logging.info("Достигнуто максимальное количество шагов в миссии. ")
+            if truncated:
                 obs, info = env.reset()
                 message = f"Новая миссия"  # add counter games
                 env.render_message(message)

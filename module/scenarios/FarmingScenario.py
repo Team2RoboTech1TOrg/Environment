@@ -104,7 +104,6 @@ class FarmingScenario(BaseScenario, ABC):
         elif all(truncated_list):
             truncated = True
 
-        # log_to_csv(self.step_count, self.total_reward, int(sum(self.done_status)))
         info = {"done": int(sum(self.done_status))}
 
         self.step_count += 1
