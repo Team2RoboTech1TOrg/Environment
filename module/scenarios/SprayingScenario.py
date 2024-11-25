@@ -24,7 +24,6 @@ class SprayingScenario(FarmingScenario, ABC):
     def _reset_scenario(self, *, seed=None, options=None):
         self.start_time = time.time()
         self.reward_coef = 1
-        self.dinamic_coef = 0.01
 
     def _get_scenario_obs(self):
         """
@@ -53,7 +52,9 @@ class SprayingScenario(FarmingScenario, ABC):
         value_position = obs['coords'][new_position[0]][new_position[1]]
         if value_position[0] == PointStatus.viewed.value:
             if value_position[1] != ObjectStatus.plant.value:
-                reward = const.REWARD_EXPLORE
+                # reward = const.REWARD_EXPLORE
+                self.reward_coef *= 1.01
+                reward = const.REWARD_EXPLORE * self.reward_coef
                 logging.info(f"{agent.name} исследовал новую клетку {new_position} + {round(reward, 2)}")
             obs['coords'][new_position[0]][new_position[1]][0] = PointStatus.visited.value
         return obs, reward

@@ -26,14 +26,16 @@ class Agent:
         self.position_history = None
         self.action_space = spaces.Discrete(const.COUNT_ACTIONS)
         self.observation_space = AgentObservationSpace(self.env.grid_size)
+        self.reward_coef = None
 
     def reset(self):
         if self.env.name == 'exploration':
             self.explorator = True
+        else:
+            self.tank = const.TANK_CAPACITY
         self.position = random.choice(self.env.base_positions)
         self.reward_coef = 1
-        self.position_history = deque(maxlen=10)#self.env.inner_grid_size)
-        self.tank = const.TANK_CAPACITY
+        self.position_history = deque(maxlen=10)  # self.env.inner_grid_size)
         self.energy = const.ENERGY_CAPACITY
         coords = np.zeros((self.env.grid_size, self.env.grid_size, 2), dtype=np.int32)
         logging.info(f"Позиция {self.name} стартовая {self.position}")
@@ -74,10 +76,20 @@ class Agent:
                 new_position = self.position
         self.energy -= const.ENERGY_CONSUMPTION_MOVE
 
-        value_new_position = obs['coords'][new_position[0]][new_position[1]]
+        # value_new_position = obs['coords'][new_position[0]][new_position[1]]
+        x, y = new_position
+        value_new_position = obs['coords'][x][y]
+
         # если не таргет, отмечаем посещение клетки
-        if value_new_position[1] != ObjectStatus.plant.value:
-            obs['coords'][new_position[0]][new_position[1]][0] = PointStatus.visited.value
+        if self.explorator or value_new_position[1] != ObjectStatus.plant.value:
+            obs['coords'][x][y][0] = PointStatus.visited.value
+
+        # if self.explorator:
+        #     obs['coords'][new_position[0]][new_position[1]][0] = PointStatus.visited.value
+        # else:
+        #     if value_new_position[1] != ObjectStatus.plant.value:
+        #         obs['coords'][new_position[0]][new_position[1]][0] = PointStatus.visited.value
+
         new_position, reward = self.get_agent_rewards(new_position, value_new_position[1], action)
         self.position = new_position
 
@@ -131,15 +143,16 @@ class Agent:
             new_position = self.position
             logging.info(
                 f"Упс, препятствие! {self} - штраф {const.PENALTY_OBSTACLE}, вернулся на {new_position}")
-        elif value == ObjectStatus.plant.value:
-            if not self.explorator:
-                idx = self.env.target_positions.index(new_position)
-                if self.env.done_status[idx] == 0:
-                    self.energy -= const.ENERGY_CONSUMPTION_DONE
-                    self.tank -= const.ON_TARGET_CONSUMPTION
-                    self.env.done_status[idx] = 1
-                    agent_reward += const.REWARD_DONE
-                    logging.info(f"{self} выполнена задача {new_position}, награда {round(agent_reward, 2)}")
+        elif value == ObjectStatus.plant.value and not self.explorator:
+            idx = self.env.target_positions.index(new_position)
+            if self.env.done_status[idx] == 0:
+                self.energy -= const.ENERGY_CONSUMPTION_DONE
+                self.tank -= const.ON_TARGET_CONSUMPTION
+                self.env.done_status[idx] = 1
+                agent_reward += const.REWARD_DONE
+                # self.reward_coef *= 1.01
+                # agent_reward = const.REWARD_EXPLORE * self.reward_coef
+                logging.info(f"{self} выполнена задача {new_position}, награда {round(agent_reward, 2)}")
 
         return new_position, agent_reward
 
@@ -175,3 +188,4 @@ class Agent:
                 if 0 <= x < self.env.grid_size and 0 <= y < self.env.grid_size:
                     review.append((x, y))
         return review
+

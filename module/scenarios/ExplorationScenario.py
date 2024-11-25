@@ -49,10 +49,7 @@ class ExplorationScenario(FarmingScenario, ABC):
         :return: observation full and reward for scenario
         """
         reward = 0
-        if obs['coords'][new_position[0]][new_position[0]][0] == PointStatus.viewed.value:
-            obs['coords'][new_position[0]][new_position[0]][0] = PointStatus.visited.value
-
-        self.reward_coef *= 0.99 #new
+        # self.reward_coef *= 0.99 #new
 
         # что видит агент в данной позиции
         for pos in agent.get_review():

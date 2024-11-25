@@ -65,9 +65,9 @@ def run():
         pygame.display.set_caption(selected_scenario.__str__())
         obs, info = env.reset()
         step_count = 0
-        log_status = False
+        log_status = True
         mission = 1
-        while True: # depends of log status
+        while mission < 9:#True: # depends of log status
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     pygame.quit()
