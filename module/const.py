@@ -1,14 +1,15 @@
 # Параметры модели
-TIME = 100000
+TIME = 50000
 LEARNING_RATE = 0.0001
-GAMMA = 0.99#5
+GAMMA = 0.99
 CLIP_RANGE = 0.2
-N_STEPS = 8192#4096
+N_STEPS = 2048#8192#4096
 COEF = 0.001
 VF_COEF = 0.5
 CLIP_RANGE_VF = 0.2
-N_EPOCHS = 50#0#0
+N_EPOCHS = 5#0#0#0
 BATCH_SIZE = 256#128
+policy_kwargs = dict(net_arch=dict(pi=[256, 128], vf=[256, 128]))
 
 # Параметры экрана и сетки
 SCREEN_SIZE = 900
@@ -28,11 +29,11 @@ TANK_CAPACITY = 20 * ON_TARGET_CONSUMPTION  # Как-то продумать е�
 ENERGY_CAPACITY = 5000  # Максимальный запас энергии
 ENERGY_CONSUMPTION_MOVE = 1
 ENERGY_CONSUMPTION_DONE = 2
-COUNT_ACTIONS = 5
+COUNT_ACTIONS = 9
 MIN_GAME_STEPS = (GRID_SIZE ** 2 // NUM_AGENTS) * 8# add to class
 
 # Награды
-REWARD_EXPLORE = 3  # Вознаграждение за исследование новых клеток
+REWARD_EXPLORE = 2  # Вознаграждение за исследование новых клеток
 REWARD_DONE = REWARD_EXPLORE * 1.1
 REWARD_COMPLETION = REWARD_DONE * 100
 PENALTY_LOOP = 0.1

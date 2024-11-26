@@ -49,13 +49,15 @@ class SprayingScenario(FarmingScenario, ABC):
         :return: observation full and reward for scenario
         """
         reward = 0
+        reward -= 0.001
         value_position = obs['coords'][new_position[0]][new_position[1]]
+        # даем награду если агент в этой клетке и она в статусе увидена (в клетках плохих он не может быть)
         if value_position[0] == PointStatus.viewed.value:
-            if value_position[1] != ObjectStatus.plant.value:
-                # reward = const.REWARD_EXPLORE
-                self.reward_coef *= 1.01
-                reward = const.REWARD_EXPLORE * self.reward_coef
-                logging.info(f"{agent.name} исследовал новую клетку {new_position} + {round(reward, 2)}")
+            # if value_position[1] != ObjectStatus.plant.value:
+            # reward = const.REWARD_EXPLORE
+                # self.reward_coef *= 1.01
+                # reward = const.REWARD_EXPLORE * self.reward_coef
+            logging.info(f"{agent.name} исследовал новую клетку {new_position} + {round(reward, 2)}")
             obs['coords'][new_position[0]][new_position[1]][0] = PointStatus.visited.value
         return obs, reward
 

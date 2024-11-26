@@ -60,33 +60,40 @@ class Agent:
 
         obs = self.get_observation()
 
-        # Действия агента в зависимости от выбранного действия
+        x, y = self.position
         match action:
             case 0:  # Вверх
-                new_position = (max(0, self.position[0] - 1), self.position[1])
+                new_position = (max(0, x - 1), y)
             case 1:  # Вниз
-                new_position = (min(self.env.grid_size - 1, self.position[0] + 1), self.position[1])
+                new_position = (min(self.env.grid_size - 1, x + 1), y)
             case 2:  # Влево
-                new_position = (self.position[0], max(0, self.position[1] - 1))
+                new_position = (x, max(0, y - 1))
             case 3:  # Вправо
-                new_position = (self.position[0], min(self.env.grid_size - 1, self.position[1] + 1))
+                new_position = (x, min(self.env.grid_size - 1, y + 1))
             case 4:  # На месте
                 new_position = self.position
+            case 5:  # right up
+                new_position = (max(0, x - 1), min(self.env.grid_size - 1, y + 1))
+            case 6:  # left up
+                new_position = (max(0, x - 1), max(0, y - 1))
+            case 7:  # right down
+                new_position = (min(self.env.grid_size - 1, x + 1), min(self.env.grid_size - 1, y + 1))
+            case 8:  # left down
+                new_position = (min(self.env.grid_size - 1, x + 1), max(0, y - 1))
             case _:
                 new_position = self.position
         self.energy -= const.ENERGY_CONSUMPTION_MOVE
 
-        # value_new_position = obs['coords'][new_position[0]][new_position[1]]
         x, y = new_position
         value_new_position = obs['coords'][x][y]
 
         # если не таргет, отмечаем посещение клетки
-        if self.explorator or value_new_position[1] != ObjectStatus.plant.value:
-            obs['coords'][x][y][0] = PointStatus.visited.value
+        # if self.explorator or value_new_position[1] != ObjectStatus.plant.value:
+        #     obs['coords'][x][y][0] = PointStatus.visited.value
 
-        # if self.explorator:
-        #     obs['coords'][new_position[0]][new_position[1]][0] = PointStatus.visited.value
-        # else:
+        if self.explorator:
+            obs['coords'][x][y][0] = PointStatus.visited.value
+        # else: # отмечаем посещение клетки в файле сценария, кроме исследователя
         #     if value_new_position[1] != ObjectStatus.plant.value:
         #         obs['coords'][new_position[0]][new_position[1]][0] = PointStatus.visited.value
 

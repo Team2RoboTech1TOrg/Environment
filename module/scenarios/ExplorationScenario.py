@@ -94,13 +94,13 @@ class ExplorationScenario(FarmingScenario, ABC):
             # self.total_reward = 0
         else:
             self.total_reward += self.step_reward
-            total_reward = self.total_reward# VS 0 проверить как лучше будет работать
+            total_reward = 0#self.total_reward# VS 0 проверить как лучше будет работать
         return total_reward, terminated, truncated, {}
 
     def _render_scenario(self):
         """Render agent game"""
         cell = self.cell_size
-        target_done_icon = load_image(const.DONE_TARGET_EXPLORE, cell)
+        # target_done_icon = load_image(const.DONE_TARGET_EXPLORE, cell)
         plant = load_image(const.DONE_TARGET_SPRAY, cell)
         agent_icon = load_image(const.AGENT, cell)
 
@@ -110,12 +110,12 @@ class ExplorationScenario(FarmingScenario, ABC):
             if self.current_map[x, y, 0] != 0:
                 self.screen.blit(plant, (y * cell, x * cell))
 
-        for i, target in enumerate(self.target_positions):
-            x, y = target
-            if self.current_map[x, y, 0] != 0:
-                known_targets += 1
-                if self.done_status[i]:
-                    self.screen.blit(target_done_icon, (y * cell, x * cell))
+        # for i, target in enumerate(self.target_positions):
+        #     x, y = target
+        #     if self.current_map[x, y, 0] != 0:
+        #         known_targets += 1
+        #         if self.done_status[i]:
+        #             self.screen.blit(target_done_icon, (y * cell, x * cell))
 
         for i, obstacle in enumerate(self.obstacle_positions):
             x, y = obstacle
