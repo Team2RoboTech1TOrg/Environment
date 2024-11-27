@@ -4,7 +4,7 @@ import random
 import pygame
 from gymnasium import spaces
 
-from logger import logging
+from logging_system.logger import logging
 
 
 def load_image(filename: str, cell_size: int):

@@ -7,8 +7,8 @@ from stable_baselines3 import PPO
 import const
 from environments.FarmingEnv import FarmingEnv
 from config import log_dir
-from logger import logging
-from logger_csv import log_to_csv
+from logging_system.logger import logging
+from logging_system.logger_csv import log_to_csv
 from render.menu_render import input_screen
 from scenarios.scenarios_dict import get_dict_scenarios
 

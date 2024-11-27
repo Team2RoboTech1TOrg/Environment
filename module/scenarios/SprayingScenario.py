@@ -6,7 +6,7 @@ import pygame
 import numpy as np
 
 from PointStatus import PointStatus, DoneStatus, ObjectStatus
-from logger import logging
+from logging_system.logger import logging
 import const
 from render.menu_render import render_text
 from scenarios.FarmingScenario import FarmingScenario

@@ -7,7 +7,6 @@ from math import ceil
 import const
 from Agent import Agent
 from PointStatus import PointStatus, ObjectStatus, DoneStatus
-from logger_csv import log_to_csv
 from scenarios.BaseScenario import BaseScenario
 from utils import load_obstacles, load_image
 
@@ -39,6 +38,7 @@ class FarmingScenario(BaseScenario, ABC):
         self.total_reward = None
         self.step_reward = None
         self.step_count = None
+        self.max_steps = None
 
     def reset(self, *, seed=None, options=None):
         self.reset_objects_positions()

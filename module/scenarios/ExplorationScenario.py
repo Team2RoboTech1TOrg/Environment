@@ -6,7 +6,7 @@ import pygame
 import numpy as np
 
 from PointStatus import DoneStatus
-from logger import logging
+from logging_system.logger import logging
 import const
 from render.menu_render import render_text
 from scenarios.FarmingScenario import FarmingScenario
@@ -22,6 +22,7 @@ class ExplorationScenario(FarmingScenario, ABC):
 
     def _reset_scenario(self, *, seed=None, options=None):
         self.start_time = time.time()
+        self.max_steps = self.grid_size ** 2 * 5 # TEST поставить среднее значение для миссии
         self.reward_coef = 1  # new
 
     def _get_scenario_obs(self):
