@@ -1,15 +1,15 @@
 # Параметры модели
-TIME = 50000
+TIME = 50#000
 LEARNING_RATE = 0.0001
 GAMMA = 0.99
 CLIP_RANGE = 0.2
-N_STEPS = 2048#8192#4096
+N_STEPS = 8192#4096
 COEF = 0.001
 VF_COEF = 0.5
 CLIP_RANGE_VF = 0.2
 N_EPOCHS = 5#0#0#0
 BATCH_SIZE = 256#128
-policy_kwargs = dict(net_arch=dict(pi=[256, 128], vf=[256, 128]))
+policy_kwargs = dict(net_arch=dict(pi=[256, 256, 128], vf=[256, 256, 128]))
 
 # Параметры экрана и сетки
 SCREEN_SIZE = 900

@@ -6,7 +6,7 @@ from abc import ABC, abstractmethod
 from math import ceil
 import const
 from Agent import Agent
-from PointStatus import PointStatus, ObjectStatus
+from PointStatus import PointStatus, ObjectStatus, DoneStatus
 from logger_csv import log_to_csv
 from scenarios.BaseScenario import BaseScenario
 from utils import load_obstacles, load_image
@@ -34,7 +34,6 @@ class FarmingScenario(BaseScenario, ABC):
                                for j in range(self.base_size)]
         self.agents = [Agent(self, name=f'agent_{i}') for i in range(self.num_agents)]
         self.obstacle_icons = load_obstacles(const.OBSTACLES, self.cell_size, self.count_obstacles)
-        self.done_status = None
         self.current_map = None
         self.reward_coef = None
         self.total_reward = None
@@ -46,15 +45,14 @@ class FarmingScenario(BaseScenario, ABC):
         self.step_count = 1
         self.total_reward = 0
         self.step_reward = 0
-        self.done_status = np.zeros(self.count_targets)
-        self.current_map = np.full((self.grid_size, self.grid_size, 2), fill_value=0)
+        self.current_map = np.full((self.grid_size, self.grid_size, 3), fill_value=0)
         agent_obs = [agent.reset() for agent in self.agents]
         obs = {'pos': np.stack([obs['pos'] for obs in agent_obs]),
                'coords': np.max(np.stack([obs['coords'] for obs in agent_obs]), axis=0)}
         # базу сразу пишем, как посещенную и отмечаем в объектах
-        for base_pos in self.base_positions:
-            obs['coords'][base_pos[0]][base_pos[1]][0] = PointStatus.visited.value
-            obs['coords'][base_pos[0]][base_pos[1]][1] = ObjectStatus.base.value
+        for x, y in self.base_positions:
+            obs['coords'][x][y][0] = PointStatus.visited.value
+            obs['coords'][x][y][1] = ObjectStatus.base.value
         self._reset_scenario()
         return obs, {}
 
@@ -104,7 +102,8 @@ class FarmingScenario(BaseScenario, ABC):
         elif all(truncated_list):
             truncated = True
 
-        info = {"done": int(sum(self.done_status))}
+        info = {"done": int(sum(element[2] == DoneStatus.done.value for row
+                                in self.current_map for element in row))}
 
         self.step_count += 1
         logging.info(

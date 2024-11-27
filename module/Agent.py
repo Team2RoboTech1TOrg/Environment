@@ -11,7 +11,7 @@ from numpy import ndarray
 
 import const
 from spaces.AgentObservationSpace import AgentObservationSpace
-from PointStatus import PointStatus, ObjectStatus
+from PointStatus import PointStatus, ObjectStatus, DoneStatus
 
 
 class Agent:
@@ -37,7 +37,7 @@ class Agent:
         self.reward_coef = 1
         self.position_history = deque(maxlen=10)  # self.env.inner_grid_size)
         self.energy = const.ENERGY_CAPACITY
-        coords = np.zeros((self.env.grid_size, self.env.grid_size, 2), dtype=np.int32)
+        coords = np.zeros((self.env.grid_size, self.env.grid_size, 3), dtype=np.int32)
         logging.info(f"Позиция {self.name} стартовая {self.position}")
         return {
             'pos': self.position,
@@ -62,13 +62,13 @@ class Agent:
 
         x, y = self.position
         match action:
-            case 0:  # Вверх
+            case 0:  # up
                 new_position = (max(0, x - 1), y)
-            case 1:  # Вниз
+            case 1:  # down
                 new_position = (min(self.env.grid_size - 1, x + 1), y)
-            case 2:  # Влево
+            case 2:  # left
                 new_position = (x, max(0, y - 1))
-            case 3:  # Вправо
+            case 3:  # right
                 new_position = (x, min(self.env.grid_size - 1, y + 1))
             case 4:  # На месте
                 new_position = self.position
@@ -87,15 +87,9 @@ class Agent:
         x, y = new_position
         value_new_position = obs['coords'][x][y]
 
-        # если не таргет, отмечаем посещение клетки
+        # отмечаем посещение клетки в файле сценария, кроме исследователя
         # if self.explorator or value_new_position[1] != ObjectStatus.plant.value:
         #     obs['coords'][x][y][0] = PointStatus.visited.value
-
-        if self.explorator:
-            obs['coords'][x][y][0] = PointStatus.visited.value
-        # else: # отмечаем посещение клетки в файле сценария, кроме исследователя
-        #     if value_new_position[1] != ObjectStatus.plant.value:
-        #         obs['coords'][new_position[0]][new_position[1]][0] = PointStatus.visited.value
 
         new_position, reward = self.get_agent_rewards(new_position, value_new_position[1], action)
         self.position = new_position
@@ -104,7 +98,7 @@ class Agent:
         return self.position, reward, terminated, truncated, {}
 
     def get_observation(self) -> dict[str, ndarray]:
-        coords = np.full((self.env.grid_size, self.env.grid_size, 2), fill_value=0)
+        coords = np.full((self.env.grid_size, self.env.grid_size, 3), fill_value=0)
         for pos in self.get_review():
             x, y = pos
             coords[x][y][0] = PointStatus.viewed.value
@@ -137,6 +131,7 @@ class Agent:
         if action != 4:
             self.position_history.append(new_position)
 
+        # TEST вместо этих штрафов попробовать штраф за каждый шаг минимальный
         if len(self.position_history) > 3:
             agent_reward += self.check_loop(new_position)
 
@@ -150,16 +145,6 @@ class Agent:
             new_position = self.position
             logging.info(
                 f"Упс, препятствие! {self} - штраф {const.PENALTY_OBSTACLE}, вернулся на {new_position}")
-        elif value == ObjectStatus.plant.value and not self.explorator:
-            idx = self.env.target_positions.index(new_position)
-            if self.env.done_status[idx] == 0:
-                self.energy -= const.ENERGY_CONSUMPTION_DONE
-                self.tank -= const.ON_TARGET_CONSUMPTION
-                self.env.done_status[idx] = 1
-                agent_reward += const.REWARD_DONE
-                # self.reward_coef *= 1.01
-                # agent_reward = const.REWARD_EXPLORE * self.reward_coef
-                logging.info(f"{self} выполнена задача {new_position}, награда {round(agent_reward, 2)}")
 
         return new_position, agent_reward
 

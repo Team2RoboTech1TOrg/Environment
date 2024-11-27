@@ -1,12 +1,11 @@
 import random
 import time
 from abc import ABC
-from math import ceil
 
 import pygame
 import numpy as np
 
-from PointStatus import PointStatus
+from PointStatus import DoneStatus
 from logger import logging
 import const
 from render.menu_render import render_text
@@ -19,11 +18,11 @@ class ExplorationScenario(FarmingScenario, ABC):
         super().__init__(num_agents, grid_size)
         self.start_time = None
         self.name = 'exploration'
-        self.count_targets = self.inner_grid_size ** 2 #- self.base_size * 2 - self.count_obstacles
+        self.count_targets = self.inner_grid_size ** 2
 
     def _reset_scenario(self, *, seed=None, options=None):
         self.start_time = time.time()
-        self.reward_coef = 1 #new
+        self.reward_coef = 1  # new
 
     def _get_scenario_obs(self):
         """
@@ -49,16 +48,16 @@ class ExplorationScenario(FarmingScenario, ABC):
         :return: observation full and reward for scenario
         """
         reward = 0
-        # self.reward_coef *= 0.99 #new
+        self.reward_coef *= 0.99  # new
 
         # что видит агент в данной позиции
         for pos in agent.get_review():
             x, y = pos
             if (x, y) in self.target_positions:
-                idx = self.target_positions.index((x, y))
-                if self.done_status[idx] == 0:
-                    self.done_status[idx] = 1
+                if obs['coords'][x][y][2] == DoneStatus.empty.value:
+                    obs['coords'][x][y][2] = DoneStatus.done.value
                     reward = const.REWARD_EXPLORE
+                    # TEST если делать динамическую награду
                     # reward = const.REWARD_EXPLORE * self.reward_coef
                     logging.info(f"{agent.name} исследовал новую клетку {x, y} + {round(reward, 2)}")
         return obs, reward
@@ -70,13 +69,13 @@ class ExplorationScenario(FarmingScenario, ABC):
         """
         terminated = False
         truncated = False
-
         if self.step_count >= const.MAX_STEPS_GAME:
             logging.info("Достигнуто максимальное количество шагов в миссии. ")
             total_reward = 0
             truncated = True
 
-        elif np.all(self.done_status == 1):
+        elif sum(element[2] == DoneStatus.done.value for row in self.current_map for element in
+                 row) == self.count_targets:
             terminated = True
             logging.info("Все растения опрысканы")
             [setattr(agent, 'position', random.choice(self.base_positions)) for agent in self.agents]
@@ -94,13 +93,12 @@ class ExplorationScenario(FarmingScenario, ABC):
             # self.total_reward = 0
         else:
             self.total_reward += self.step_reward
-            total_reward = 0#self.total_reward# VS 0 проверить как лучше будет работать
+            total_reward = self.total_reward  # TEST Динамический ревард или 0? проверить как лучше будет работать
         return total_reward, terminated, truncated, {}
 
     def _render_scenario(self):
         """Render agent game"""
         cell = self.cell_size
-        # target_done_icon = load_image(const.DONE_TARGET_EXPLORE, cell)
         plant = load_image(const.DONE_TARGET_SPRAY, cell)
         agent_icon = load_image(const.AGENT, cell)
 
@@ -109,13 +107,6 @@ class ExplorationScenario(FarmingScenario, ABC):
             x, y = flower
             if self.current_map[x, y, 0] != 0:
                 self.screen.blit(plant, (y * cell, x * cell))
-
-        # for i, target in enumerate(self.target_positions):
-        #     x, y = target
-        #     if self.current_map[x, y, 0] != 0:
-        #         known_targets += 1
-        #         if self.done_status[i]:
-        #             self.screen.blit(target_done_icon, (y * cell, x * cell))
 
         for i, obstacle in enumerate(self.obstacle_positions):
             x, y = obstacle
@@ -129,7 +120,7 @@ class ExplorationScenario(FarmingScenario, ABC):
             for y in range(self.grid_size):
                 if self.current_map[x, y, 0] == 0:
                     dark_overlay = pygame.Surface((cell, cell), pygame.SRCALPHA)
-                    dark_overlay.fill((0, 0, 0, 200))  # Непрозрачный
+                    dark_overlay.fill((0, 0, 0, 200))
                     self.screen.blit(dark_overlay, (y * cell, x * cell))
 
         # Отрисовка агента
@@ -140,9 +131,9 @@ class ExplorationScenario(FarmingScenario, ABC):
         # Отрисовка времени, очков, заряда и уровня воды
         screen_width, screen_height = self.screen.get_size()
         status_bar_height = const.BAR_HEIGHT
-        elapsed_time = time.time() - self.start_time  # Рассчитываем время
+        elapsed_time = time.time() - self.start_time
 
-        font_size = int(status_bar_height * 0.25)  # Размер шрифта для панели статуса
+        font_size = int(status_bar_height * 0.25)
         font = pygame.font.SysFont(const.FONT, font_size)
 
         text_x1 = screen_width * 0.05
@@ -152,26 +143,26 @@ class ExplorationScenario(FarmingScenario, ABC):
         text_y3 = text_y1 + status_bar_height // 4 * 2
 
         color = const.BLACK
-        # count_targets = len(self.target_positions)
         render_text(self.screen, f"Время: {elapsed_time:.2f} сек", font, color, text_x1, text_y1)
         render_text(self.screen, f"Очки: {int(self.total_reward)}", font, color, text_x1, text_y2)
         render_text(self.screen, f"Шагов: {self.step_count}", font, color, text_x1, text_y3)
         render_text(self.screen, f"Обнаружено препятствий: {known_obstacles}/{self.count_obstacles}", font, color,
                     text_x2, text_y1)
-        # render_text(self.screen, f"Обнаружено целей: {known_targets}/{self.count_targets}", font, color,
-        #             text_x2, text_y2)
-        render_text(self.screen, f"Отработано целей: {int(np.sum(self.done_status))}/{self.count_targets}", font, color,
+        render_text(self.screen,
+                    f"Отработано целей:"
+                    f" {int(np.sum(element[2] == DoneStatus.done.value for row in self.current_map for element in row))}"
+                    f"/{self.count_targets}",
+                    font, color,
                     text_x2, text_y2)
         pygame.display.flip()
 
     def _randomize_positions(self):
         """
-        Get random positions of objects
+        Get random positions of objects.
         """
-
         self.target_positions = self._get_available_positions(set())
         unavailable_positions = self.get_restricted_area_around_base()
-        # TO DO  проверка, чтоб препятствия не стояли вокруг клетки
+
         self.obstacle_positions = self._get_objects_positions(unavailable_positions, self.count_obstacles)
         unavailable_positions.update(self.obstacle_positions)
 
@@ -179,7 +170,7 @@ class ExplorationScenario(FarmingScenario, ABC):
 
     def _fixed_positions(self):
         """
-        Get fixed positions of objects
+        Get fixed positions of objects.
         """
         self.obstacle_positions = const.FIXED_OBSTACLE_POSITIONS
         self.target_positions = self._get_objects_positions(

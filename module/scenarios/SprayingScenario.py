@@ -1,12 +1,11 @@
 import random
 import time
 from abc import ABC
-from math import ceil
 
 import pygame
 import numpy as np
 
-from PointStatus import PointStatus, ObjectStatus
+from PointStatus import PointStatus, DoneStatus, ObjectStatus
 from logger import logging
 import const
 from render.menu_render import render_text
@@ -49,16 +48,26 @@ class SprayingScenario(FarmingScenario, ABC):
         :return: observation full and reward for scenario
         """
         reward = 0
-        reward -= 0.001
-        value_position = obs['coords'][new_position[0]][new_position[1]]
+        x, y = new_position
         # даем награду если агент в этой клетке и она в статусе увидена (в клетках плохих он не может быть)
-        if value_position[0] == PointStatus.viewed.value:
-            # if value_position[1] != ObjectStatus.plant.value:
-            # reward = const.REWARD_EXPLORE
+        if obs['coords'][x][y][0] == PointStatus.viewed.value:
+            reward = const.REWARD_EXPLORE
+            # TEST если делать динамическую награду
+            # self.reward_coef *= 1.01
+            # reward = const.REWARD_EXPLORE * self.reward_coef
+            logging.info(f"{agent.name} исследовал новую клетку {new_position} + {round(reward, 2)}")
+            obs['coords'][x][y][0] = PointStatus.visited.value
+
+        if obs['coords'][x][y][1] == ObjectStatus.plant.value:
+            if obs['coords'][x][y][2] == DoneStatus.empty.value:
+                agent.energy -= const.ENERGY_CONSUMPTION_DONE
+                agent.tank -= const.ON_TARGET_CONSUMPTION
+                obs['coords'][x][y][2] = DoneStatus.done.value
+                reward += const.REWARD_DONE
+                # TEST если делать динамическую награду
                 # self.reward_coef *= 1.01
                 # reward = const.REWARD_EXPLORE * self.reward_coef
-            logging.info(f"{agent.name} исследовал новую клетку {new_position} + {round(reward, 2)}")
-            obs['coords'][new_position[0]][new_position[1]][0] = PointStatus.visited.value
+                logging.info(f"{self} выполнена задача {new_position}, награда {round(reward, 2)}")
         return obs, reward
 
     def _check_termination_conditions(self) -> tuple:
@@ -74,7 +83,8 @@ class SprayingScenario(FarmingScenario, ABC):
             total_reward = 0
             truncated = True
 
-        elif np.all(self.done_status == 1):
+        elif sum(element[2] == DoneStatus.done.value for row in self.current_map for element in
+                 row) == self.count_targets:
             terminated = True
             logging.info("Все растения опрысканы")
             [setattr(agent, 'position', random.choice(self.base_positions)) for agent in self.agents]
@@ -108,14 +118,14 @@ class SprayingScenario(FarmingScenario, ABC):
         known_obstacles, known_targets = 0, 0
         for i, target in enumerate(self.target_positions):
             x, y = target
-            if self.current_map[x, y, 0] != 0:
+            if self.current_map[x, y, 0] != PointStatus.empty.value:
                 known_targets += 1
-                icon = target_done_icon if self.done_status[i] else target_icon
+                icon = target_done_icon if self.current_map[x, y, 2] == 1 else target_icon
                 self.screen.blit(icon, (y * cell, x * cell))
 
         for i, obstacle in enumerate(self.obstacle_positions):
             x, y = obstacle
-            if self.current_map[x, y, 0] != 0:
+            if self.current_map[x, y, 0] != PointStatus.empty.value:
                 known_obstacles += 1
                 obstacle_icon = self.obstacle_icons[i % len(self.obstacle_icons)]
                 self.screen.blit(obstacle_icon, (y * cell, x * cell))
@@ -123,7 +133,7 @@ class SprayingScenario(FarmingScenario, ABC):
         # Накладываем исследование области
         for x in range(self.grid_size):
             for y in range(self.grid_size):
-                if self.current_map[x, y, 0] == 0:
+                if self.current_map[x, y, 0] == PointStatus.empty.value:
                     dark_overlay = pygame.Surface((cell, cell), pygame.SRCALPHA)
                     dark_overlay.fill((0, 0, 0, 200))  # Непрозрачный
                     self.screen.blit(dark_overlay, (y * cell, x * cell))
@@ -136,9 +146,9 @@ class SprayingScenario(FarmingScenario, ABC):
         # Отрисовка времени, очков, заряда и уровня воды
         screen_width, screen_height = self.screen.get_size()
         status_bar_height = const.BAR_HEIGHT
-        elapsed_time = time.time() - self.start_time  # Рассчитываем время
+        elapsed_time = time.time() - self.start_time
 
-        font_size = int(status_bar_height * 0.25)  # Размер шрифта для панели статуса
+        font_size = int(status_bar_height * 0.25)
         font = pygame.font.SysFont('Arial', font_size)
 
         text_x1 = screen_width * 0.05
@@ -156,7 +166,10 @@ class SprayingScenario(FarmingScenario, ABC):
         render_text(self.screen, f"Обнаружено целей: {known_targets}/{self.count_targets}", font, color,
                     text_x2, text_y2)
         render_text(self.screen,
-                    f"Отработано целей: {int(np.sum(self.done_status))}/{self.count_targets}", font, color,
+                    f"Отработано целей:"
+                    f" {int(np.sum(element[2] == DoneStatus.done.value for row in self.current_map for element in row))}"
+                    f"/{self.count_targets}",
+                    font, color,
                     text_x2, text_y3)
         pygame.display.flip()
 

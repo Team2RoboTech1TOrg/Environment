@@ -13,3 +13,7 @@ class ObjectStatus(enum.Enum):
     plant = 2
     base = 3
 
+
+class DoneStatus(enum.Enum):
+    empty = 0
+    done = 1

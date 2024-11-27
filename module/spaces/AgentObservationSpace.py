@@ -13,8 +13,8 @@ class AgentObservationSpace(gym.spaces.Dict):
         )
 
         self.points_space = spaces.Box(
-            low=np.zeros((size, size, 2), dtype=np.int32),
-            high=np.full((size, size, 2), fill_value=2, dtype=np.int32),
+            low=np.zeros((size, size, 3), dtype=np.int32),
+            high=np.full((size, size, 3), fill_value=3, dtype=np.int32),
             dtype=np.int32
         )
 
