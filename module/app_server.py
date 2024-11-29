@@ -1,4 +1,5 @@
 import time
+from math import ceil
 
 import pygame
 import sys
@@ -9,12 +10,19 @@ from environments.FarmingEnv import FarmingEnv
 from config import log_dir
 from logging_system.logger import logging
 from logging_system.logger_csv import log_to_csv
-from render.menu_render import input_screen
 from scenarios.scenarios_dict import get_dict_scenarios
 
 
-def run():
-    num_agents, grid_size, selected = input_screen()
+def run_server():
+    print("Введите количество агентов:")
+    num_agents = int(input()) or const.NUM_AGENTS
+    print(f"Введите размер поля больше, чем :"
+          f"{ceil((num_agents + const.STATION_SIZE * 2 + const.MARGIN_SIZE * 2) / (1 - (const.OBSTACLE_PERCENT + const.TARGET_PERCENT)))}")
+
+    grid_size = int(input()) or const.GRID_SIZE
+    print("Выберите сценарий:")
+    selected = int(input()) or 1
+
     scenarios = get_dict_scenarios(num_agents, grid_size)
     selected_scenario = scenarios.get(selected)
 
@@ -39,7 +47,7 @@ def run():
         env.render_message(message)
         pygame.display.set_caption("OS SWARM OF DRONES")
         logging.info(message)
-        policy = 'MultiInputPolicy'  # 'MlpPolicy'
+        policy = 'MultiInputPolicy'
         model = PPO(
             policy,
             env,
@@ -53,7 +61,7 @@ def run():
             n_epochs=const.N_EPOCHS,
             batch_size=const.BATCH_SIZE,
             tensorboard_log=log_dir,
-            # policy_kwargs=const.policy_kwargs
+            policy_kwargs=const.policy_kwargs
         )
         model.learn(total_timesteps=const.TIME)
         message = "Обучение модели\nзавершено."
@@ -68,7 +76,7 @@ def run():
         step_count = 0
         log_status = True
         mission = 1
-        while mission < 9:#True: # depends of log status
+        while mission < 9:  # True: # depends of log status
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     pygame.quit()

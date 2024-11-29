@@ -3,7 +3,7 @@ from typing import List
 import gymnasium as gym
 import numpy as np
 
-from Agent import Agent
+from agent.Agent import Agent
 
 
 class SystemObservationSpace(gym.spaces.Dict):

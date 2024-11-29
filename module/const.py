@@ -1,5 +1,6 @@
+import torch as th
 # Параметры модели
-TIME = 50#000
+TIME = 20000
 LEARNING_RATE = 0.0001
 GAMMA = 0.99
 CLIP_RANGE = 0.2
@@ -9,7 +10,9 @@ VF_COEF = 0.5
 CLIP_RANGE_VF = 0.2
 N_EPOCHS = 5#0#0#0
 BATCH_SIZE = 256#128
-policy_kwargs = dict(net_arch=dict(pi=[256, 256, 128], vf=[256, 256, 128]))
+# policy_kwargs = dict(net_arch=dict(pi=[256, 256, 128], vf=[256, 256, 128]))
+policy_kwargs = dict(activation_fn=th.nn.ReLU,
+                     net_arch=dict(pi=[128, 64, 32], vf=[128, 64, 32]))
 
 # Параметры экрана и сетки
 SCREEN_SIZE = 900
@@ -33,13 +36,14 @@ COUNT_ACTIONS = 9
 MIN_GAME_STEPS = (GRID_SIZE ** 2 // NUM_AGENTS) * 8# add to class
 
 # Награды
-REWARD_EXPLORE = 2  # Вознаграждение за исследование новых клеток
+REWARD_EXPLORE = 1  # Вознаграждение за исследование новых клеток
 REWARD_DONE = REWARD_EXPLORE * 1.1
 REWARD_COMPLETION = REWARD_DONE * 100
 PENALTY_LOOP = 0.1
+PENALTY_RETURN = 0.05
 PENALTY_OUT_FIELD = 0.1
-PENALTY_OBSTACLE = 0.1
-PENALTY_CRASH = 0.12
+PENALTY_OBSTACLE = 0.15
+PENALTY_CRASH = 0.2
 
 # Позиции цветов и ям
 # PLACEMENT_MODE = 'fixed'

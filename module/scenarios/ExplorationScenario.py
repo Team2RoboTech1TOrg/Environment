@@ -5,7 +5,7 @@ from abc import ABC
 import pygame
 import numpy as np
 
-from PointStatus import DoneStatus
+from PointStatus import DoneStatus, PointStatus
 from logging_system.logger import logging
 import const
 from render.menu_render import render_text
@@ -23,6 +23,8 @@ class ExplorationScenario(FarmingScenario, ABC):
     def _reset_scenario(self, *, seed=None, options=None):
         self.start_time = time.time()
         self.max_steps = self.grid_size ** 2 * 5 # TEST поставить среднее значение для миссии
+        self.min_steps = self.grid_size ** 2
+        self.reward_complexion = const.REWARD_DONE * self.count_targets
         self.reward_coef = 1  # new
 
     def _get_scenario_obs(self):
@@ -51,16 +53,25 @@ class ExplorationScenario(FarmingScenario, ABC):
         reward = 0
         self.reward_coef *= 0.99  # new
 
+        #new condition
+        x, y = new_position
+        #TO DO проверить есть ли тут клетки пустые и если нет убрать
+        if obs['coords'][x][y][0] in (PointStatus.viewed.value, PointStatus.empty.value):
+            obs['coords'][x][y][0] = PointStatus.visited.value
+        else:
+            reward -= const.PENALTY_RETURN
+            logging.info(f"{agent.name} тут уже кто-то был {x, y} + {reward}")
+
         # что видит агент в данной позиции
         for pos in agent.get_review():
             x, y = pos
             if (x, y) in self.target_positions:
                 if obs['coords'][x][y][2] == DoneStatus.empty.value:
                     obs['coords'][x][y][2] = DoneStatus.done.value
-                    reward = const.REWARD_EXPLORE
+                    reward += const.REWARD_EXPLORE
                     # TEST если делать динамическую награду
-                    # reward = const.REWARD_EXPLORE * self.reward_coef
-                    logging.info(f"{agent.name} исследовал новую клетку {x, y} + {round(reward, 2)}")
+                    # reward += const.REWARD_EXPLORE * self.reward_coef
+                    logging.info(f"{agent.name} исследовал новую клетку {x, y} + {reward}")
         return obs, reward
 
     def _check_termination_conditions(self) -> tuple:
@@ -70,9 +81,9 @@ class ExplorationScenario(FarmingScenario, ABC):
         """
         terminated = False
         truncated = False
-        if self.step_count >= const.MAX_STEPS_GAME:
+        if self.step_count >= self.max_steps:
             logging.info("Достигнуто максимальное количество шагов в миссии. ")
-            total_reward = 0
+            reward = 0
             truncated = True
 
         elif sum(element[2] == DoneStatus.done.value for row in self.current_map for element in
@@ -81,21 +92,18 @@ class ExplorationScenario(FarmingScenario, ABC):
             logging.info("Все растения опрысканы")
             [setattr(agent, 'position', random.choice(self.base_positions)) for agent in self.agents]
             logging.info("Агенты вернулись на базу")
-
-            # условие по времени выполнения
-            if self.step_count <= const.MIN_GAME_STEPS:
-                self.total_reward += const.REWARD_COMPLETION * 1.2
-                total_reward = self.total_reward
-                logging.info(f"Увеличенная награда: {total_reward}за шагов меньше, чем {const.MIN_GAME_STEPS}")
+            if self.step_count <= self.min_steps:
+                self.total_reward += self.reward_complexion * 1.5
+                reward = self.total_reward
+                logging.info(f"Увеличенная награда: {reward} за шагов меньше, чем {self.min_steps}")
             else:
-                self.total_reward += const.REWARD_COMPLETION
-                total_reward = self.total_reward
-                logging.info(f"Награда: {total_reward}")
-            # self.total_reward = 0
+                self.total_reward += self.reward_complexion
+                reward = self.total_reward
+                logging.info(f"Награда: {reward}")
         else:
             self.total_reward += self.step_reward
-            total_reward = self.total_reward  # TEST Динамический ревард или 0? проверить как лучше будет работать
-        return total_reward, terminated, truncated, {}
+            reward = self.total_reward  # TEST Динамический ревард или 0? проверить как лучше будет работать
+        return reward, terminated, truncated, {}
 
     def _render_scenario(self):
         """Render agent game"""

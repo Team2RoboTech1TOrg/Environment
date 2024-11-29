@@ -1,10 +1,11 @@
 import pygame
 
 from app import run
+from app_server import run_server
+server = False
 
-# from IPython.display import display pip install ipython
 
 if __name__ == '__main__':
     pygame.init()
-    run()
+    run_server() if server else run()
 

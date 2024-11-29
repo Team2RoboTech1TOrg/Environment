@@ -1,4 +1,5 @@
 import gymnasium as gym
+from gymnasium.core import ActType
 
 from spaces.SystemObservationSpace import SystemObservationSpace
 from logging_system.logger import logging
@@ -33,8 +34,8 @@ class FarmingEnv(gym.Env):
         obs = self.scenario.get_observation()
         return obs
 
-    def step(self, actions):
-        obs, reward, terminated, truncated, info = self.scenario.step(actions)
+    def step(self, action: ActType):
+        obs, reward, terminated, truncated, info = self.scenario.step(action)
         return obs, reward, terminated, truncated, info
 
     def render(self):

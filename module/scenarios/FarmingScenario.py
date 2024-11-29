@@ -4,8 +4,11 @@ import pygame
 
 from abc import ABC, abstractmethod
 from math import ceil
+
+from gymnasium.core import ActType
+
 import const
-from Agent import Agent
+from agent.Agent import Agent
 from PointStatus import PointStatus, ObjectStatus, DoneStatus
 from scenarios.BaseScenario import BaseScenario
 from utils import load_obstacles, load_image
@@ -39,6 +42,8 @@ class FarmingScenario(BaseScenario, ABC):
         self.step_reward = None
         self.step_count = None
         self.max_steps = None
+        self.min_steps = None
+        self.reward_complexion = None
 
     def reset(self, *, seed=None, options=None):
         self.reset_objects_positions()
@@ -49,9 +54,9 @@ class FarmingScenario(BaseScenario, ABC):
         agent_obs = [agent.reset() for agent in self.agents]
         obs = {'pos': np.stack([obs['pos'] for obs in agent_obs]),
                'coords': np.max(np.stack([obs['coords'] for obs in agent_obs]), axis=0)}
-        # базу сразу пишем, как посещенную и отмечаем в объектах
+        # базу сразу отмечаем в объектах
         for x, y in self.base_positions:
-            obs['coords'][x][y][0] = PointStatus.visited.value
+            # obs['coords'][x][y][0] = PointStatus.visited.value в сценариях кроме исследователя
             obs['coords'][x][y][1] = ObjectStatus.base.value
         self._reset_scenario()
         return obs, {}
@@ -68,7 +73,7 @@ class FarmingScenario(BaseScenario, ABC):
     def _get_scenario_obs(self):
         pass
 
-    def step(self, action):
+    def step(self, action: ActType):
         terminated_list, truncated_list = [], []
         logging.info(f"Шаг: {self.step_count}")
         obs = self.get_observation()
@@ -90,6 +95,7 @@ class FarmingScenario(BaseScenario, ABC):
             logging.info(f"pos after crash {new_position}")
             obs, system_reward = self._get_system_reward(obs, new_position, agent)
             obs['pos'][i] = new_position
+            agent.position = new_position
             logging.info(f"obs after check sys{obs['pos'][i]}")
             self.step_reward += system_reward
             self.step_reward += agent_reward
@@ -101,6 +107,9 @@ class FarmingScenario(BaseScenario, ABC):
             terminated = True
         elif all(truncated_list):
             truncated = True
+
+        # print(self.step_count)
+        # print(self.current_map == obs['coords'])
 
         info = {"done": int(sum(element[2] == DoneStatus.done.value for row
                                 in self.current_map for element in row))}
@@ -129,12 +138,14 @@ class FarmingScenario(BaseScenario, ABC):
         :param obs: all agents positions at the moment
         :return: agent coordinates x, y
         """
-        # TO DO чтоб на базе не было столкновений
-        for i, item in enumerate(obs['pos']):
-            if i != int(agent.name.split('_')[1]) and tuple(item) == new_position:
-                self.total_reward -= const.PENALTY_CRASH
-                logging.warning(f"Столкнование {new_position} агентов")
-                new_position = agent.position
+        if new_position not in self.base_positions:
+            for i, item in enumerate(obs['pos']):
+                if i != int(agent.name.split('_')[1]) and tuple(item) == new_position:
+                    self.total_reward -= const.PENALTY_CRASH
+                    logging.warning(f"Столкнование {new_position} агентов")
+                    # new_position = agent.position
+        else:
+            logging.warning(f"Два агента на базе {new_position}")
         return new_position
 
     def render(self):

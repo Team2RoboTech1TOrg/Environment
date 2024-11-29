@@ -57,38 +57,44 @@ class Agent:
             if self.tank < 10:  # возврат на базу
                 self.position = random.choice(self.env.base_positions)
                 self.tank = const.TANK_CAPACITY
+                logging.info(f"{self.name} полетел на базу за пестицидами")
 
         obs = self.get_observation()
 
         x, y = self.position
+        # board = self.env.grid_size
         match action:
             case 0:  # up
-                new_position = (max(0, x - 1), y)
+                new_position = (x - 1, y)
             case 1:  # down
-                new_position = (min(self.env.grid_size - 1, x + 1), y)
+                new_position = (x + 1, y)
             case 2:  # left
-                new_position = (x, max(0, y - 1))
+                new_position = (x, y - 1)
             case 3:  # right
-                new_position = (x, min(self.env.grid_size - 1, y + 1))
-            case 4:  # На месте
+                new_position = (x, y + 1)
+            case 4:  # stop
                 new_position = self.position
             case 5:  # right up
-                new_position = (max(0, x - 1), min(self.env.grid_size - 1, y + 1))
+                new_position = (x - 1, y + 1)
             case 6:  # left up
-                new_position = (max(0, x - 1), max(0, y - 1))
+                new_position = (x - 1, y - 1)
             case 7:  # right down
-                new_position = (min(self.env.grid_size - 1, x + 1), min(self.env.grid_size - 1, y + 1))
+                new_position = (x + 1, y + 1)
             case 8:  # left down
-                new_position = (min(self.env.grid_size - 1, x + 1), max(0, y - 1))
+                new_position = (x + 1, y - 1)
             case _:
                 new_position = self.position
+
+        new_position = np.clip(new_position, self.observation_space.position_space.low,
+                               self.observation_space.position_space.high)
+        new_position = tuple(new_position)
         self.energy -= const.ENERGY_CONSUMPTION_MOVE
 
         x, y = new_position
         value_new_position = obs['coords'][x][y]
 
         # отмечаем посещение клетки в файле сценария, кроме исследователя
-        # if self.explorator or value_new_position[1] != ObjectStatus.plant.value:
+        # if self.explorator:# or value_new_position[1] != ObjectStatus.plant.value:
         #     obs['coords'][x][y][0] = PointStatus.visited.value
 
         new_position, reward = self.get_agent_rewards(new_position, value_new_position[1], action)
@@ -117,7 +123,7 @@ class Agent:
         return f'{self.name}'
 
     def get_agent_rewards(self, new_position: tuple[int, int], value: float, action: Any) -> tuple[
-            tuple[int, int], int]:
+        tuple[int, int], int]:
         """
         Update explored cells, update position of agent in dependency of cells.
         Give reward in dependency of cells.
@@ -156,9 +162,9 @@ class Agent:
         """
         reward = 0
         pos_counter = self.position_history.count(new_position)
-        if new_position == self.position_history[-2]:
+        if new_position == self.position:  # _history[-2]:
             reward -= const.PENALTY_LOOP
-            logging.warning(f"Штраф {self} за второй раз в одну клетку' {self.position_history[-2]}")
+            logging.warning(f"Штраф {self} за второй раз в одну клетку' {self.position}")  # _history[-2]}")
         elif 4 >= pos_counter > 2:
             reward -= const.PENALTY_LOOP * 1.1
             logging.warning(
@@ -180,4 +186,3 @@ class Agent:
                 if 0 <= x < self.env.grid_size and 0 <= y < self.env.grid_size:
                     review.append((x, y))
         return review
-
