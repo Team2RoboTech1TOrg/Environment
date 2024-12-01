@@ -22,7 +22,7 @@ class ExplorationScenario(FarmingScenario, ABC):
 
     def _reset_scenario(self, *, seed=None, options=None):
         self.start_time = time.time()
-        self.max_steps = self.grid_size ** 2 * 5 # TEST поставить среднее значение для миссии
+        self.max_steps = self.grid_size ** 2 * 3#5 # TEST поставить среднее значение для миссии
         self.min_steps = self.grid_size ** 2
         self.reward_complexion = const.REWARD_DONE * self.count_targets
         self.reward_coef = 1  # new
@@ -51,7 +51,7 @@ class ExplorationScenario(FarmingScenario, ABC):
         :return: observation full and reward for scenario
         """
         reward = 0
-        self.reward_coef *= 0.99  # new
+        self.reward_coef *= 1.001  # new
 
         #new condition
         x, y = new_position
@@ -59,7 +59,8 @@ class ExplorationScenario(FarmingScenario, ABC):
         if obs['coords'][x][y][0] in (PointStatus.viewed.value, PointStatus.empty.value):
             obs['coords'][x][y][0] = PointStatus.visited.value
         else:
-            reward -= const.PENALTY_RETURN
+            # reward -= const.PENALTY_RETURN
+            reward -= const.PENALTY_RETURN * self.reward_coef
             logging.info(f"{agent.name} тут уже кто-то был {x, y} + {reward}")
 
         # что видит агент в данной позиции
@@ -68,10 +69,13 @@ class ExplorationScenario(FarmingScenario, ABC):
             if (x, y) in self.target_positions:
                 if obs['coords'][x][y][2] == DoneStatus.empty.value:
                     obs['coords'][x][y][2] = DoneStatus.done.value
-                    reward += const.REWARD_EXPLORE
+                    # print(obs['coords'][x][y])
+                    # reward += const.REWARD_EXPLORE
                     # TEST если делать динамическую награду
-                    # reward += const.REWARD_EXPLORE * self.reward_coef
+                    reward += const.REWARD_EXPLORE * self.reward_coef
                     logging.info(f"{agent.name} исследовал новую клетку {x, y} + {reward}")
+        # print('---')
+        # print(self.current_map == obs['coords'])
         return obs, reward
 
     def _check_termination_conditions(self) -> tuple:
@@ -100,9 +104,10 @@ class ExplorationScenario(FarmingScenario, ABC):
                 self.total_reward += self.reward_complexion
                 reward = self.total_reward
                 logging.info(f"Награда: {reward}")
+            # self.total_reward = 0
         else:
             self.total_reward += self.step_reward
-            reward = self.total_reward  # TEST Динамический ревард или 0? проверить как лучше будет работать
+            reward = 0#self.total_reward  # TEST Динамический ревард или 0? проверить как лучше будет работать
         return reward, terminated, truncated, {}
 
     def _render_scenario(self):
@@ -115,14 +120,14 @@ class ExplorationScenario(FarmingScenario, ABC):
         for i, flower in enumerate(self.plants_positions):
             x, y = flower
             if self.current_map[x, y, 0] != 0:
-                self.screen.blit(plant, (y * cell, x * cell))
+                self.screen.blit(plant, (x * cell, y * cell))
 
         for i, obstacle in enumerate(self.obstacle_positions):
             x, y = obstacle
             if self.current_map[x, y, 0] != 0:
                 known_obstacles += 1
                 obstacle_icon = self.obstacle_icons[i % len(self.obstacle_icons)]
-                self.screen.blit(obstacle_icon, (y * cell, x * cell))
+                self.screen.blit(obstacle_icon, (x * cell, y * cell))
 
         # Накладываем исследование области
         for x in range(self.grid_size):
@@ -130,12 +135,12 @@ class ExplorationScenario(FarmingScenario, ABC):
                 if self.current_map[x, y, 0] == 0:
                     dark_overlay = pygame.Surface((cell, cell), pygame.SRCALPHA)
                     dark_overlay.fill((0, 0, 0, 200))
-                    self.screen.blit(dark_overlay, (y * cell, x * cell))
+                    self.screen.blit(dark_overlay, (x * cell, y * cell))
 
         # Отрисовка агента
         for agent in self.agents:
-            self.screen.blit(agent_icon, (agent.position[1] * cell,
-                                          agent.position[0] * cell))
+            self.screen.blit(agent_icon, (agent.position[0] * cell,
+                                          agent.position[1] * cell))
 
         # Отрисовка времени, очков, заряда и уровня воды
         screen_width, screen_height = self.screen.get_size()
@@ -164,6 +169,7 @@ class ExplorationScenario(FarmingScenario, ABC):
                     font, color,
                     text_x2, text_y2)
         pygame.display.flip()
+        time.sleep(0.1) ###
 
     def _randomize_positions(self):
         """

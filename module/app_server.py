@@ -61,6 +61,7 @@ def run_server():
             n_epochs=const.N_EPOCHS,
             batch_size=const.BATCH_SIZE,
             tensorboard_log=log_dir,
+            normalize_advantage=True,
             policy_kwargs=const.policy_kwargs
         )
         model.learn(total_timesteps=const.TIME)

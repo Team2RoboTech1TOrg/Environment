@@ -1,10 +1,10 @@
 import torch as th
 # Параметры модели
-TIME = 20000
+TIME = 30000
 LEARNING_RATE = 0.0001
 GAMMA = 0.99
 CLIP_RANGE = 0.2
-N_STEPS = 8192#4096
+N_STEPS = 2048#4096 # должна быть привязка к кол-ву шагов эпизода
 COEF = 0.001
 VF_COEF = 0.5
 CLIP_RANGE_VF = 0.2
@@ -22,7 +22,7 @@ MARGIN_SIZE = 1
 
 # Параметры игры
 NUM_AGENTS = 3
-TARGET_PERCENT = 0.45
+TARGET_PERCENT = 0.1#45
 OBSTACLE_PERCENT = 0.05
 STATION_SIZE = 2
 MAX_STEPS_GAME = (GRID_SIZE ** 2) * 10 #add to class

@@ -31,7 +31,7 @@ class FarmingScenario(BaseScenario, ABC):
         self.count_plants = ceil(self.grid_size ** 2 * const.TARGET_PERCENT)
         self.plants_positions = None
         self.base_size = const.STATION_SIZE
-        base_coords = (self.margin + 1, self.grid_size // 2 - self.base_size // 2)
+        base_coords = (self.grid_size // 2 - self.base_size // 2, self.margin + 1)
         self.base_positions = [(base_coords[0] + i, base_coords[1] + j) for i in range(self.base_size)
                                for j in range(self.base_size)]
         self.agents = [Agent(self, name=f'agent_{i}') for i in range(self.num_agents)]
@@ -91,7 +91,8 @@ class FarmingScenario(BaseScenario, ABC):
                 logging.info(f"{agent.name} ожидает вылета")
                 continue
 
-            new_position = self.check_crash(obs, agent, new_position)
+            new_position, penalty = self.check_crash(obs, agent, new_position)
+            self.step_reward += penalty
             logging.info(f"pos after crash {new_position}")
             obs, system_reward = self._get_system_reward(obs, new_position, agent)
             obs['pos'][i] = new_position
@@ -99,7 +100,6 @@ class FarmingScenario(BaseScenario, ABC):
             logging.info(f"obs after check sys{obs['pos'][i]}")
             self.step_reward += system_reward
             self.step_reward += agent_reward
-
         reward, terminated, truncated, info = self._check_termination_conditions()
 
         # если у всех агентов закончился заряд
@@ -108,9 +108,7 @@ class FarmingScenario(BaseScenario, ABC):
         elif all(truncated_list):
             truncated = True
 
-        # print(self.step_count)
-        # print(self.current_map == obs['coords'])
-
+        self.current_map = np.maximum(obs['coords'], self.current_map) #??
         info = {"done": int(sum(element[2] == DoneStatus.done.value for row
                                 in self.current_map for element in row))}
 
@@ -120,6 +118,7 @@ class FarmingScenario(BaseScenario, ABC):
             f"Завершено: {terminated}, "
             f"Прервано: {truncated}"
         )
+        logging.info(obs)
         return obs, reward, terminated, truncated, info
 
     @abstractmethod
@@ -130,23 +129,22 @@ class FarmingScenario(BaseScenario, ABC):
     def _check_termination_conditions(self):
         pass
 
-    def check_crash(self, obs: dict, agent: Agent, new_position: tuple[int, int]):
+    def check_crash(self, obs: dict, agent: Agent, new_position: tuple[int, int]) -> tuple[tuple[int, int], int]:
         """
         Check if agents coordinates is same with another agents.
         :param new_position: position of agent (x, y)
         :param agent: agent in process
         :param obs: all agents positions at the moment
-        :return: agent coordinates x, y
+        :return: agent coordinates x, y; agent penaly
         """
-        if new_position not in self.base_positions:
+        penalty = 0
+        if new_position not in self.base_positions and self.step_count > self.num_agents:
             for i, item in enumerate(obs['pos']):
                 if i != int(agent.name.split('_')[1]) and tuple(item) == new_position:
-                    self.total_reward -= const.PENALTY_CRASH
+                    penalty = -const.PENALTY_CRASH
                     logging.warning(f"Столкнование {new_position} агентов")
-                    # new_position = agent.position
-        else:
-            logging.warning(f"Два агента на базе {new_position}")
-        return new_position
+                # new_position = agent.position
+        return new_position, penalty
 
     def render(self):
         if self.screen is None:
@@ -186,9 +184,9 @@ class FarmingScenario(BaseScenario, ABC):
         # Отрисовка базы
         base_size = self.base_size * self.cell_size
         base_icon_scaled = pygame.transform.smoothscale(base_icon, (base_size, base_size))
-        base_start_pos = self.base_positions[0]
+        x, y = self.base_positions[0]
         self.screen.blit(base_icon_scaled,
-                         (base_start_pos[1] * cell, base_start_pos[0] * cell))
+                         (x * cell, y * cell))
         self._render_scenario()
 
     @abstractmethod
