@@ -44,6 +44,7 @@ class FarmingScenario(BaseScenario, ABC):
         self.max_steps = None
         self.min_steps = None
         self.reward_complexion = None
+        self.current_agent = None
 
     def reset(self, *, seed=None, options=None):
         self.reset_objects_positions()
@@ -51,13 +52,15 @@ class FarmingScenario(BaseScenario, ABC):
         self.total_reward = 0
         self.step_reward = 0
         self.current_map = np.full((self.grid_size, self.grid_size, 3), fill_value=0)
-        agent_obs = [agent.reset() for agent in self.agents]
-        obs = {'pos': np.stack([obs['pos'] for obs in agent_obs]),
-               'coords': np.max(np.stack([obs['coords'] for obs in agent_obs]), axis=0)}
-        # базу сразу отмечаем в объектах
+        agent_obs = [agent.reset() for agent in self.agents] # old
+        obs = {'pos': np.stack([obs['pos'] for obs in agent_obs]), # old
+               'coords': np.max(np.stack([obs['coords'] for obs in agent_obs]), axis=0)} # old
+        # TO DO базу сразу отмечаем в объектах
         for x, y in self.base_positions:
             # obs['coords'][x][y][0] = PointStatus.visited.value в сценариях кроме исследователя
-            obs['coords'][x][y][1] = ObjectStatus.base.value
+            self.current_map[x][y][1] = ObjectStatus.base.value
+        self.current_agent = 0  #new
+        # obs = self.agents[self.current_agent].reset() #new
         self._reset_scenario()
         return obs, {}
 
@@ -73,40 +76,75 @@ class FarmingScenario(BaseScenario, ABC):
     def _get_scenario_obs(self):
         pass
 
+    # def step(self, action: ActType):
+    #     terminated_list, truncated_list = [], []
+    #     logging.info(f"Шаг: {self.step_count}")
+    #     obs = self.get_observation()
+    #     self.step_reward = 0
+    #
+    #     agent_start_times = [i * 2 for i in range(self.num_agents)]
+    #     for i, agent in enumerate(self.agents):
+    #         logging.info(f"obs old {obs['pos'][i]}")
+    #         if self.step_count >= agent_start_times[i]:
+    #             new_position, agent_reward, terminated, truncated, info = agent.take_action(action[i])
+    #             logging.info(f"pos after action {new_position}")
+    #             terminated_list.append(terminated)
+    #             truncated_list.append(truncated)
+    #         else:
+    #             logging.info(f"{agent.name} ожидает вылета")
+    #             continue
+    #
+    #         new_position, penalty = self.check_crash(obs, agent, new_position)
+    #         self.step_reward += penalty
+    #         logging.info(f"pos after crash {new_position}")
+    #         obs, system_reward = self._get_system_reward(obs, new_position, agent)
+    #         obs['pos'][i] = new_position
+    #         agent.position = new_position
+    #         logging.info(f"obs after check sys{obs['pos'][i]}")
+    #         self.step_reward += system_reward
+    #         self.step_reward += agent_reward
+    #     reward, terminated, truncated, info = self._check_termination_conditions()
+    #
+    #     # если у всех агентов закончился заряд
+    #     if all(terminated_list):
+    #         terminated = True
+    #     elif all(truncated_list):
+    #         truncated = True
+    #
+    #     self.current_map = np.maximum(obs['coords'], self.current_map) #??
+    #     info = {"done": int(sum(element[2] == DoneStatus.done.value for row
+    #                             in self.current_map for element in row))}
+    #
+    #     self.step_count += 1
+    #     logging.info(
+    #         f"Награда: {ceil(self.total_reward)}, "
+    #         f"Завершено: {terminated}, "
+    #         f"Прервано: {truncated}"
+    #     )
+    #     # logging.info(obs) OLD
+    #     return obs, reward, terminated, truncated, info
+
     def step(self, action: ActType):
-        terminated_list, truncated_list = [], []
         logging.info(f"Шаг: {self.step_count}")
         obs = self.get_observation()
         self.step_reward = 0
+        agent = self.agents[self.current_agent]
+        new_position, agent_reward, terminated, truncated, info = agent.take_action(action)
 
-        agent_start_times = [i * 2 for i in range(self.num_agents)]
-        for i, agent in enumerate(self.agents):
-            logging.info(f"obs old {obs['pos'][i]}")
-            if self.step_count >= agent_start_times[i]:
-                new_position, agent_reward, terminated, truncated, info = agent.take_action(action[i])
-                logging.info(f"pos after action {new_position}")
-                terminated_list.append(terminated)
-                truncated_list.append(truncated)
-            else:
-                logging.info(f"{agent.name} ожидает вылета")
-                continue
-
-            new_position, penalty = self.check_crash(obs, agent, new_position)
-            self.step_reward += penalty
-            logging.info(f"pos after crash {new_position}")
-            obs, system_reward = self._get_system_reward(obs, new_position, agent)
-            obs['pos'][i] = new_position
-            agent.position = new_position
-            logging.info(f"obs after check sys{obs['pos'][i]}")
-            self.step_reward += system_reward
-            self.step_reward += agent_reward
+        new_position, penalty = self.check_crash(obs, agent, new_position)
+        self.step_reward += penalty
+        obs, system_reward = self._get_system_reward(obs, new_position, agent)
+        obs['pos'][self.current_agent] = new_position
+        agent.position = new_position
+        self.step_reward += system_reward
+        self.step_reward += agent_reward
         reward, terminated, truncated, info = self._check_termination_conditions()
 
         # если у всех агентов закончился заряд
-        if all(terminated_list):
-            terminated = True
-        elif all(truncated_list):
-            truncated = True
+        # if all(terminated_list):
+        #     terminated = True
+        # elif all(truncated_list):
+        #     truncated = True
 
         self.current_map = np.maximum(obs['coords'], self.current_map) #??
         info = {"done": int(sum(element[2] == DoneStatus.done.value for row
@@ -118,7 +156,9 @@ class FarmingScenario(BaseScenario, ABC):
             f"Завершено: {terminated}, "
             f"Прервано: {truncated}"
         )
-        logging.info(obs)
+
+        self.current_agent = (self.current_agent + 1) % self.num_agents
+        # print(self.current_agent)
         return obs, reward, terminated, truncated, info
 
     @abstractmethod

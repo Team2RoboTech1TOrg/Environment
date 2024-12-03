@@ -22,8 +22,8 @@ class ExplorationScenario(FarmingScenario, ABC):
 
     def _reset_scenario(self, *, seed=None, options=None):
         self.start_time = time.time()
-        self.max_steps = self.grid_size ** 2 * 3#5 # TEST поставить среднее значение для миссии
-        self.min_steps = self.grid_size ** 2
+        self.max_steps = self.grid_size ** 2 * 5 # TEST поставить среднее значение для миссии
+        self.min_steps = self.grid_size ** 2 * 2
         self.reward_complexion = const.REWARD_DONE * self.count_targets
         self.reward_coef = 1  # new
 
@@ -32,13 +32,16 @@ class ExplorationScenario(FarmingScenario, ABC):
         Get observation at the moment: array of agents positions and
         current map with actual status of cells
         """
-        agent_obs = [agent.get_observation() for agent in self.agents]
-        max_agent_coords = np.max(np.stack([obs['coords'] for obs in agent_obs]), axis=0)
+        # agent_obs = [agent.get_observation() for agent in self.agents] #old
+        # max_agent_coords = np.max(np.stack([obs['coords'] for obs in agent_obs]), axis=0) #old
+        agent_obs = self.agents[self.current_agent].get_observation() #new
+        max_agent_coords = agent_obs['coords'] #new
         max_coords_status = np.maximum(max_agent_coords, self.current_map)
         self.current_map = max_coords_status
-
-        obs = {'pos': np.stack([obs['pos'] for obs in agent_obs]),
-               'coords': max_coords_status}
+        obs = {'pos': [(0, 0) for _ in range(self.num_agents)], 'coords': max_coords_status} #new
+        obs['pos'][self.current_agent] = agent_obs['pos'] #new
+        # obs = {'pos': np.stack([obs['pos'] for obs in agent_obs]), #old
+        #        'coords': max_coords_status} #old
         return obs
 
     def _get_system_reward(self, obs, new_position, agent):
@@ -53,14 +56,13 @@ class ExplorationScenario(FarmingScenario, ABC):
         reward = 0
         self.reward_coef *= 1.001  # new
 
-        #new condition
         x, y = new_position
         #TO DO проверить есть ли тут клетки пустые и если нет убрать
         if obs['coords'][x][y][0] in (PointStatus.viewed.value, PointStatus.empty.value):
             obs['coords'][x][y][0] = PointStatus.visited.value
         else:
-            # reward -= const.PENALTY_RETURN
-            reward -= const.PENALTY_RETURN * self.reward_coef
+            reward -= const.PENALTY_RETURN
+            # reward -= const.PENALTY_RETURN * self.reward_coef
             logging.info(f"{agent.name} тут уже кто-то был {x, y} + {reward}")
 
         # что видит агент в данной позиции
@@ -70,9 +72,9 @@ class ExplorationScenario(FarmingScenario, ABC):
                 if obs['coords'][x][y][2] == DoneStatus.empty.value:
                     obs['coords'][x][y][2] = DoneStatus.done.value
                     # print(obs['coords'][x][y])
-                    # reward += const.REWARD_EXPLORE
+                    reward += const.REWARD_EXPLORE
                     # TEST если делать динамическую награду
-                    reward += const.REWARD_EXPLORE * self.reward_coef
+                    # reward += const.REWARD_EXPLORE * self.reward_coef
                     logging.info(f"{agent.name} исследовал новую клетку {x, y} + {reward}")
         # print('---')
         # print(self.current_map == obs['coords'])
@@ -169,7 +171,7 @@ class ExplorationScenario(FarmingScenario, ABC):
                     font, color,
                     text_x2, text_y2)
         pygame.display.flip()
-        time.sleep(0.1) ###
+        # time.sleep(0.1) ###
 
     def _randomize_positions(self):
         """

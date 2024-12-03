@@ -8,7 +8,7 @@ N_STEPS = 2048#4096 # должна быть привязка к кол-ву ша
 COEF = 0.001
 VF_COEF = 0.5
 CLIP_RANGE_VF = 0.2
-N_EPOCHS = 5#0#0#0
+N_EPOCHS = 10#0#0#0
 BATCH_SIZE = 256#128
 # policy_kwargs = dict(net_arch=dict(pi=[256, 256, 128], vf=[256, 256, 128]))
 policy_kwargs = dict(activation_fn=th.nn.ReLU,
@@ -22,7 +22,7 @@ MARGIN_SIZE = 1
 
 # Параметры игры
 NUM_AGENTS = 3
-TARGET_PERCENT = 0.1#45
+TARGET_PERCENT = 0.45
 OBSTACLE_PERCENT = 0.05
 STATION_SIZE = 2
 MAX_STEPS_GAME = (GRID_SIZE ** 2) * 10 #add to class

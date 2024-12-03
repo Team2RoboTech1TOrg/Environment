@@ -24,7 +24,7 @@ class Agent:
         self.tank = None
         self.energy = None
         self.position_history = None
-        self.action_space = spaces.Discrete(const.COUNT_ACTIONS)
+        # self.action_space = spaces.Discrete(const.COUNT_ACTIONS)
         self.observation_space = AgentObservationSpace(self.env.grid_size)
         self.reward_coef = None
 
@@ -35,7 +35,7 @@ class Agent:
             self.tank = const.TANK_CAPACITY
         self.position = random.choice(self.env.base_positions)
         self.reward_coef = 1
-        self.position_history = deque(maxlen=10)  # self.env.inner_grid_size)
+        self.position_history = deque(maxlen=10)
         self.energy = const.ENERGY_CAPACITY
         coords = np.zeros((self.env.grid_size, self.env.grid_size, 3), dtype=np.int32)
         logging.info(f"Позиция {self.name} стартовая {self.position}")
@@ -62,7 +62,6 @@ class Agent:
         obs = self.get_observation()
 
         x, y = self.position
-        # board = self.env.grid_size
         match action:
             case 0:  # up
                 new_position = (x - 1, y)
@@ -87,9 +86,9 @@ class Agent:
 
         new_position = np.clip(new_position, self.observation_space.position_space.low,
                                self.observation_space.position_space.high)
-        new_position = tuple(new_position)
         self.energy -= const.ENERGY_CONSUMPTION_MOVE
 
+        new_position = tuple(new_position)
         x, y = new_position
         value_new_position = obs['coords'][x][y]
 
@@ -123,7 +122,7 @@ class Agent:
         return f'{self.name}'
 
     def get_agent_rewards(self, new_position: tuple[int, int], value: float, action: Any) -> tuple[
-        tuple[int, int], int]:
+            tuple[int, int], int]:
         """
         Update explored cells, update position of agent in dependency of cells.
         Give reward in dependency of cells.
@@ -138,6 +137,7 @@ class Agent:
             self.position_history.append(new_position)
 
         # TEST вместо этих штрафов попробовать штраф за каждый шаг минимальный
+        # награда за удаление друг от друга
         if len(self.position_history) > 3:
             agent_reward += self.check_loop(new_position)
 

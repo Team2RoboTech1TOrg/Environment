@@ -1,6 +1,7 @@
 import gymnasium as gym
 from gymnasium.core import ActType
 
+import const
 from spaces.SystemObservationSpace import SystemObservationSpace
 from logging_system.logger import logging
 from utils import convert_to_multidiscrete
@@ -13,11 +14,12 @@ class FarmingEnv(gym.Env):
         self.agents = self.scenario.agents
         self.num_agents = self.scenario.num_agents
         self.grid_size = self.scenario.grid_size
-        action_spaces = gym.spaces.Dict({
-            f'agent_{i}': agent.action_space
-            for i, agent in enumerate(self.scenario.agents)
-        })
-        self.action_space = convert_to_multidiscrete(action_spaces)
+        # action_spaces = gym.spaces.Dict({ # old
+        #     f'agent_{i}': agent.action_space
+        #     for i, agent in enumerate(self.scenario.agents)
+        # })
+        # self.action_space = convert_to_multidiscrete(action_spaces) #old
+        self.action_space = gym.spaces.Discrete(const.COUNT_ACTIONS) # new
         self.observation_space = SystemObservationSpace(self.agents, self.num_agents,
                                                         self.grid_size)
 
