@@ -55,7 +55,6 @@ def run():
             batch_size=c.BATCH_SIZE,
             tensorboard_log=log_dir,
             normalize_advantage=True,
-            policy_kwargs=c.policy_kwargs
         )
         model.learn(total_timesteps=c.TIME)
         message = "Обучение модели\nзавершено."

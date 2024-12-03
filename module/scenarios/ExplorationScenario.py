@@ -23,7 +23,7 @@ class ExplorationScenario(FarmingScenario, ABC):
 
     def _reset_scenario(self, *, seed=None, options=None):
         self.start_time = time.time()
-        self.max_steps = self.grid_size ** 2 * 5 # TEST поставить среднее значение для миссии
+        self.max_steps = self.grid_size ** 2 * self.num_agents * 10 # TEST поставить среднее значение для миссии
         self.min_steps = self.grid_size ** 2 * 2
         self.reward_complexion = c.REWARD_DONE * self.count_targets
         self.reward_coef = 1  # TEST динамический коэф
@@ -103,14 +103,14 @@ class ExplorationScenario(FarmingScenario, ABC):
                 logging.info(f"Награда: {reward}")
         else:
             self.total_reward += self.step_reward
-            reward = 0 #self.total_reward  # TEST Динамический ревард или 0?
+            reward = 0#self.total_reward  # TEST Динамический ревард или 0?
         return reward, terminated, truncated, info
 
     def _render_scenario(self):
         """Render agent game"""
         cell = self.cell_size
-        plant = load_image(const.DONE_TARGET_SPRAY, cell)
-        agent_icon = load_image(const.AGENT, cell)
+        plant = load_image(c.DONE_TARGET_SPRAY, cell)
+        agent_icon = load_image(c.AGENT, cell)
 
         known_obstacles, known_targets = 0, 0
         for i, flower in enumerate(self.plants_positions):
@@ -140,11 +140,11 @@ class ExplorationScenario(FarmingScenario, ABC):
 
         # Отрисовка времени, очков, заряда и уровня воды
         screen_width, screen_height = self.screen.get_size()
-        status_bar_height = const.BAR_HEIGHT
+        status_bar_height = c.BAR_HEIGHT
         elapsed_time = time.time() - self.start_time
 
         font_size = int(status_bar_height * 0.25)
-        font = pygame.font.SysFont(const.FONT, font_size)
+        font = pygame.font.SysFont(c.FONT, font_size)
 
         text_x1 = screen_width * 0.05
         text_x2 = screen_width * 0.5
@@ -152,7 +152,7 @@ class ExplorationScenario(FarmingScenario, ABC):
         text_y2 = text_y1 + status_bar_height // 4
         text_y3 = text_y1 + status_bar_height // 4 * 2
 
-        color = const.BLACK
+        color = c.BLACK
         render_text(self.screen, f"Время: {elapsed_time:.2f} сек", font, color, text_x1, text_y1)
         render_text(self.screen, f"Очки: {int(self.total_reward)}", font, color, text_x1, text_y2)
         render_text(self.screen, f"Шагов: {self.step_count}", font, color, text_x1, text_y3)
@@ -183,6 +183,6 @@ class ExplorationScenario(FarmingScenario, ABC):
         """
         Get fixed positions of objects.
         """
-        self.obstacle_positions = const.FIXED_OBSTACLE_POSITIONS
+        self.obstacle_positions = c.FIXED_OBSTACLE_POSITIONS
         self.target_positions = self._get_objects_positions(
-            const.FIXED_TARGET_POSITIONS, self.inner_grid_size * 2 - self.base_size * 2)
+            c.FIXED_TARGET_POSITIONS, self.inner_grid_size * 2 - self.base_size * 2)

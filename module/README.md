@@ -26,3 +26,8 @@ self.net_arch = {"pi": [128, 64, 32], "vf": [128, 64, 32]}
 self.activation_fn = th.nn.ReLU
 optimizer_class = ...
 ```
+6. ExplorationScenario.py - настройка мин и макс количества шагов в миссии
+```
+self.max_steps = self.grid_size ** 2 * 10
+self.min_steps = self.grid_size ** 2 * 2
+```
