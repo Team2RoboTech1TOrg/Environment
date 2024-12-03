@@ -111,7 +111,6 @@ class FarmingScenario(BaseScenario, ABC):
         )
 
         self.current_agent = (self.current_agent + 1) % self.num_agents
-        # print(self.step_reward)
         return obs, self.step_reward, terminated, truncated, info
 
     def _check_system_termination(self) -> bool:
