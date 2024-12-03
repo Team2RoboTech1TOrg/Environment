@@ -8,7 +8,9 @@ import const as c
 from spaces.AgentObservationSpace import AgentObservationSpace
 from enums.PointStatus import PointStatus as Point
 from enums.ObjectStatus import ObjectStatus as Obj
+from enums.DoneStatus import DoneStatus as Done
 from enums.ActionsNames import ActionsNames as Act
+
 
 class Agent:
     def __init__(self, scenario, name=None):
@@ -103,8 +105,11 @@ class Agent:
         new_position, reward = self.get_agent_rewards(new_position, value_new_position[1])
         self.position = new_position
 
+        info = {"done": int(sum(element[2] == Done.done.value for row
+                                in self.env.current_map for element in row))}
         logging.info(f"{self.name} действие: {action} - позиция: {new_position}")
-        return new_position, reward, terminated, truncated, {}
+
+        return new_position, reward, terminated, truncated, info
 
     def get_observation(self) -> dict[str, np.array]:
         """

@@ -9,6 +9,7 @@ from environments.FarmingEnv import FarmingEnv
 from config import log_dir
 from logging_system.logger import logging
 from logging_system.logger_csv import log_to_csv
+from policy import CustomPolicy
 from render.menu_render import input_screen
 from scenarios.scenarios_dict import get_dict_scenarios
 
@@ -39,7 +40,7 @@ def run():
         env.render_message(message)
         pygame.display.set_caption("OS SWARM OF DRONES")
         logging.info(message)
-        policy = 'MultiInputPolicy'  # 'MlpPolicy'
+        policy = CustomPolicy
         model = PPO(
             policy,
             env,
@@ -79,12 +80,12 @@ def run():
             pygame.time.wait(10)
             obs, reward, terminated, truncated, info = env.step(action)
             if log_status:
-                log_to_csv(mission, step_count, int(reward), info['done'])
+                log_to_csv(mission, step_count, int(reward), info['done'], action)
             env.render()
             step_count += 1
             if truncated:
                 obs, info = env.reset()
-                message = f"Новая миссия"  # add counter games
+                message = f"Новая миссия {mission}"
                 env.render_message(message)
                 time.sleep(5)
                 step_count = 0
@@ -97,6 +98,9 @@ def run():
                     obs, info = env.reset()
                     step_count = 0
                     mission += 1
+                    message = f"Новая миссия {mission}"
+                    env.render_message(message)
+                    time.sleep(5)
                 else:
                     break
             clock.tick(15)  # slow

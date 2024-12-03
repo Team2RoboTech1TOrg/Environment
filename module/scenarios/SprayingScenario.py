@@ -5,7 +5,9 @@ from abc import ABC
 import pygame
 import numpy as np
 
-from enums.PointStatus import PointStatus, DoneStatus, ObjectStatus
+from enums.PointStatus import PointStatus
+from enums.DoneStatus import DoneStatus
+from enums.ObjectStatus import ObjectStatus
 from logging_system.logger import logging
 import const
 from render.menu_render import render_text
@@ -73,7 +75,7 @@ class SprayingScenario(FarmingScenario, ABC):
                 logging.info(f"{self} выполнена задача {new_position}, награда {round(reward, 2)}")
         return obs, reward
 
-    def _check_termination_conditions(self) -> tuple:
+    def _check_scenario_termination(self) -> tuple:
         """
         Check conditions for exit game: quantity of steps and if all flowers are watered.
         :return: tuple of conditions (bool, bool, dictionary)

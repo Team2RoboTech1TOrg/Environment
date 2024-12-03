@@ -1,0 +1,28 @@
+1. Для запуска на сервере необходимо клонировать репозиторий:
+```
+git clone https://github.com/Team2RoboTech1TOrg/Environment.git
+```
+
+2. Если вы хотите клонировать определенную ветку:
+```
+git clone -b branch_name https://github.com/Team2RoboTech1TOrg/Environment.git
+```
+3. Для тестирования без рендера в файле main.py указать:
+```
+server = True
+```
+
+4. Для логирования в csv в файле app.py/app_server.py:
+```
+log_status = True
+...
+ while mission < число миссий для теста:
+```
+Логи сохраняются путем добавления в существующие файлы в папку logging_system.
+
+5.В файле policy.py можно настроить политику (читаем документацию)
+```
+self.net_arch = {"pi": [128, 64, 32], "vf": [128, 64, 32]}
+self.activation_fn = th.nn.ReLU
+optimizer_class = ...
+```

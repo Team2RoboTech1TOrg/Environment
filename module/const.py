@@ -1,5 +1,5 @@
 import torch as th
-# Параметры модели
+# Параметры модели ВЫДЕЛИТЬ В ОТДЕЛЬНЫЙ КОНФ
 TIME = 30000
 LEARNING_RATE = 0.0001
 GAMMA = 0.99
@@ -10,9 +10,6 @@ VF_COEF = 0.5
 CLIP_RANGE_VF = 0.2
 N_EPOCHS = 10#0#0#0
 BATCH_SIZE = 256#128
-# policy_kwargs = dict(net_arch=dict(pi=[256, 256, 128], vf=[256, 256, 128]))
-policy_kwargs = dict(activation_fn=th.nn.ReLU,
-                     net_arch=dict(pi=[128, 64, 32], vf=[128, 64, 32]))
 
 # Параметры экрана и сетки
 SCREEN_SIZE = 900

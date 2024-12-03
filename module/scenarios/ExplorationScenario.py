@@ -5,9 +5,10 @@ from abc import ABC
 import pygame
 import numpy as np
 
-from enums.PointStatus import DoneStatus, PointStatus
+from enums.PointStatus import PointStatus as Point
+from enums.DoneStatus import DoneStatus as Done
 from logging_system.logger import logging
-import const
+import const as c
 from render.menu_render import render_text
 from scenarios.FarmingScenario import FarmingScenario
 from utils import load_image
@@ -24,7 +25,7 @@ class ExplorationScenario(FarmingScenario, ABC):
         self.start_time = time.time()
         self.max_steps = self.grid_size ** 2 * 5 # TEST поставить среднее значение для миссии
         self.min_steps = self.grid_size ** 2 * 2
-        self.reward_complexion = const.REWARD_DONE * self.count_targets
+        self.reward_complexion = c.REWARD_DONE * self.count_targets
         self.reward_coef = 1  # TEST динамический коэф
 
     def _get_scenario_obs(self):
@@ -32,70 +33,65 @@ class ExplorationScenario(FarmingScenario, ABC):
         Get observation at the moment: array of agents positions and
         current map with actual status of cells. Choose maximum value of status.
         Current agent coordination append to list of all agents positions into his cell.
-        :return: observation dictionary
+        :return: Observation dictionary
         """
         agent_obs = self.agents[self.current_agent].get_observation()
         max_coords_status = np.maximum(agent_obs['coords'], self.current_map)
         self.current_map = max_coords_status
         obs = {'pos': [(0, 0) for _ in range(self.num_agents)], 'coords': max_coords_status}
-        obs['pos'][self.current_agent] = agent_obs['pos'] #new
-        # obs = {'pos': np.stack([obs['pos'] for obs in agent_obs]), #old
-        #        'coords': max_coords_status} #old
+        obs['pos'][self.current_agent] = agent_obs['pos']
         return obs
 
     def _get_system_reward(self, obs, new_position, agent):
         """
         If cell is not explored, it had status - viewed or empty.
         And in this case cell is not target.
-        :param obs:
-        :param new_position:
-        :param agent:
-        :return: observation full and reward for scenario
+        :param obs: Observation of system
+        :param new_position: Coordination of agent
+        :param agent: Current agent
+        :return: Updated system observation and current agent reward for scenario
         """
         reward = 0
-        self.reward_coef *= 1.001  # new
+        self.reward_coef *= 1.001 # dynamical coefficient
 
         x, y = new_position
-        #TO DO проверить есть ли тут клетки пустые и если нет убрать
-        if obs['coords'][x][y][0] in (PointStatus.viewed.value, PointStatus.empty.value):
-            obs['coords'][x][y][0] = PointStatus.visited.value
+        if obs['coords'][x][y][0] in (Point.viewed.value, Point.empty.value):
+            obs['coords'][x][y][0] = Point.visited.value
         else:
-            reward -= const.PENALTY_RETURN
-            # reward -= const.PENALTY_RETURN * self.reward_coef
-            logging.info(f"{agent.name} тут уже кто-то был {x, y} + {reward}")
+            reward -= c.PENALTY_RETURN
+            # reward -= c.PENALTY_RETURN * self.reward_coef
+            logging.info(f"{agent.name} тут уже кто-то был {new_position} + {reward}")
 
-        # что видит агент в данной позиции
         for pos in agent.get_review():
             x, y = pos
             if (x, y) in self.target_positions:
-                if obs['coords'][x][y][2] == DoneStatus.empty.value:
-                    obs['coords'][x][y][2] = DoneStatus.done.value
-                    # print(obs['coords'][x][y])
-                    reward += const.REWARD_EXPLORE
+                if obs['coords'][x][y][2] == Done.empty.value:
+                    obs['coords'][x][y][2] = Done.done.value
+                    reward += c.REWARD_EXPLORE
                     # TEST если делать динамическую награду
-                    # reward += const.REWARD_EXPLORE * self.reward_coef
+                    # reward += c.REWARD_EXPLORE * self.reward_coef
                     logging.info(f"{agent.name} исследовал новую клетку {x, y} + {reward}")
-        # print('---')
-        # print(self.current_map == obs['coords'])
         return obs, reward
 
-    def _check_termination_conditions(self) -> tuple:
+    def _check_scenario_termination(self) -> tuple:
         """
-        Check conditions for exit game: quantity of steps and if all flowers are watered.
-        :return: tuple of conditions (bool, bool, dictionary)
+        Check conditions for exit game: quantity of steps and if all tasks are done.
+        :return: Tuple of conditions (bool, bool, dictionary)
         """
         terminated = False
         truncated = False
+        info = {"done": int(sum(element[2] == Done.done.value for row
+                                in self.current_map for element in row))}
+
         if self.step_count >= self.max_steps:
             logging.info("Достигнуто максимальное количество шагов в миссии. ")
             reward = 0
             truncated = True
 
-        elif sum(element[2] == DoneStatus.done.value for row in self.current_map for element in
-                 row) == self.count_targets:
+        elif info["done"] == self.count_targets:
             terminated = True
-            logging.info("Все растения опрысканы")
-            [setattr(agent, 'position', random.choice(self.base_positions)) for agent in self.agents]
+            logging.info("Все поле исследовано")
+            [setattr(agent, "position", random.choice(self.base_positions)) for agent in self.agents]
             logging.info("Агенты вернулись на базу")
             if self.step_count <= self.min_steps:
                 self.total_reward += self.reward_complexion * 1.5
@@ -105,11 +101,10 @@ class ExplorationScenario(FarmingScenario, ABC):
                 self.total_reward += self.reward_complexion
                 reward = self.total_reward
                 logging.info(f"Награда: {reward}")
-            # self.total_reward = 0
         else:
             self.total_reward += self.step_reward
-            reward = 0#self.total_reward  # TEST Динамический ревард или 0? проверить как лучше будет работать
-        return reward, terminated, truncated, {}
+            reward = 0 #self.total_reward  # TEST Динамический ревард или 0?
+        return reward, terminated, truncated, info
 
     def _render_scenario(self):
         """Render agent game"""
@@ -165,7 +160,7 @@ class ExplorationScenario(FarmingScenario, ABC):
                     text_x2, text_y1)
         render_text(self.screen,
                     f"Отработано целей:"
-                    f" {int(np.sum(element[2] == DoneStatus.done.value for row in self.current_map for element in row))}"
+                    f" {int(np.sum(element[2] == Done.done.value for row in self.current_map for element in row))}"
                     f"/{self.count_targets}",
                     font, color,
                     text_x2, text_y2)

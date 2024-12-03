@@ -10,6 +10,7 @@ from environments.FarmingEnv import FarmingEnv
 from config import log_dir
 from logging_system.logger import logging
 from logging_system.logger_csv import log_to_csv
+from policy import CustomPolicy
 from scenarios.scenarios_dict import get_dict_scenarios
 
 
@@ -47,7 +48,7 @@ def run_server():
         env.render_message(message)
         pygame.display.set_caption("OS SWARM OF DRONES")
         logging.info(message)
-        policy = 'MultiInputPolicy'
+        policy = CustomPolicy
         model = PPO(
             policy,
             env,
@@ -62,7 +63,6 @@ def run_server():
             batch_size=const.BATCH_SIZE,
             tensorboard_log=log_dir,
             normalize_advantage=True,
-            policy_kwargs=const.policy_kwargs
         )
         model.learn(total_timesteps=const.TIME)
         message = "Обучение модели\nзавершено."
@@ -75,9 +75,9 @@ def run_server():
         pygame.display.set_caption(selected_scenario.__str__())
         obs, info = env.reset()
         step_count = 0
-        log_status = True
+        log_status = False
         mission = 1
-        while mission < 9:  # True: # depends of log status
+        while True: #  while mission < 9: depends of log status
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     pygame.quit()
@@ -86,7 +86,7 @@ def run_server():
             pygame.time.wait(10)
             obs, reward, terminated, truncated, info = env.step(action)
             if log_status:
-                log_to_csv(mission, step_count, int(reward), info['done'])
+                log_to_csv(mission, step_count, int(reward), info['done'], action)
             env.render()
             step_count += 1
             if truncated:
