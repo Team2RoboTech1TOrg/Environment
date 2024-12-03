@@ -101,7 +101,7 @@ class FarmingScenario(BaseScenario, ABC):
         self.step_reward += system_reward
 
         termination_reward, terminated, truncated, info = self._check_scenario_termination()
-
+        self.step_reward += termination_reward
         self.current_map = np.maximum(obs['coords'], self.current_map)
         self.step_count += 1
         logging.info(
@@ -111,7 +111,8 @@ class FarmingScenario(BaseScenario, ABC):
         )
 
         self.current_agent = (self.current_agent + 1) % self.num_agents
-        return obs, termination_reward, terminated, truncated, info
+        # print(self.step_reward)
+        return obs, self.step_reward, terminated, truncated, info
 
     def _check_system_termination(self) -> bool:
         """

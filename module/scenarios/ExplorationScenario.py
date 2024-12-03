@@ -78,6 +78,7 @@ class ExplorationScenario(FarmingScenario, ABC):
         Check conditions for exit game: quantity of steps and if all tasks are done.
         :return: Tuple of conditions (bool, bool, dictionary)
         """
+        reward = 0
         terminated = False
         truncated = False
         info = {"done": int(sum(element[2] == Done.done.value for row
@@ -85,7 +86,6 @@ class ExplorationScenario(FarmingScenario, ABC):
 
         if self.step_count >= self.max_steps:
             logging.info("Достигнуто максимальное количество шагов в миссии. ")
-            reward = 0
             truncated = True
 
         elif info["done"] == self.count_targets:
@@ -103,7 +103,7 @@ class ExplorationScenario(FarmingScenario, ABC):
                 logging.info(f"Награда: {reward}")
         else:
             self.total_reward += self.step_reward
-            reward = 0#self.total_reward  # TEST Динамический ревард или 0?
+        #     reward = self.total_reward  # TEST Динамический ревард или 0?
         return reward, terminated, truncated, info
 
     def _render_scenario(self):
