@@ -5,7 +5,7 @@ from abc import ABC
 import pygame
 import numpy as np
 
-from PointStatus import DoneStatus, PointStatus
+from enums.PointStatus import DoneStatus, PointStatus
 from logging_system.logger import logging
 import const
 from render.menu_render import render_text
@@ -25,20 +25,19 @@ class ExplorationScenario(FarmingScenario, ABC):
         self.max_steps = self.grid_size ** 2 * 5 # TEST поставить среднее значение для миссии
         self.min_steps = self.grid_size ** 2 * 2
         self.reward_complexion = const.REWARD_DONE * self.count_targets
-        self.reward_coef = 1  # new
+        self.reward_coef = 1  # TEST динамический коэф
 
     def _get_scenario_obs(self):
         """
         Get observation at the moment: array of agents positions and
-        current map with actual status of cells
+        current map with actual status of cells. Choose maximum value of status.
+        Current agent coordination append to list of all agents positions into his cell.
+        :return: observation dictionary
         """
-        # agent_obs = [agent.get_observation() for agent in self.agents] #old
-        # max_agent_coords = np.max(np.stack([obs['coords'] for obs in agent_obs]), axis=0) #old
-        agent_obs = self.agents[self.current_agent].get_observation() #new
-        max_agent_coords = agent_obs['coords'] #new
-        max_coords_status = np.maximum(max_agent_coords, self.current_map)
+        agent_obs = self.agents[self.current_agent].get_observation()
+        max_coords_status = np.maximum(agent_obs['coords'], self.current_map)
         self.current_map = max_coords_status
-        obs = {'pos': [(0, 0) for _ in range(self.num_agents)], 'coords': max_coords_status} #new
+        obs = {'pos': [(0, 0) for _ in range(self.num_agents)], 'coords': max_coords_status}
         obs['pos'][self.current_agent] = agent_obs['pos'] #new
         # obs = {'pos': np.stack([obs['pos'] for obs in agent_obs]), #old
         #        'coords': max_coords_status} #old

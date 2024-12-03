@@ -9,7 +9,8 @@ from gymnasium.core import ActType
 
 import const
 from agent.Agent import Agent
-from PointStatus import PointStatus, ObjectStatus, DoneStatus
+from enums.ObjectStatus import ObjectStatus as Obj
+from enums.DoneStatus import DoneStatus as Done
 from scenarios.BaseScenario import BaseScenario
 from utils import load_obstacles, load_image
 
@@ -22,7 +23,7 @@ class FarmingScenario(BaseScenario, ABC):
         self.cell_size = self.screen_size // self.grid_size
         self.margin = const.MARGIN_SIZE
         self.inner_grid_size = self.grid_size - self.margin * 2
-        self.screen = None  # Экран создается при необходимости
+        self.screen = None
         self.num_agents = num_agents
         self.count_targets = None
         self.target_positions = None
@@ -52,15 +53,12 @@ class FarmingScenario(BaseScenario, ABC):
         self.total_reward = 0
         self.step_reward = 0
         self.current_map = np.full((self.grid_size, self.grid_size, 3), fill_value=0)
-        agent_obs = [agent.reset() for agent in self.agents] # old
-        obs = {'pos': np.stack([obs['pos'] for obs in agent_obs]), # old
-               'coords': np.max(np.stack([obs['coords'] for obs in agent_obs]), axis=0)} # old
-        # TO DO базу сразу отмечаем в объектах
         for x, y in self.base_positions:
-            # obs['coords'][x][y][0] = PointStatus.visited.value в сценариях кроме исследователя
-            self.current_map[x][y][1] = ObjectStatus.base.value
-        self.current_agent = 0  #new
-        # obs = self.agents[self.current_agent].reset() #new
+            self.current_map[x][y][1] = Obj.base.value
+        agent_obs = [agent.reset() for agent in self.agents]
+        obs = {'pos': np.stack([obs['pos'] for obs in agent_obs]),
+               'coords': np.max(np.stack([obs['coords'] for obs in agent_obs]), axis=0)}
+        self.current_agent = 0
         self._reset_scenario()
         return obs, {}
 

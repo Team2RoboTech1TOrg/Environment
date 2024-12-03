@@ -5,7 +5,7 @@ from abc import ABC
 import pygame
 import numpy as np
 
-from PointStatus import PointStatus, DoneStatus, ObjectStatus
+from enums.PointStatus import PointStatus, DoneStatus, ObjectStatus
 from logging_system.logger import logging
 import const
 from render.menu_render import render_text
@@ -22,6 +22,9 @@ class SprayingScenario(FarmingScenario, ABC):
 
     def _reset_scenario(self, *, seed=None, options=None):
         self.start_time = time.time()
+        self.max_steps = self.grid_size ** 2 * 5 # TEST поставить среднее значение для миссии
+        self.min_steps = self.grid_size ** 2 * 2
+        self.reward_complexion = const.REWARD_DONE * self.count_targets
         self.reward_coef = 1
 
     def _get_scenario_obs(self):
@@ -78,7 +81,7 @@ class SprayingScenario(FarmingScenario, ABC):
         terminated = False
         truncated = False
 
-        if self.step_count >= const.MAX_STEPS_GAME:
+        if self.step_count >= self.max_steps:
             logging.info("Достигнуто максимальное количество шагов в миссии. ")
             total_reward = 0
             truncated = True
@@ -91,13 +94,13 @@ class SprayingScenario(FarmingScenario, ABC):
             logging.info("Агенты вернулись на базу")
 
             # условие по времени выполнения
-            if self.step_count <= const.MIN_GAME_STEPS:
-                self.total_reward += const.REWARD_COMPLETION * 1.2
+            if self.step_count <= self.min_steps:
+                self.total_reward += self.reward_complexion * 1.2
                 total_reward = self.total_reward
-                logging.info(f"Увеличенная награда: {total_reward}за шагов меньше, чем {const.MIN_GAME_STEPS}")
+                logging.info(f"Увеличенная награда: {total_reward}за шагов меньше, чем {self.min_steps}")
 
             else:
-                self.total_reward += const.REWARD_COMPLETION
+                self.total_reward += self.reward_complexion
                 total_reward = self.total_reward
                 logging.info(f"Награда: {total_reward}")
             # self.total_reward = 0

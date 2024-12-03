@@ -2,17 +2,13 @@ import random
 import numpy as np
 
 from collections import deque
-from gymnasium import spaces
-from typing import Any
 
 import logging
-
-from numpy import ndarray
-
-import const
+import const as c
 from spaces.AgentObservationSpace import AgentObservationSpace
-from PointStatus import PointStatus, ObjectStatus, DoneStatus
-
+from enums.PointStatus import PointStatus as Point
+from enums.ObjectStatus import ObjectStatus as Obj
+from enums.ActionsNames import ActionsNames as Act
 
 class Agent:
     def __init__(self, scenario, name=None):
@@ -24,19 +20,19 @@ class Agent:
         self.tank = None
         self.energy = None
         self.position_history = None
-        # self.action_space = spaces.Discrete(const.COUNT_ACTIONS)
         self.observation_space = AgentObservationSpace(self.env.grid_size)
+        self.view_range = 1
         self.reward_coef = None
 
     def reset(self):
         if self.env.name == 'exploration':
             self.explorator = True
         else:
-            self.tank = const.TANK_CAPACITY
+            self.tank = c.TANK_CAPACITY
         self.position = random.choice(self.env.base_positions)
         self.reward_coef = 1
         self.position_history = deque(maxlen=10)
-        self.energy = const.ENERGY_CAPACITY
+        self.energy = c.ENERGY_CAPACITY
         coords = np.zeros((self.env.grid_size, self.env.grid_size, 3), dtype=np.int32)
         logging.info(f"Позиция {self.name} стартовая {self.position}")
         return {
@@ -44,7 +40,12 @@ class Agent:
             'coords': coords
         }
 
-    def take_action(self, action):
+    def take_action(self, action) -> tuple[tuple[int, int], float, bool, bool, dict]:
+        """
+        Agent get action from model prediction, done step, check conditions and reward of new position.
+        :param action: action predict from model
+        :return: position of agent, his reward, terminated, truncated, information
+        """
         reward = 0
         terminated = False
         truncated = False
@@ -56,39 +57,42 @@ class Agent:
         if not self.explorator:
             if self.tank < 10:  # возврат на базу
                 self.position = random.choice(self.env.base_positions)
-                self.tank = const.TANK_CAPACITY
+                self.tank = c.TANK_CAPACITY
                 logging.info(f"{self.name} полетел на базу за пестицидами")
 
         obs = self.get_observation()
 
         x, y = self.position
         match action:
-            case 0:  # up
+            case Act.up.value:
                 new_position = (x - 1, y)
-            case 1:  # down
+            case Act.down.value:
                 new_position = (x + 1, y)
-            case 2:  # left
+            case Act.left.value:
                 new_position = (x, y - 1)
-            case 3:  # right
+            case Act.right.value:
                 new_position = (x, y + 1)
-            case 4:  # stop
+            case Act.stop.value:
                 new_position = self.position
-            case 5:  # right up
+            case Act.right_up.value:
                 new_position = (x - 1, y + 1)
-            case 6:  # left up
+            case Act.left_up.value:
                 new_position = (x - 1, y - 1)
-            case 7:  # right down
+            case Act.right_down.value:
                 new_position = (x + 1, y + 1)
-            case 8:  # left down
+            case Act.left_down.value:
                 new_position = (x + 1, y - 1)
             case _:
                 new_position = self.position
 
         new_position = np.clip(new_position, self.observation_space.position_space.low,
                                self.observation_space.position_space.high)
-        self.energy -= const.ENERGY_CONSUMPTION_MOVE
+        self.energy -= c.ENERGY_CONSUMPTION_MOVE
 
         new_position = tuple(new_position)
+        if action != 4:
+            self.position_history.append(new_position)
+
         x, y = new_position
         value_new_position = obs['coords'][x][y]
 
@@ -96,21 +100,25 @@ class Agent:
         # if self.explorator:# or value_new_position[1] != ObjectStatus.plant.value:
         #     obs['coords'][x][y][0] = PointStatus.visited.value
 
-        new_position, reward = self.get_agent_rewards(new_position, value_new_position[1], action)
+        new_position, reward = self.get_agent_rewards(new_position, value_new_position[1])
         self.position = new_position
 
-        logging.info(f"{self.name} действие: {action} - позиция: {self.position}")
-        return self.position, reward, terminated, truncated, {}
+        logging.info(f"{self.name} действие: {action} - позиция: {new_position}")
+        return new_position, reward, terminated, truncated, {}
 
-    def get_observation(self) -> dict[str, ndarray]:
+    def get_observation(self) -> dict[str, np.array]:
+        """
+        Get observation of current agent, using view range of agent.
+        :return: observation dictionary
+        """
         coords = np.full((self.env.grid_size, self.env.grid_size, 3), fill_value=0)
         for pos in self.get_review():
             x, y = pos
-            coords[x][y][0] = PointStatus.viewed.value
+            coords[x][y][0] = Point.viewed.value
             if pos in self.env.obstacle_positions:
-                coords[x][y][1] = ObjectStatus.obstacle.value
+                coords[x][y][1] = Obj.obstacle.value
             elif pos in self.env.plants_positions:
-                coords[x][y][1] = ObjectStatus.plant.value
+                coords[x][y][1] = Obj.plant.value
 
         observation = {
             'pos': self.position,
@@ -121,36 +129,31 @@ class Agent:
     def __repr__(self):
         return f'{self.name}'
 
-    def get_agent_rewards(self, new_position: tuple[int, int], value: float, action: Any) -> tuple[
+    def get_agent_rewards(self, new_position: tuple[int, int], value: float) -> tuple[
             tuple[int, int], int]:
         """
-        Update explored cells, update position of agent in dependency of cells.
+        Update position of agent in dependency of cells.
         Give reward in dependency of cells.
-        :param action: chosen action
         :param value: status and objects in agent position
         :param new_position: coordinates of agent (x, y)
         :return: coordinates of agent (x, y) and agent reward
         """
         agent_reward = 0
-        # не хранить если действие - стоять на месте
-        if action != 4:
-            self.position_history.append(new_position)
-
         # TEST вместо этих штрафов попробовать штраф за каждый шаг минимальный
-        # награда за удаление друг от друга
+        # TEST награда за удаление друг от друга
         if len(self.position_history) > 3:
             agent_reward += self.check_loop(new_position)
 
         if not ((self.env.margin <= new_position[0] <= self.env.inner_grid_size) and (
                 self.env.margin <= new_position[1] <= self.env.inner_grid_size)):
-            agent_reward -= const.PENALTY_OUT_FIELD
+            agent_reward -= c.PENALTY_OUT_FIELD
             logging.warning(f"{self} вышел за границы внутреннего поля: {new_position}")
             new_position = self.position
-        elif value == ObjectStatus.obstacle.value:
-            agent_reward -= const.PENALTY_OBSTACLE
+        elif value == Obj.obstacle.value:
+            agent_reward -= c.PENALTY_OBSTACLE
             new_position = self.position
             logging.info(
-                f"Упс, препятствие! {self} - штраф {const.PENALTY_OBSTACLE}, вернулся на {new_position}")
+                f"Упс, препятствие! {self} - штраф {c.PENALTY_OBSTACLE}, вернулся на {new_position}")
 
         return new_position, agent_reward
 
@@ -162,26 +165,29 @@ class Agent:
         """
         reward = 0
         pos_counter = self.position_history.count(new_position)
-        if new_position == self.position:  # _history[-2]:
-            reward -= const.PENALTY_LOOP
-            logging.warning(f"Штраф {self} за второй раз в одну клетку' {self.position}")  # _history[-2]}")
+        if new_position == self.position:
+            reward -= c.PENALTY_LOOP
+            logging.warning(f"Штраф {self} за второй раз в одну клетку' {self.position}")
         elif 4 >= pos_counter > 2:
-            reward -= const.PENALTY_LOOP * 1.1
+            reward -= c.PENALTY_LOOP * c.CORR_COEF
             logging.warning(
                 f"Штраф {self} за вторичное посещение {new_position}"
                 f" в последние {len(self.position_history)} шагов")
         elif pos_counter > 4:
-            reward -= const.PENALTY_LOOP * 1.2
+            reward -= c.PENALTY_LOOP * c.CORR_COEF * c.CORR_COEF
             logging.warning(
                 f"Штраф {self} за мнократное посещение {new_position}"
                 f" в последние {len(self.position_history)} шагов")
         return reward
 
     def get_review(self) -> list[tuple[int, int]]:
+        """
+        Get cells in view range of current agent.
+        :return: list of cell's coordination
+        """
         review = []
-        view = const.VIEW_RANGE
-        for dx in range(-view, view + 1):
-            for dy in range(-view, view + 1):
+        for dx in range(-self.view_range, self.view_range + 1):
+            for dy in range(-self.view_range, self.view_range + 1):
                 x, y = self.position[0] + dx, self.position[1] + dy
                 if 0 <= x < self.env.grid_size and 0 <= y < self.env.grid_size:
                     review.append((x, y))
