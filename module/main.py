@@ -6,6 +6,9 @@ server = False
 
 
 if __name__ == '__main__':
-    pygame.init()
-    run_server() if server else run()
+    if server:
+        pygame.init()
+        run_server()
+    else:
+        run()
 

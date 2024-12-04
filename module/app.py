@@ -67,9 +67,10 @@ def run():
         clock = pygame.time.Clock()
         pygame.display.set_caption(selected_scenario.__str__())
         obs, info = env.reset()
-        step_count = 0
+        step_count = 1
         log_status = True
         mission = 1
+        total_reward = 0
         while mission < 9:#True: # depends of log status
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -78,8 +79,9 @@ def run():
             action, _ = model.predict(obs)
             pygame.time.wait(10)
             obs, reward, terminated, truncated, info = env.step(action)
+            total_reward += reward
             if log_status:
-                log_to_csv(mission, step_count, int(reward), info['done'], action)
+                log_to_csv(mission, step_count, int(reward), int(total_reward), info['done'], action, info['agent'])
             env.render()
             step_count += 1
             if truncated:
@@ -87,16 +89,18 @@ def run():
                 message = f"Новая миссия {mission}"
                 env.render_message(message)
                 time.sleep(5)
-                step_count = 0
+                step_count = 1
                 mission += 1
+                total_reward = 0
             if terminated:
-                message = f"Конец миссии\n\n награда: {int(reward)}\n шагов: {step_count}"
+                message = f"Конец миссии\n\n награда: {int(total_reward)}\n шагов: {step_count}"
                 env.render_message(message)
                 time.sleep(5)
                 if log_status:
                     obs, info = env.reset()
-                    step_count = 0
+                    step_count = 1
                     mission += 1
+                    total_reward = 0
                     message = f"Новая миссия {mission}"
                     env.render_message(message)
                     time.sleep(5)

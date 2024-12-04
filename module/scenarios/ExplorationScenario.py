@@ -82,7 +82,8 @@ class ExplorationScenario(FarmingScenario, ABC):
         terminated = False
         truncated = False
         info = {"done": int(sum(element[2] == Done.done.value for row
-                                in self.current_map for element in row))}
+                                in self.current_map for element in row)),
+                "agent": self.current_agent}
 
         if self.step_count >= self.max_steps:
             logging.info("Достигнуто максимальное количество шагов в миссии. ")

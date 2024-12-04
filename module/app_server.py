@@ -45,8 +45,6 @@ def run_server():
         )
 
         message = "Начало обучения модели\n\n\n" + hyperparameters_message
-        env.render_message(message)
-        pygame.display.set_caption("OS SWARM OF DRONES")
         logging.info(message)
         policy = CustomPolicy
         model = PPO(
@@ -67,46 +65,39 @@ def run_server():
         model.learn(total_timesteps=const.TIME)
         message = "Обучение модели\nзавершено."
         logging.info(message)
-        env.render_message(message)
         model.save(f"{selected_scenario}_model")
         time.sleep(2)
         # model = PPO.load("spraying_scenario_model", print_system_info=True)
-        clock = pygame.time.Clock()
-        pygame.display.set_caption(selected_scenario.__str__())
         obs, info = env.reset()
         step_count = 0
         log_status = False
+        total_reward = 0
         mission = 1
         while True: #  while mission < 9: depends of log status
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    pygame.quit()
-                    sys.exit()
             action, _ = model.predict(obs)
-            pygame.time.wait(10)
             obs, reward, terminated, truncated, info = env.step(action)
+            total_reward += reward
             if log_status:
-                log_to_csv(mission, step_count, int(reward), info['done'], action)
+                log_to_csv(mission, step_count, int(reward), int(total_reward), info['done'], action, info['agent'])
             env.render()
             step_count += 1
             if truncated:
                 obs, info = env.reset()
-                message = f"Новая миссия"  # add counter games
-                env.render_message(message)
-                time.sleep(5)
+                message = f"Новая миссия"
+                logging.info(message)
                 step_count = 0
                 mission += 1
+                total_reward = 0
             if terminated:
-                message = f"Конец миссии\n\n награда: {int(reward)}\n шагов: {step_count}"
-                env.render_message(message)
-                time.sleep(5)
+                message = f"Конец миссии\n\n награда: {int(total_reward)}\n шагов: {step_count}"
+                logging.info(message)
                 if log_status:
                     obs, info = env.reset()
                     step_count = 0
                     mission += 1
+                    total_reward = 0
                 else:
                     break
-            clock.tick(15)  # slow
     except KeyboardInterrupt:
         logging.info("Прервано пользователем")
     except Exception as e:

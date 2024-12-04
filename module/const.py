@@ -1,4 +1,3 @@
-import torch as th
 # Параметры модели ВЫДЕЛИТЬ В ОТДЕЛЬНЫЙ КОНФ
 TIME = 30000
 LEARNING_RATE = 0.0001

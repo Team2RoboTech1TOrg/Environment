@@ -106,7 +106,8 @@ class Agent:
         self.position = new_position
 
         info = {"done": int(sum(element[2] == Done.done.value for row
-                                in self.env.current_map for element in row))}
+                                in self.env.current_map for element in row)),
+                "agent": self.name}
         logging.info(f"{self.name} действие: {action} - позиция: {new_position}")
 
         return new_position, reward, terminated, truncated, info
@@ -135,7 +136,7 @@ class Agent:
         return f'{self.name}'
 
     def get_agent_rewards(self, new_position: tuple[int, int], value: float) -> tuple[
-            tuple[int, int], int]:
+        tuple[int, int], int]:
         """
         Update position of agent in dependency of cells.
         Give reward in dependency of cells.
