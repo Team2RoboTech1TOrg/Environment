@@ -103,7 +103,7 @@ class FarmingScenario(BaseScenario, ABC):
         self.step_reward += system_reward
 
         termination_reward, terminated, truncated, info = self._check_scenario_termination()
-        self.step_reward = termination_reward
+        self.step_reward += termination_reward
         self.current_map = np.maximum(obs['coords'], self.current_map)
         self.step_count += 1
         logging.info(

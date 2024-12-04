@@ -102,13 +102,13 @@ class SprayingScenario(FarmingScenario, ABC):
             logging.info("Агенты вернулись на базу")
 
             if self.step_count <= self.min_steps:
-                self.total_reward += self.reward_complexion * 1.5
-                reward = self.total_reward
+                reward = self.reward_complexion * 2
+                self.total_reward += reward
                 logging.info(f"Увеличенная награда: {reward} за шагов меньше, чем {self.min_steps}")
             else:
-                self.total_reward += self.reward_complexion
-                reward = self.total_reward
-                logging.info(f"Награда: {reward}")
+                reward = self.reward_complexion
+                self.total_reward += reward
+                logging.info(f"Награда за выполненную миссию: {reward}")
         else:
             self.total_reward += self.step_reward
         return reward, terminated, truncated, info

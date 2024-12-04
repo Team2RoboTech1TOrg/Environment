@@ -70,10 +70,10 @@ def run_server():
         # model = PPO.load("spraying_scenario_model", print_system_info=True)
         obs, info = env.reset()
         step_count = 0
-        log_status = False
+        log_status = True
         total_reward = 0
         mission = 1
-        while True: #  while mission < 9: depends of log status
+        while mission < 9: #depends of log status
             action, _ = model.predict(obs)
             obs, reward, terminated, truncated, info = env.step(action)
             total_reward += reward

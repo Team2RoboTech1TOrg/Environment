@@ -7,7 +7,7 @@ class AgentObservationSpace(gym.spaces.Dict):
     def __init__(self, size: int):
         self.position_space = spaces.Box(
             low=0,
-            high=size,
+            high=size - 1,
             shape=(2,),
             dtype=np.int32
         )

@@ -88,7 +88,7 @@ class Agent:
                 new_position = self.position
 
         new_position = np.clip(new_position, self.observation_space.position_space.low,
-                               self.observation_space.position_space.high - 1)
+                               self.observation_space.position_space.high)
         self.energy -= c.ENERGY_CONSUMPTION_MOVE
 
         new_position = tuple(new_position)

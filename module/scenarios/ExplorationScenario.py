@@ -23,8 +23,8 @@ class ExplorationScenario(FarmingScenario, ABC):
 
     def _reset_scenario(self, *, seed=None, options=None):
         self.start_time = time.time()
-        self.max_steps = self.grid_size ** 2 * self.num_agents * 4# TEST поставить среднее значение для миссии
-        self.min_steps = self.grid_size ** 2 * self.num_agents
+        self.max_steps = self.grid_size ** 2 * self.num_agents * 3# TEST поставить среднее значение для миссии
+        self.min_steps = self.grid_size ** 2 * self.num_agents * 2
         self.reward_complexion = c.REWARD_DONE * self.count_targets
         self.reward_coef = 1  # TEST динамический коэф
 
@@ -41,7 +41,7 @@ class ExplorationScenario(FarmingScenario, ABC):
         self.current_map = max_coords_status
         self.agents_positions[idx] = agent_obs['pos']
         obs = {'pos': self.agents_positions, 'coords': max_coords_status}
-        obs['pos'][idx] = agent_obs['pos']
+        # obs['pos'][idx] = agent_obs['pos']
         return obs
 
     def _get_system_reward(self, obs, new_position, agent):
@@ -97,13 +97,13 @@ class ExplorationScenario(FarmingScenario, ABC):
             [setattr(agent, "position", random.choice(self.base_positions)) for agent in self.agents]
             logging.info("Агенты вернулись на базу")
             if self.step_count <= self.min_steps:
-                self.total_reward += self.reward_complexion * 1.5
-                reward = self.total_reward
+                reward = self.reward_complexion * 2
+                self.total_reward += reward
                 logging.info(f"Увеличенная награда: {reward} за шагов меньше, чем {self.min_steps}")
             else:
-                self.total_reward += self.reward_complexion
-                reward = self.total_reward
-                logging.info(f"Награда: {reward}")
+                reward = self.reward_complexion
+                self.total_reward += reward
+                logging.info(f"Награда за выполненную миссию: {reward}")
         else:
             self.total_reward += self.step_reward
         return reward, terminated, truncated, info
