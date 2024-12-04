@@ -23,8 +23,8 @@ class ExplorationScenario(FarmingScenario, ABC):
 
     def _reset_scenario(self, *, seed=None, options=None):
         self.start_time = time.time()
-        self.max_steps = self.grid_size ** 2 * self.num_agents * 10 # TEST поставить среднее значение для миссии
-        self.min_steps = self.grid_size ** 2 * 2
+        self.max_steps = self.grid_size ** 2 * self.num_agents * 3 # TEST поставить среднее значение для миссии
+        self.min_steps = self.grid_size ** 2 * self.num_agents
         self.reward_complexion = c.REWARD_DONE * self.count_targets
         self.reward_coef = 1  # TEST динамический коэф
 
@@ -104,7 +104,6 @@ class ExplorationScenario(FarmingScenario, ABC):
                 logging.info(f"Награда: {reward}")
         else:
             self.total_reward += self.step_reward
-        #     reward = self.total_reward  # TEST Динамический ревард или 0?
         return reward, terminated, truncated, info
 
     def _render_scenario(self):

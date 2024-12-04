@@ -98,10 +98,6 @@ class Agent:
         x, y = new_position
         value_new_position = obs['coords'][x][y]
 
-        # отмечаем посещение клетки в файле сценария, кроме исследователя
-        # if self.explorator:# or value_new_position[1] != ObjectStatus.plant.value:
-        #     obs['coords'][x][y][0] = PointStatus.visited.value
-
         new_position, reward = self.get_agent_rewards(new_position, value_new_position[1])
         self.position = new_position
 

@@ -2,7 +2,7 @@ import pygame
 
 from app import run
 from app_server import run_server
-server = True
+server = False
 
 
 if __name__ == '__main__':
