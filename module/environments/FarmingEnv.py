@@ -14,12 +14,7 @@ class FarmingEnv(gym.Env):
         self.agents = self.scenario.agents
         self.num_agents = self.scenario.num_agents
         self.grid_size = self.scenario.grid_size
-        # action_spaces = gym.spaces.Dict({ # old
-        #     f'agent_{i}': agent.action_space
-        #     for i, agent in enumerate(self.scenario.agents)
-        # })
-        # self.action_space = convert_to_multidiscrete(action_spaces) #old
-        self.action_space = gym.spaces.Discrete(const.COUNT_ACTIONS) # new
+        self.action_space = gym.spaces.Discrete(const.COUNT_ACTIONS)
         self.observation_space = SystemObservationSpace(self.agents, self.num_agents,
                                                         self.grid_size)
 

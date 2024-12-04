@@ -47,6 +47,7 @@ class FarmingScenario(BaseScenario, ABC):
         self.step_reward = None
         self.reward_complexion = None
         self.current_agent = None
+        self.agents_positions = None
         self.all_terminated = None
         self.all_truncated = None
 
@@ -60,7 +61,8 @@ class FarmingScenario(BaseScenario, ABC):
         for x, y in self.base_positions:
             self.current_map[x][y][1] = Obj.base.value
         agent_obs = [agent.reset() for agent in self.agents]
-        obs = {'pos': np.stack([obs['pos'] for obs in agent_obs]),
+        self.agents_positions = [obs['pos'] for obs in agent_obs]
+        obs = {'pos': self.agents_positions,
                'coords': np.max(np.stack([obs['coords'] for obs in agent_obs]), axis=0)}
         self.current_agent = 0
         self._reset_scenario()
@@ -109,7 +111,6 @@ class FarmingScenario(BaseScenario, ABC):
             f"Завершено: {terminated}, "
             f"Прервано: {truncated}"
         )
-
         self.current_agent = (self.current_agent + 1) % self.num_agents
         return obs, self.step_reward, terminated, truncated, info
 
@@ -140,8 +141,9 @@ class FarmingScenario(BaseScenario, ABC):
         """
         penalty = 0
         if new_position not in self.base_positions and self.step_count > self.num_agents:
-            for i, item in enumerate(positions):
-                if i != int(agent.name.split('_')[1]) and tuple(item) == new_position:
+            for i, position in enumerate(positions):
+                # if i != int(agent.name.split('_')[1]) and tuple(position) == new_position:
+                if i != self.current_agent and tuple(position) == new_position:
                     penalty = -const.PENALTY_CRASH
                     logging.warning(f"Столкнование {new_position} агентов")
                 # new_position = agent.position

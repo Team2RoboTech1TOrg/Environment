@@ -23,7 +23,7 @@ class ExplorationScenario(FarmingScenario, ABC):
 
     def _reset_scenario(self, *, seed=None, options=None):
         self.start_time = time.time()
-        self.max_steps = self.grid_size ** 2 * self.num_agents * 3 # TEST поставить среднее значение для миссии
+        self.max_steps = self.grid_size ** 2 * self.num_agents * 4# TEST поставить среднее значение для миссии
         self.min_steps = self.grid_size ** 2 * self.num_agents
         self.reward_complexion = c.REWARD_DONE * self.count_targets
         self.reward_coef = 1  # TEST динамический коэф
@@ -35,11 +35,13 @@ class ExplorationScenario(FarmingScenario, ABC):
         Current agent coordination append to list of all agents positions into his cell.
         :return: Observation dictionary
         """
-        agent_obs = self.agents[self.current_agent].get_observation()
+        idx = self.current_agent
+        agent_obs = self.agents[idx].get_observation()
         max_coords_status = np.maximum(agent_obs['coords'], self.current_map)
         self.current_map = max_coords_status
-        obs = {'pos': [(0, 0) for _ in range(self.num_agents)], 'coords': max_coords_status}
-        obs['pos'][self.current_agent] = agent_obs['pos']
+        self.agents_positions[idx] = agent_obs['pos']
+        obs = {'pos': self.agents_positions, 'coords': max_coords_status}
+        obs['pos'][idx] = agent_obs['pos']
         return obs
 
     def _get_system_reward(self, obs, new_position, agent):
