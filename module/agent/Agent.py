@@ -132,7 +132,7 @@ class Agent:
         return f'{self.name}'
 
     def get_agent_rewards(self, new_position: tuple[int, int], value: float) -> tuple[
-        tuple[int, int], int]:
+            tuple[int, int], int]:
         """
         Update position of agent in dependency of cells.
         Give reward in dependency of cells.
@@ -141,7 +141,6 @@ class Agent:
         :return: coordinates of agent (x, y) and agent reward
         """
         agent_reward = 0
-        # TEST вместо этих штрафов попробовать штраф за каждый шаг минимальный
         # TEST награда за удаление друг от друга
         if len(self.position_history) > 3:
             agent_reward += self.check_loop(new_position)
@@ -155,10 +154,8 @@ class Agent:
             new_position = self.position
             logging.info(
                 f"Упс, препятствие! {self} - штраф {c.PENALTY_OBSTACLE}, вернулся на {new_position}")
-        elif not ((self.env.margin <= new_position[0] <= self.env.inner_grid_size) and (
-                self.env.margin <= new_position[1] <= self.env.inner_grid_size)):
+        elif self.check_boundaries(new_position):
             agent_reward -= c.PENALTY_OUT_FIELD
-            logging.warning(f"{self} вышел за границы внутреннего поля: {new_position}")
             new_position = self.position
         return new_position, agent_reward
 
@@ -170,9 +167,9 @@ class Agent:
         """
         reward = 0
         pos_counter = self.position_history.count(new_position)
-        if new_position == self.position:
+        if new_position == self.position_history[-2]:
             reward -= c.PENALTY_LOOP
-            logging.warning(f"Штраф {self} за второй раз в одну клетку' {self.position}")
+            logging.warning(f"Штраф {self} за второй раз в одну клетку' {self.position_history[-2]}")
         elif 4 >= pos_counter > 2:
             reward -= c.PENALTY_LOOP * c.CORR_COEF
             logging.warning(
@@ -188,7 +185,7 @@ class Agent:
     def get_review(self) -> list[tuple[int, int]]:
         """
         Get cells in view range of current agent.
-        :return: list of cell's coordination
+        :return: List of cell's coordination
         """
         review = []
         for dx in range(-self.view_range, self.view_range + 1):
@@ -198,16 +195,25 @@ class Agent:
                     review.append((x, y))
         return review
 
-    def check_crash(self, new_position: tuple[int, int]) -> int:
+    def check_crash(self, agent_position: tuple[int, int]) -> bool:
         """
-        Check if agents coordinates is same with another agents.
-        :param new_position: Position of agent (x, y)
-        :return: penalty: Agent penalty for crash
+        Check if agents coordinates is same with another agents after first step from base.
+        :param agent_position: Position of agent (x, y)
+        :return: bool: If crash return true
         """
-        penalty = 0
-        if new_position not in self.env.base_positions and self.env.step_count > self.env.num_agents:
+        if self.env.step_count > self.env.num_agents:
             for i, position in enumerate(self.env.agents_positions):
-                if i != int(self.name.split('_')[1]) and tuple(position) == new_position:
-                    penalty = -c.PENALTY_CRASH
-                    logging.warning(f"Столкнование {new_position} агентов")
-        return penalty
+                if i != int(self.name.split('_')[1]) and tuple(position) == agent_position:
+                    logging.warning(f"Столкнование {agent_position} агентов")
+                    return True
+
+    def check_boundaries(self, new_position: tuple[int, int]) -> bool:
+        """
+        Check if agents coordinates are situated in field.
+        :param new_position: Position of agent (x, y)
+        :return: bool: If coordinates not in field return true
+        """
+        if not ((self.env.margin <= new_position[0] <= self.env.inner_grid_size) and (
+                self.env.margin <= new_position[1] <= self.env.inner_grid_size)):
+            logging.warning(f"{self} вышел за границы внутреннего поля: {new_position}")
+            return True

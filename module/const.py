@@ -1,14 +1,14 @@
 # Параметры модели ВЫДЕЛИТЬ В ОТДЕЛЬНЫЙ КОНФ
-TIME = 30000
+TIME = 50000
 LEARNING_RATE = 0.0001
-GAMMA = 0.95
+GAMMA = 0.9
 CLIP_RANGE = 0.2
 N_STEPS = 2048 # должна быть привязка к кол-ву шагов эпизода
 COEF = 0.001
-VF_COEF = 0.25
+VF_COEF = 0.5
 CLIP_RANGE_VF = 0.2
-N_EPOCHS = 50#0#0#0
-BATCH_SIZE = 256#128
+N_EPOCHS = 10#0#0#0
+BATCH_SIZE = 512#256#128
 
 # Параметры экрана и сетки
 SCREEN_SIZE = 900
@@ -23,7 +23,7 @@ OBSTACLE_PERCENT = 0.05
 STATION_SIZE = 2
 ON_TARGET_CONSUMPTION = 10  # Расход
 TANK_CAPACITY = 20 * ON_TARGET_CONSUMPTION  # Как-то продумать его
-ENERGY_CAPACITY = 5000  # Максимальный запас энергии
+ENERGY_CAPACITY = 3000  # Максимальный запас энергии
 ENERGY_CONSUMPTION_MOVE = 1
 ENERGY_CONSUMPTION_DONE = 2
 COUNT_ACTIONS = 9
@@ -31,11 +31,12 @@ COUNT_ACTIONS = 9
 # Награды
 REWARD_EXPLORE = 1  # Вознаграждение за исследование новых клеток
 REWARD_DONE = REWARD_EXPLORE * 1.1
-PENALTY_LOOP = 0.1
+PENALTY_LOOP = 0.15
 PENALTY_RETURN = 0.05
 PENALTY_OUT_FIELD = 0.1
-PENALTY_OBSTACLE = 0.15
-PENALTY_CRASH = 0.2
+PENALTY_OBSTACLE = 0.2
+PENALTY_CRASH = 0.25
+PENALTY_DISTANCE = 0.05
 CORR_COEF = 1.1
 
 # Позиции цветов и ям

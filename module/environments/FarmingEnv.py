@@ -19,8 +19,8 @@ class FarmingEnv(gym.Env):
                                                         self.grid_size)
 
     def reset(self, *, seed=None, options=None):
-        obs, info = self.scenario.reset()
         logging.info("Перезагрузка среды")
+        obs, info = self.scenario.reset()
         return obs, info
 
     def get_observation(self):

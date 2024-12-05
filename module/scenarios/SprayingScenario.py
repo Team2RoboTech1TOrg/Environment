@@ -42,7 +42,6 @@ class SprayingScenario(FarmingScenario, ABC):
         self.current_map = max_coords_status
         self.agents_positions[idx] = agent_obs['pos']
         obs = {'pos': self.agents_positions, 'coords': max_coords_status}
-        obs['pos'][idx] = agent_obs['pos']
         return obs
 
     def _get_system_reward(self, obs, new_position, agent):
@@ -97,20 +96,15 @@ class SprayingScenario(FarmingScenario, ABC):
 
         elif info["done"] == self.count_targets:
             terminated = True
-            logging.info("Все растения опрысканы")
-            [setattr(agent, 'position', random.choice(self.base_positions)) for agent in self.agents]
+            logging.info("Все поле исследовано")
+            [setattr(agent, "position", random.choice(self.base_positions)) for agent in self.agents]
             logging.info("Агенты вернулись на базу")
-
             if self.step_count <= self.min_steps:
                 reward = self.reward_complexion * 2
-                self.total_reward += reward
                 logging.info(f"Увеличенная награда: {reward} за шагов меньше, чем {self.min_steps}")
             else:
                 reward = self.reward_complexion
-                self.total_reward += reward
                 logging.info(f"Награда за выполненную миссию: {reward}")
-        else:
-            self.total_reward += self.step_reward
         return reward, terminated, truncated, info
 
     def _render_scenario(self):

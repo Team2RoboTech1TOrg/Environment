@@ -31,3 +31,9 @@ optimizer_class = ...
 self.max_steps = self.grid_size ** 2 * 10
 self.min_steps = self.grid_size ** 2 * 2
 ```
+7. ExplorationScenario.py функция check_agents_distance,
+можно поработать с настройкой расстояния между агентами.
+8. Попробовать со штрафом, если клетка уже посещена и без в ExplorationScenario.py
+```
+reward -= c.PENALTY_RETURN
+```

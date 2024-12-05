@@ -86,6 +86,7 @@ class FarmingScenario(BaseScenario, ABC):
         self.step_reward = 0
         idx = self.current_agent
         agent = self.agents[idx]
+
         new_position, agent_reward, agent_terminated, agent_truncated, info = agent.take_action(action)
         self.all_terminated.append(agent_terminated)
         self.all_truncated.append(agent_truncated)
@@ -96,19 +97,19 @@ class FarmingScenario(BaseScenario, ABC):
 
         obs, system_reward = self._get_system_reward(obs, new_position, agent)
         obs['pos'][idx] = new_position
-        agent.position = new_position
         self.step_reward += system_reward
 
         termination_reward, terminated, truncated, info = self._check_scenario_termination()
         self.step_reward += termination_reward
         self.current_map = np.maximum(obs['coords'], self.current_map)
+        self.total_reward += self.step_reward
         self.step_count += 1
         logging.info(
             f"Награда: {ceil(self.total_reward)}, "
             f"Завершено: {terminated}, "
             f"Прервано: {truncated}"
         )
-        self.current_agent = (self.current_agent + 1) % self.num_agents
+        self.current_agent = (idx + 1) % self.num_agents
         return obs, self.step_reward, terminated, truncated, info
 
     def _check_system_termination(self) -> bool:
@@ -126,8 +127,6 @@ class FarmingScenario(BaseScenario, ABC):
     @abstractmethod
     def _check_scenario_termination(self):
         pass
-
-
 
     def render(self):
         if self.screen is None:

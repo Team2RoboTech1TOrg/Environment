@@ -5,6 +5,7 @@ from abc import ABC
 import pygame
 import numpy as np
 
+from agent.Agent import Agent
 from enums.PointStatus import PointStatus as Point
 from enums.DoneStatus import DoneStatus as Done
 from logging_system.logger import logging
@@ -23,8 +24,8 @@ class ExplorationScenario(FarmingScenario, ABC):
 
     def _reset_scenario(self, *, seed=None, options=None):
         self.start_time = time.time()
-        self.max_steps = self.grid_size ** 2 * self.num_agents * 3# TEST поставить среднее значение для миссии
-        self.min_steps = self.grid_size ** 2 * self.num_agents * 2
+        self.max_steps = self.grid_size ** 2 * self.num_agents * 3  # TEST поставить среднее значение для миссии
+        self.min_steps = self.grid_size ** 2 * self.num_agents
         self.reward_complexion = c.REWARD_DONE * self.count_targets
         self.reward_coef = 1  # TEST динамический коэф
 
@@ -41,26 +42,28 @@ class ExplorationScenario(FarmingScenario, ABC):
         self.current_map = max_coords_status
         self.agents_positions[idx] = agent_obs['pos']
         obs = {'pos': self.agents_positions, 'coords': max_coords_status}
-        # obs['pos'][idx] = agent_obs['pos']
         return obs
 
-    def _get_system_reward(self, obs, new_position, agent):
+    def _get_system_reward(self, obs: dict[str, list[tuple]], new_position: tuple[int, int], agent: Agent) -> tuple[
+            dict[str, list[tuple]], float]:
+
         """
         If cell is not explored, it had status - viewed or empty.
-        And in this case cell is not target.
+        Append status visited and done to cells.
         :param obs: Observation of system
         :param new_position: Coordination of agent
         :param agent: Current agent
         :return: Updated system observation and current agent reward for scenario
         """
         reward = 0
-        self.reward_coef *= 1.001 # dynamical coefficient
+        self.reward_coef *= 1.001  # dynamical coefficient
 
         x, y = new_position
         if obs['coords'][x][y][0] in (Point.viewed.value, Point.empty.value):
             obs['coords'][x][y][0] = Point.visited.value
         else:
-            reward -= c.PENALTY_RETURN
+            # TEST как лучше со штрафом или без
+            # reward -= c.PENALTY_RETURN
             # reward -= c.PENALTY_RETURN * self.reward_coef
             logging.info(f"{agent.name} тут уже кто-то был {new_position} + {reward}")
 
@@ -73,7 +76,30 @@ class ExplorationScenario(FarmingScenario, ABC):
                     # TEST если делать динамическую награду
                     # reward += c.REWARD_EXPLORE * self.reward_coef
                     logging.info(f"{agent.name} исследовал новую клетку {x, y} + {reward}")
+
+        reward += self.check_agents_distance(new_position)
         return obs, reward
+
+    def check_agents_distance(self, agent_position: tuple[int, int]) -> int:
+        """
+        Check distance between current agent and other agents, distance value
+         depends on range view of current agent.
+        :param agent_position: Coordinates x, y of agent
+        :return: penalty: Agent penalty depend on distance
+        """
+        agent_position = np.array(agent_position)
+        penalty = 0
+        distance = self.agents[self.current_agent].view_range
+        if self.step_count > self.num_agents:
+            for position in self.agents_positions:
+                position = np.array(position)
+                if np.linalg.norm(position - agent_position) == distance * 2:
+                    logging.info(f"Агенты близко друг к другу {position}, {agent_position}")
+                    penalty -= c.PENALTY_DISTANCE
+                elif np.linalg.norm(position - agent_position) == distance:
+                    logging.info(f"Агенты слишком близко друг к другу {position}, {agent_position}")
+                    penalty -= c.PENALTY_DISTANCE
+        return penalty
 
     def _check_scenario_termination(self) -> tuple:
         """
@@ -98,14 +124,10 @@ class ExplorationScenario(FarmingScenario, ABC):
             logging.info("Агенты вернулись на базу")
             if self.step_count <= self.min_steps:
                 reward = self.reward_complexion * 2
-                self.total_reward += reward
                 logging.info(f"Увеличенная награда: {reward} за шагов меньше, чем {self.min_steps}")
             else:
                 reward = self.reward_complexion
-                self.total_reward += reward
                 logging.info(f"Награда за выполненную миссию: {reward}")
-        else:
-            self.total_reward += self.step_reward
         return reward, terminated, truncated, info
 
     def _render_scenario(self):
