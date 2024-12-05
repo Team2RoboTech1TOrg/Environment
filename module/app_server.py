@@ -1,8 +1,7 @@
 import time
 from math import ceil
 
-import pygame
-import sys
+# import pygame
 from stable_baselines3 import PPO
 
 import const
@@ -103,5 +102,4 @@ def run_server():
     except Exception as e:
         logging.error(f"Произошла ошибка: {e}")
         raise
-    finally:
-        pygame.quit()
+

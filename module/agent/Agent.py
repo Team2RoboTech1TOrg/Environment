@@ -141,7 +141,6 @@ class Agent:
         :return: coordinates of agent (x, y) and agent reward
         """
         agent_reward = 0
-        # TEST награда за удаление друг от друга
         if len(self.position_history) > 3:
             agent_reward += self.check_loop(new_position)
 

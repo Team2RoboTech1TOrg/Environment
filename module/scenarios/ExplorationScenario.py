@@ -91,14 +91,15 @@ class ExplorationScenario(FarmingScenario, ABC):
         penalty = 0
         distance = self.agents[self.current_agent].view_range
         if self.step_count > self.num_agents:
-            for position in self.agents_positions:
-                position = np.array(position)
-                if np.linalg.norm(position - agent_position) == distance * 2:
-                    logging.info(f"Агенты близко друг к другу {position}, {agent_position}")
-                    penalty -= c.PENALTY_DISTANCE
-                elif np.linalg.norm(position - agent_position) == distance:
-                    logging.info(f"Агенты слишком близко друг к другу {position}, {agent_position}")
-                    penalty -= c.PENALTY_DISTANCE
+            for i, position in enumerate(self.agents_positions):
+                if i != self.current_agent:
+                    position = np.array(position)
+                    if np.linalg.norm(position - agent_position) == distance * 2:
+                        logging.info(f"Агенты близко друг к другу {position}, {agent_position}")
+                        penalty -= c.PENALTY_DISTANCE
+                    elif np.linalg.norm(position - agent_position) == distance:
+                        logging.info(f"Агенты слишком близко друг к другу {position}, {agent_position}")
+                        penalty -= c.PENALTY_DISTANCE
         return penalty
 
     def _check_scenario_termination(self) -> tuple:
