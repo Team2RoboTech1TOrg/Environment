@@ -69,6 +69,7 @@ class SprayingScenario(FarmingScenario, ABC):
             # reward = const.REWARD_EXPLORE * self.reward_coef
             logging.info(f"{agent.name} исследовал новую клетку {new_position} + {reward}")
 
+        # Можно сделать штраф только если там растение и кто-то был
         if obs['coords'][x][y][1] == Obj.plant.value and obs['coords'][x][y][2] == Done.empty.value:
             agent.energy -= c.ENERGY_CONSUMPTION_DONE
             agent.tank -= c.ON_TARGET_CONSUMPTION
@@ -107,7 +108,8 @@ class SprayingScenario(FarmingScenario, ABC):
                 logging.info(f"Награда за выполненную миссию: {reward}")
         return reward, terminated, truncated, info
 
-    def _render_scenario(self):
+    def _render_scenario(self, font: pygame.font, text_x1: int, text_x2: int, text_y1: int, text_y2: int,
+                         text_y3: int):
         """Render agent game"""
         cell = self.cell_size
         target_icon = load_image(c.TARGET_SPRAY, cell)
@@ -119,40 +121,28 @@ class SprayingScenario(FarmingScenario, ABC):
             x, y = target
             if self.current_map[x, y, 0] != Point.empty.value:
                 known_targets += 1
-                icon = target_done_icon if self.current_map[x, y, 2] == 1 else target_icon
-                self.screen.blit(icon, (x * cell, y * cell))
+            icon = target_done_icon if self.current_map[x, y, 2] == 1 else target_icon
+            self.screen.blit(icon, (x * cell, y * cell))
 
         for i, obstacle in enumerate(self.obstacle_positions):
             x, y = obstacle
             if self.current_map[x, y, 0] != Point.empty.value:
                 known_obstacles += 1
-                obstacle_icon = self.obstacle_icons[i % len(self.obstacle_icons)]
-                self.screen.blit(obstacle_icon, (x * cell, y * cell))
+            obstacle_icon = self.obstacle_icons[i % len(self.obstacle_icons)]
+            self.screen.blit(obstacle_icon, (x * cell, y * cell))
 
         for x in range(self.grid_size):
             for y in range(self.grid_size):
                 if self.current_map[x, y, 0] == Point.empty.value:
                     dark_overlay = pygame.Surface((cell, cell), pygame.SRCALPHA)
-                    dark_overlay.fill((0, 0, 0, 200))
+                    dark_overlay.fill((0, 0, 0, 100))
                     self.screen.blit(dark_overlay, (x * cell, y * cell))
 
         for agent in self.agents:
             self.screen.blit(agent_icon, (agent.position[0] * cell,
                                           agent.position[1] * cell))
 
-        # Отрисовка времени, очков, заряда и уровня воды
-        screen_width, screen_height = self.screen.get_size()
-        status_bar_height = c.BAR_HEIGHT
         elapsed_time = time.time() - self.start_time
-
-        font_size = int(status_bar_height * 0.25)
-        font = pygame.font.SysFont('Arial', font_size)
-
-        text_x1 = screen_width * 0.05
-        text_x2 = screen_width * 0.5
-        text_y1 = self.screen_size + status_bar_height * 0.1
-        text_y2 = text_y1 + status_bar_height // 4
-        text_y3 = text_y1 + status_bar_height // 4 * 2
 
         color = c.BLACK
         render_text(self.screen, f"Время: {elapsed_time:.2f} сек", font, color, text_x1, text_y1)

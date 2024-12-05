@@ -131,7 +131,8 @@ class ExplorationScenario(FarmingScenario, ABC):
                 logging.info(f"Награда за выполненную миссию: {reward}")
         return reward, terminated, truncated, info
 
-    def _render_scenario(self):
+    def _render_scenario(self, font: pygame.font, text_x1: int, text_x2: int, text_y1: int, text_y2: int,
+                         text_y3: int):
         """Render agent game"""
         cell = self.cell_size
         plant = load_image(c.DONE_TARGET_SPRAY, cell)
@@ -164,18 +165,7 @@ class ExplorationScenario(FarmingScenario, ABC):
                                           agent.position[1] * cell))
 
         # Отрисовка времени, очков, заряда и уровня воды
-        screen_width, screen_height = self.screen.get_size()
-        status_bar_height = c.BAR_HEIGHT
         elapsed_time = time.time() - self.start_time
-
-        font_size = int(status_bar_height * 0.25)
-        font = pygame.font.SysFont(c.FONT, font_size)
-
-        text_x1 = screen_width * 0.05
-        text_x2 = screen_width * 0.5
-        text_y1 = self.screen_size + status_bar_height * 0.1
-        text_y2 = text_y1 + status_bar_height // 4
-        text_y3 = text_y1 + status_bar_height // 4 * 2
 
         color = c.BLACK
         render_text(self.screen, f"Время: {elapsed_time:.2f} сек", font, color, text_x1, text_y1)

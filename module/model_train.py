@@ -68,6 +68,7 @@ class TrainingModel:
         logging.info(message)
         if self.render:
             self.env.render_message(message)
+        return self.model
 
     def save_model(self):
         self.model.save(f"{self.env.scenario}_model")

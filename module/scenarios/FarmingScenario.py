@@ -9,7 +9,7 @@ from math import ceil
 
 from gymnasium.core import ActType
 
-import const
+import const as c
 from agent.Agent import Agent
 from enums.ObjectStatus import ObjectStatus as Obj
 from scenarios.BaseScenario import BaseScenario
@@ -19,25 +19,25 @@ from utils import load_obstacles, load_image
 class FarmingScenario(BaseScenario, ABC):
     def __init__(self, num_agents: int, grid_size: int):
         self.name = None
-        self.screen_size = const.SCREEN_SIZE
+        self.screen_size = c.SCREEN_SIZE
         self.grid_size = grid_size
         self.cell_size = self.screen_size // self.grid_size
-        self.margin = const.MARGIN_SIZE
+        self.margin = c.MARGIN_SIZE
         self.inner_grid_size = self.grid_size - self.margin * 2
         self.screen = None
         self.num_agents = num_agents
         self.count_targets = None
         self.target_positions = None
-        self.count_obstacles = ceil(self.grid_size ** 2 * const.OBSTACLE_PERCENT)
+        self.count_obstacles = ceil(self.grid_size ** 2 * c.OBSTACLE_PERCENT)
         self.obstacle_positions = None
-        self.count_plants = ceil(self.grid_size ** 2 * const.TARGET_PERCENT)
+        self.count_plants = ceil(self.grid_size ** 2 * c.TARGET_PERCENT)
         self.plants_positions = None
-        self.base_size = const.STATION_SIZE
+        self.base_size = c.STATION_SIZE
         base_coords = (self.grid_size // 2 - self.base_size // 2, self.margin + 1)
         self.base_positions = [(base_coords[0] + i, base_coords[1] + j) for i in range(self.base_size)
                                for j in range(self.base_size)]
         self.agents = [Agent(self, name=f'agent_{i}') for i in range(self.num_agents)]
-        self.obstacle_icons = load_obstacles(const.OBSTACLES, self.cell_size, self.count_obstacles)
+        self.obstacle_icons = load_obstacles(c.OBSTACLES, self.cell_size, self.count_obstacles)
         self.current_map = None
         self.reward_coef = None
         self.total_reward = None
@@ -131,11 +131,11 @@ class FarmingScenario(BaseScenario, ABC):
     def render(self):
         if self.screen is None:
             pygame.init()
-            self.screen = pygame.display.set_mode((self.screen_size, self.screen_size + const.BAR_HEIGHT))
+            self.screen = pygame.display.set_mode((self.screen_size, self.screen_size + c.BAR_HEIGHT))
         cell = self.cell_size
-        bg = pygame.image.load(const.FIELD_BACKGROUND).convert()
-        base_icon = load_image(const.STATION, cell)
-        bg_image = pygame.image.load(const.FIELD).convert()
+        bg = pygame.image.load(c.FIELD_BACKGROUND).convert()
+        base_icon = load_image(c.STATION, cell)
+        bg_image = pygame.image.load(c.FIELD).convert()
 
         full_field_size = self.grid_size * cell
         bg = pygame.transform.smoothscale(bg, (full_field_size, full_field_size))
@@ -144,7 +144,7 @@ class FarmingScenario(BaseScenario, ABC):
         for x in range(self.grid_size):
             for y in range(self.grid_size):
                 pygame.draw.rect(
-                    self.screen, const.BLACK,
+                    self.screen, c.BLACK,
                     (x * cell, y * cell, cell, cell), 1
                 )
         # Отрисовка границы внутреннего поля
@@ -152,7 +152,7 @@ class FarmingScenario(BaseScenario, ABC):
         margin_x = (self.grid_size * cell - inner_field_size) // 2
         margin_y = (self.grid_size * cell - inner_field_size) // 2
         inner_field_rect = pygame.Rect(margin_x, margin_y, inner_field_size, inner_field_size)
-        pygame.draw.rect(self.screen, const.BLACK, inner_field_rect, 4)
+        pygame.draw.rect(self.screen, c.BLACK, inner_field_rect, 4)
 
         self.screen.blit(bg, (0, 0))
         bg_image = pygame.transform.smoothscale(bg_image, (inner_field_size, inner_field_size))
@@ -160,8 +160,8 @@ class FarmingScenario(BaseScenario, ABC):
 
         # Отрисовка панели статуса
         status_bar_rect = pygame.Rect(0, self.screen_size, self.screen_size,
-                                      const.BAR_HEIGHT)
-        pygame.draw.rect(self.screen, const.WHITE, status_bar_rect)
+                                      c.BAR_HEIGHT)
+        pygame.draw.rect(self.screen, c.WHITE, status_bar_rect)
 
         # Отрисовка базы
         base_size = self.base_size * self.cell_size
@@ -169,10 +169,22 @@ class FarmingScenario(BaseScenario, ABC):
         x, y = self.base_positions[0]
         self.screen.blit(base_icon_scaled,
                          (x * cell, y * cell))
-        self._render_scenario()
+        screen_width, screen_height = self.screen.get_size()
+        status_bar_height = c.BAR_HEIGHT
+
+        font_size = int(status_bar_height * 0.25)
+        font = pygame.font.SysFont(c.FONT, font_size)
+
+        text_x1 = int(screen_width * 0.05)
+        text_x2 = int(screen_width * 0.5)
+        text_y1 = self.screen_size + status_bar_height * 0.1
+        text_y2 = text_y1 + status_bar_height // 4
+        text_y3 = text_y1 + status_bar_height // 4 * 2
+        self._render_scenario(font, text_x1, text_x2, text_y1, text_y2, text_y3)
 
     @abstractmethod
-    def _render_scenario(self):
+    def _render_scenario(self, font: pygame.font, text_x1: int, text_x2: int, text_y1: int, text_y2: int,
+                         text_y3: int):
         pass
 
     def render_message(self, render_text: str):
@@ -209,9 +221,9 @@ class FarmingScenario(BaseScenario, ABC):
         Reset positions of objects
         :return: function for get object's postitions
         """
-        if const.PLACEMENT_MODE == 'random':
+        if c.PLACEMENT_MODE == 'random':
             self._randomize_positions()
-        elif const.PLACEMENT_MODE == 'fixed':
+        elif c.PLACEMENT_MODE == 'fixed':
             self._fixed_positions()
         else:
             raise ValueError("Invalid PLACEMENT_MODE. Choose 'random' or 'fixed'.")
