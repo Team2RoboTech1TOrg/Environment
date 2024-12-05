@@ -4,7 +4,6 @@ from gymnasium.core import ActType
 import const
 from spaces.SystemObservationSpace import SystemObservationSpace
 from logging_system.logger import logging
-from utils import convert_to_multidiscrete
 
 
 class FarmingEnv(gym.Env):

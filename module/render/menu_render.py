@@ -17,7 +17,6 @@ def render_text(screen: Surface, text: Any, font: pygame.font, color: tuple[int,
     :param color:
     :param x:
     :param y:
-    :return:
     """
     text_surface = font.render(text, True, color)
     screen.blit(text_surface, (x, y))
@@ -42,7 +41,7 @@ def input_screen():
     input_values = ["", "", "1"]  # По умолчанию выбран сценарий 1
 
     # Данные для выпадающего списка
-    scenarios = ["1 - spraying", "2 - exploration"]
+    scenarios = ["1 - spraying", "2 - exploration", "3 - animal map"]
     dropdown_open = False
     dropdown_scroll_offset = 0  # Смещение прокрутки списка
     dropdown_visible_count = 3  # Количество видимых опций в списке

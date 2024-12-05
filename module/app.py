@@ -9,6 +9,7 @@ from environments.FarmingEnv import FarmingEnv
 from config import log_dir
 from logging_system.logger import logging
 from logging_system.logger_csv import log_to_csv
+from model_train import TrainingModel
 from policy import CustomPolicy
 from render.menu_render import input_screen
 from scenarios.scenarios_dict import get_dict_scenarios
@@ -24,45 +25,11 @@ def run():
         selected_scenario = scenarios[1]
     try:
         env = FarmingEnv(selected_scenario)
-        hyperparameters_message = (
-            f"Гиперпараметры модели:\n\n"
-            f"Темп: {c.LEARNING_RATE}\n"
-            f"Гамма: {c.GAMMA}\n"
-            f"Диапазон обрезки: {c.CLIP_RANGE}\n"
-            f"Длина эпизода: {c.N_STEPS}\n"
-            f"Энтропия: {c.COEF}\n"
-            f"Баланс ценности: {c.VF_COEF}\n"
-            f"Эпох: {c.N_EPOCHS}\n"
-            f"Размер батча: {c.BATCH_SIZE}\n"
-        )
-
-        message = "Начало обучения модели\n\n\n" + hyperparameters_message
-        env.render_message(message)
-        pygame.display.set_caption("OS SWARM OF DRONES")
-        logging.info(message)
-        policy = CustomPolicy
-        model = PPO(
-            policy,
-            env,
-            learning_rate=c.LEARNING_RATE,
-            gamma=c.GAMMA,
-            clip_range=c.CLIP_RANGE,
-            n_steps=c.N_STEPS,
-            ent_coef=c.COEF,
-            verbose=1,
-            vf_coef=c.VF_COEF,
-            n_epochs=c.N_EPOCHS,
-            batch_size=c.BATCH_SIZE,
-            tensorboard_log=log_dir,
-            normalize_advantage=True,
-        )
-        model.learn(total_timesteps=c.TIME)
-        message = "Обучение модели\nзавершено."
-        logging.info(message)
-        env.render_message(message)
-        model.save(f"{selected_scenario}_model")
+        train = TrainingModel(env, render=True)
+        train.train_model()
+        train.save_model()
         time.sleep(2)
-        # model = PPO.load("spraying_scenario_model", print_system_info=True)
+        model = train.get_model()
 
         clock = pygame.time.Clock()
         pygame.display.set_caption(selected_scenario.__str__())

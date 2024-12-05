@@ -45,7 +45,7 @@ class ExplorationScenario(FarmingScenario, ABC):
         return obs
 
     def _get_system_reward(self, obs: dict[str, list[tuple]], new_position: tuple[int, int], agent: Agent) -> tuple[
-            dict[str, list[tuple]], float]:
+        dict[str, list[tuple]], float]:
 
         """
         If cell is not explored, it had status - viewed or empty.
@@ -137,15 +137,15 @@ class ExplorationScenario(FarmingScenario, ABC):
         plant = load_image(c.DONE_TARGET_SPRAY, cell)
         agent_icon = load_image(c.AGENT, cell)
 
-        known_obstacles, known_targets = 0, 0
+        known_obstacles = 0
         for i, flower in enumerate(self.plants_positions):
             x, y = flower
-            if self.current_map[x, y, 0] != 0:
+            if self.current_map[x, y, 0] != Point.empty.value:
                 self.screen.blit(plant, (x * cell, y * cell))
 
         for i, obstacle in enumerate(self.obstacle_positions):
             x, y = obstacle
-            if self.current_map[x, y, 0] != 0:
+            if self.current_map[x, y, 0] != Point.empty.value:
                 known_obstacles += 1
                 obstacle_icon = self.obstacle_icons[i % len(self.obstacle_icons)]
                 self.screen.blit(obstacle_icon, (x * cell, y * cell))

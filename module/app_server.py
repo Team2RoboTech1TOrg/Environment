@@ -9,6 +9,7 @@ from environments.FarmingEnv import FarmingEnv
 from config import log_dir
 from logging_system.logger import logging
 from logging_system.logger_csv import log_to_csv
+from model_train import TrainingModel
 from policy import CustomPolicy
 from scenarios.scenarios_dict import get_dict_scenarios
 
@@ -29,44 +30,16 @@ def run_server():
     if not selected_scenario:
         print(f"Ошибка: сценарий с номером {selected} не найден. Выбран сценарий по умолчанию.")
         selected_scenario = scenarios[1]
+
+    # print("Для обучения модели нажите - 1")
     try:
         env = FarmingEnv(selected_scenario)
-        hyperparameters_message = (
-            f"Гиперпараметры модели:\n\n"
-            f"Темп: {const.LEARNING_RATE}\n"
-            f"Гамма: {const.GAMMA}\n"
-            f"Диапазон обрезки: {const.CLIP_RANGE}\n"
-            f"Длина эпизода: {const.N_STEPS}\n"
-            f"Энтропия: {const.COEF}\n"
-            f"Баланс ценности: {const.VF_COEF}\n"
-            f"Эпох: {const.N_EPOCHS}\n"
-            f"Размер батча: {const.BATCH_SIZE}\n"
-        )
-
-        message = "Начало обучения модели\n\n\n" + hyperparameters_message
-        logging.info(message)
-        policy = CustomPolicy
-        model = PPO(
-            policy,
-            env,
-            learning_rate=const.LEARNING_RATE,
-            gamma=const.GAMMA,
-            clip_range=const.CLIP_RANGE,
-            n_steps=const.N_STEPS,
-            ent_coef=const.COEF,
-            verbose=1,
-            vf_coef=const.VF_COEF,
-            n_epochs=const.N_EPOCHS,
-            batch_size=const.BATCH_SIZE,
-            tensorboard_log=log_dir,
-            normalize_advantage=True,
-        )
-        model.learn(total_timesteps=const.TIME)
-        message = "Обучение модели\nзавершено."
-        logging.info(message)
-        model.save(f"{selected_scenario}_model")
+        train = TrainingModel(env)
+        train.train_model()
+        train.save_model()
         time.sleep(2)
-        # model = PPO.load("spraying_scenario_model", print_system_info=True)
+        model = train.get_model()
+
         obs, info = env.reset()
         step_count = 0
         log_status = True

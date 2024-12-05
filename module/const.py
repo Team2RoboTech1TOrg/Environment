@@ -1,5 +1,5 @@
 # Параметры модели ВЫДЕЛИТЬ В ОТДЕЛЬНЫЙ КОНФ
-TIME = 50000
+TIME = 10000
 LEARNING_RATE = 0.0001
 GAMMA = 0.9
 CLIP_RANGE = 0.2
@@ -20,6 +20,7 @@ MARGIN_SIZE = 1
 NUM_AGENTS = 3
 TARGET_PERCENT = 0.45
 OBSTACLE_PERCENT = 0.05
+ANIMALS_PERCENT = 0.05
 STATION_SIZE = 2
 ON_TARGET_CONSUMPTION = 10  # Расход
 TANK_CAPACITY = 20 * ON_TARGET_CONSUMPTION  # Как-то продумать его
@@ -67,6 +68,7 @@ TARGET_SPRAY = "images/bad_plant.png"
 DONE_TARGET_SPRAY = "images/healthy_plant.png"
 DONE_TARGET_EXPLORE = "images/explored.png"
 OBSTACLES = "./images/obstacles"
+ANIMALS = "images/animal.png"
 STATION = "images/robdocst.png"
 FIELD = "images/field.png"
 FIELD_BACKGROUND = "images/forest.jpg"

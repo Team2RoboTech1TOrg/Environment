@@ -24,7 +24,7 @@ class SprayingScenario(FarmingScenario, ABC):
 
     def _reset_scenario(self, *, seed=None, options=None):
         self.start_time = time.time()
-        self.max_steps = self.grid_size ** 2 * self.num_agents * 10   # TEST поставить среднее значение для миссии
+        self.max_steps = self.grid_size ** 2 * self.num_agents * 10  # TEST поставить среднее значение для миссии
         self.min_steps = self.grid_size ** 2 * self.num_agents
         self.reward_complexion = c.REWARD_DONE * self.count_targets
         self.reward_coef = 1
@@ -114,7 +114,7 @@ class SprayingScenario(FarmingScenario, ABC):
         target_done_icon = load_image(c.DONE_TARGET_SPRAY, cell)
         agent_icon = load_image(c.AGENT, cell)
 
-        known_obstacles, known_targets = 0, 0
+        known_targets, known_obstacles = 0, 0
         for i, target in enumerate(self.target_positions):
             x, y = target
             if self.current_map[x, y, 0] != Point.empty.value:
