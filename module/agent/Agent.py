@@ -146,20 +146,23 @@ class Agent:
         if len(self.position_history) > 3:
             agent_reward += self.check_loop(new_position)
 
-        if not ((self.env.margin <= new_position[0] <= self.env.inner_grid_size) and (
-                self.env.margin <= new_position[1] <= self.env.inner_grid_size)):
-            agent_reward -= c.PENALTY_OUT_FIELD
-            logging.warning(f"{self} вышел за границы внутреннего поля: {new_position}")
+        if self.check_crash(new_position):
+            agent_reward -= c.PENALTY_CRASH
             new_position = self.position
+            logging.info(f"{self.name} , вернулся на {new_position}")
         elif value == Obj.obstacle.value:
             agent_reward -= c.PENALTY_OBSTACLE
             new_position = self.position
             logging.info(
                 f"Упс, препятствие! {self} - штраф {c.PENALTY_OBSTACLE}, вернулся на {new_position}")
-
+        elif not ((self.env.margin <= new_position[0] <= self.env.inner_grid_size) and (
+                self.env.margin <= new_position[1] <= self.env.inner_grid_size)):
+            agent_reward -= c.PENALTY_OUT_FIELD
+            logging.warning(f"{self} вышел за границы внутреннего поля: {new_position}")
+            new_position = self.position
         return new_position, agent_reward
 
-    def check_loop(self, new_position) -> int:
+    def check_loop(self, new_position: tuple[int, int]) -> int:
         """
         Calculate penalty for loop for agent position
         :param new_position: coordinates of agent (x, y)
@@ -194,3 +197,17 @@ class Agent:
                 if 0 <= x < self.env.grid_size and 0 <= y < self.env.grid_size:
                     review.append((x, y))
         return review
+
+    def check_crash(self, new_position: tuple[int, int]) -> int:
+        """
+        Check if agents coordinates is same with another agents.
+        :param new_position: Position of agent (x, y)
+        :return: penalty: Agent penalty for crash
+        """
+        penalty = 0
+        if new_position not in self.env.base_positions and self.env.step_count > self.env.num_agents:
+            for i, position in enumerate(self.env.agents_positions):
+                if i != int(self.name.split('_')[1]) and tuple(position) == new_position:
+                    penalty = -c.PENALTY_CRASH
+                    logging.warning(f"Столкнование {new_position} агентов")
+        return penalty

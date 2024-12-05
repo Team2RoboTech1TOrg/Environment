@@ -94,9 +94,6 @@ class FarmingScenario(BaseScenario, ABC):
         if self._check_system_termination():
             return obs, self.step_reward, agent_terminated, agent_truncated, info
 
-        new_position, penalty = self.check_crash(obs['pos'], agent, new_position)
-        self.step_reward += penalty
-
         obs, system_reward = self._get_system_reward(obs, new_position, agent)
         obs['pos'][idx] = new_position
         agent.position = new_position
@@ -130,24 +127,7 @@ class FarmingScenario(BaseScenario, ABC):
     def _check_scenario_termination(self):
         pass
 
-    def check_crash(self, positions: list[tuple], agent: Agent, new_position: tuple[int, int]) -> tuple[
-            tuple[int, int], int]:
-        """
-        Check if agents coordinates is same with another agents.
-        :param new_position: Position of agent (x, y)
-        :param agent: Agent in process
-        :param positions: All agents positions at the moment
-        :return: Agent coordinates x, y; agent penalty
-        """
-        penalty = 0
-        if new_position not in self.base_positions and self.step_count > self.num_agents:
-            for i, position in enumerate(positions):
-                # if i != int(agent.name.split('_')[1]) and tuple(position) == new_position:
-                if i != self.current_agent and tuple(position) == new_position:
-                    penalty = -const.PENALTY_CRASH
-                    logging.warning(f"Столкнование {new_position} агентов")
-                # new_position = agent.position
-        return new_position, penalty
+
 
     def render(self):
         if self.screen is None:
