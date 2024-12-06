@@ -11,5 +11,5 @@ def get_dict_scenarios(num_agents, grid_size) -> dict:
     return {
         1: spraying_scenario,
         2: exploration_scenario,
-        3: animal_map
+        # 3: animal_map
     }

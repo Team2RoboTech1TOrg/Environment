@@ -56,7 +56,7 @@ def input_screen() -> tuple[int, int, int, int]:
     ]
 
     # Выпадающий список
-    scenarios = ["1 - spraying", "2 - exploration", "3 - animal map"]
+    scenarios = ["1 - spraying", "2 - exploration"]#, "3 - animal map"]
     dropdown_open = False
     dropdown_scroll_offset = 0
     dropdown_visible_count = 3
