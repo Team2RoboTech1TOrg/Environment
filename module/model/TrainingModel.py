@@ -9,7 +9,7 @@ from policy import CustomPolicy
 
 
 class TrainingModel:
-    def __init__(self, env, render=False):
+    def __init__(self, env, render_mode=False):
         self.env = env
         self.model = None
         self.log_dir = log_dir
@@ -22,10 +22,10 @@ class TrainingModel:
         self.epochs = c.N_EPOCHS
         self.batch = c.BATCH_SIZE
         self.total_steps = c.TIME
-        self.render = render
+        self.render_mode = render_mode
 
     def render_hyperparameters_message(self) -> str:
-        if not self.render:
+        if not self.render_mode:
             return ''
         message = (
             f"Гиперпараметры модели:\n\n"
@@ -44,7 +44,7 @@ class TrainingModel:
         message = "Начало обучения модели\n\n\n" + self.render_hyperparameters_message()
         logging.info(message)
 
-        if self.render:
+        if self.render_mode:
             self.env.render_message(message)
             pygame.display.set_caption("OS SWARM OF DRONES")
 
@@ -66,8 +66,9 @@ class TrainingModel:
         self.model.learn(total_timesteps=self.total_steps)
         message = "Обучение модели\nзавершено."
         logging.info(message)
-        if self.render:
+        if self.render_mode:
             self.env.render_message(message)
+        pygame.quit()
         return self.model
 
     def save_model(self):

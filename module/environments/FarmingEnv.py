@@ -32,6 +32,7 @@ class FarmingEnv(gym.Env):
 
     def step(self, action: ActType):
         obs, reward, terminated, truncated, info = self.scenario.step(action)
+        # print(reward, terminated, truncated)
         return obs, reward, terminated, truncated, info
 
     def render(self):

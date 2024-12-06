@@ -1,15 +1,10 @@
-import time
 from math import ceil
-
-# import pygame
-from stable_baselines3 import PPO
 
 import const
 from environments.FarmingEnv import FarmingEnv
 from logging_system.logger import logging
-from logging_system.logger_csv import log_to_csv
-from model_test import TestingModel
-from model_train import TrainingModel
+from model.TestingModel import TestingModel
+from model.TrainingModel import TrainingModel
 from scenarios.scenarios_dict import get_dict_scenarios
 
 
@@ -31,21 +26,21 @@ def run_server():
         selected_scenario = scenarios[1]
 
     print("Для обучения модели нажите - 1\n Для просмотра работы модели - 2\n Тестирование - 3")
-    selected_operation = int(input()) or 1
+    selected_mode = int(input()) or 1
     try:
         env = FarmingEnv(selected_scenario)
         train = TrainingModel(env)
-        if selected_operation == 1:
+        if selected_mode == 1:
             train.train_model()
             train.save_model()
-        elif selected_operation == 2:
+        elif selected_mode == 2:
             model = train.get_model()
             test = TestingModel(env, model, log=True)  # логи в файл csv, 8 missions default
             test.test_model()
         else:
             model = train.train_model()
             test = TestingModel(env, model, log=True)
-            test.test_model_render()
+            test.test_model()
     except KeyboardInterrupt:
         logging.info("Прервано пользователем")
     except Exception as e:

@@ -1,5 +1,5 @@
 # Параметры модели ВЫДЕЛИТЬ В ОТДЕЛЬНЫЙ КОНФ
-TIME = 10000
+TIME = 20000
 LEARNING_RATE = 0.0001
 GAMMA = 0.9
 CLIP_RANGE = 0.2
@@ -8,7 +8,8 @@ COEF = 0.001
 VF_COEF = 0.5
 CLIP_RANGE_VF = 0.2
 N_EPOCHS = 10#0#0#0
-BATCH_SIZE = 512#256#128
+BATCH_SIZE = 512#256#12
+MISSIONS_FOR_TEST = 8
 
 # Параметры экрана и сетки
 SCREEN_SIZE = 900
@@ -63,7 +64,7 @@ LIGHT_GRAY = (100, 100, 100)
 FONT = 'Arial'
 
 # изображения
-AGENT = "images/drone.png"
+AGENT = "images/drone_blue.png"
 TARGET_SPRAY = "images/bad_plant.png"
 DONE_TARGET_SPRAY = "images/healthy_plant.png"
 DONE_TARGET_EXPLORE = "images/explored.png"

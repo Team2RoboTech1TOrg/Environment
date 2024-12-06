@@ -93,6 +93,8 @@ class FarmingScenario(BaseScenario, ABC):
         self.step_reward += agent_reward
 
         if self._check_system_termination():
+            self.step_reward = 0
+            self.total_reward = 0
             return obs, self.step_reward, agent_terminated, agent_truncated, info
 
         obs, system_reward = self._get_system_reward(obs, new_position, agent)
@@ -195,8 +197,8 @@ class FarmingScenario(BaseScenario, ABC):
         """
         if self.screen is None:
             pygame.init()
-            self.screen = pygame.display.set_mode((self.screen_size, self.screen_size + const.BAR_HEIGHT))
-        self.screen.fill(const.GRAY)
+            self.screen = pygame.display.set_mode((self.screen_size, self.screen_size + c.BAR_HEIGHT))
+        self.screen.fill(c.GRAY)
 
         font = pygame.font.Font(pygame.font.get_default_font(), int(self.screen_size * 0.055))
         lines = render_text.split('\n')
@@ -206,10 +208,10 @@ class FarmingScenario(BaseScenario, ABC):
         for i, line in enumerate(lines):
             if i == 0:
                 font_title = pygame.font.Font(pygame.font.get_default_font(), ceil(font.get_height() * 1.2))
-                text_surface = font_title.render(line, True, const.RED)
+                text_surface = font_title.render(line, True, c.RED)
                 text_width, text_height = font_title.size(line)
             else:
-                text_surface = font.render(line, True, const.GREEN)
+                text_surface = font.render(line, True, c.GREEN)
                 text_width, text_height = font.size(line)
             x_offset = (screen_width - text_width) // 2
             self.screen.blit(text_surface, (x_offset, y_offset))

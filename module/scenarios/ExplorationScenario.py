@@ -24,7 +24,7 @@ class ExplorationScenario(FarmingScenario, ABC):
 
     def _reset_scenario(self, *, seed=None, options=None):
         self.start_time = time.time()
-        self.max_steps = self.grid_size ** 2 * self.num_agents * 3  # TEST поставить среднее значение для миссии
+        self.max_steps = 10#self.grid_size ** 2 * self.num_agents * 3  # TEST поставить среднее значение для миссии
         self.min_steps = self.grid_size ** 2 * self.num_agents
         self.reward_complexion = c.REWARD_DONE * self.count_targets
         self.reward_coef = 1  # TEST динамический коэф
@@ -45,7 +45,7 @@ class ExplorationScenario(FarmingScenario, ABC):
         return obs
 
     def _get_system_reward(self, obs: dict[str, list[tuple]], new_position: tuple[int, int], agent: Agent) -> tuple[
-        dict[str, list[tuple]], float]:
+            dict[str, list[tuple]], float]:
 
         """
         If cell is not explored, it had status - viewed or empty.
