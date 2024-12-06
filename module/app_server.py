@@ -25,7 +25,7 @@ def run_server():
         print(f"Ошибка: сценарий с номером {selected} не найден. Выбран сценарий по умолчанию.")
         selected_scenario = scenarios[1]
 
-    print("Для обучения модели нажите - 1\n Для просмотра работы модели - 2\n Тестирование - 3")
+    print("Для обучения модели нажите - 1\n Запись логов тестов модели в csv - 2")#\n Тестирование - 3")
     selected_mode = int(input()) or 1
     try:
         env = FarmingEnv(selected_scenario)
@@ -35,7 +35,7 @@ def run_server():
             train.save_model()
         elif selected_mode == 2:
             model = train.get_model()
-            test = TestingModel(env, model, log=True)  # логи в файл csv, 8 missions default
+            test = TestingModel(env, model, log=True)
             test.test_model()
         else:
             model = train.train_model()

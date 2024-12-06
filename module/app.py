@@ -1,3 +1,4 @@
+import sys
 import time
 import pygame
 
@@ -18,20 +19,21 @@ def run():
         print(f"Ошибка: сценарий с номером {selected} не найден. Выбран сценарий по умолчанию.")
         selected_scenario = scenarios[1]
     try:
-        pygame.init()
         env = FarmingEnv(selected_scenario)
-        train = TrainingModel(env, render_mode=True)
+        train = TrainingModel(env, render=True)
         if selected_mode == 1:
             train.train_model()
             train.save_model()
             time.sleep(2)
         elif selected_mode == 2:
             model = train.get_model()
-            test = TestingModel(env, model, log=True, render_mode=True)
+            # pygame.init()
+            test = TestingModel(env, model, log=True, render=True)
             test.test_model_render()
         else:
             model = train.train_model()
-            test = TestingModel(env, model, log=True, render_mode=True)
+            # pygame.init()
+            test = TestingModel(env, model, log=True, render=True)
             test.test_model_render()
     except KeyboardInterrupt:
         logging.info("Прервано пользователем")

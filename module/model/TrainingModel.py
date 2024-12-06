@@ -9,7 +9,7 @@ from policy import CustomPolicy
 
 
 class TrainingModel:
-    def __init__(self, env, render_mode=False):
+    def __init__(self, env, render=False):
         self.env = env
         self.model = None
         self.log_dir = log_dir
@@ -22,7 +22,7 @@ class TrainingModel:
         self.epochs = c.N_EPOCHS
         self.batch = c.BATCH_SIZE
         self.total_steps = c.TIME
-        self.render_mode = render_mode
+        self.render_mode = render
 
     def render_hyperparameters_message(self) -> str:
         if not self.render_mode:

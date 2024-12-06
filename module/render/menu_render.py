@@ -50,7 +50,7 @@ def input_screen() -> tuple[int, int, int, int]:
 
     # Радио-кнопки
     radio_buttons = [
-        {"label": "Тестирование", "pos": (50, 150), "selected": True},  # TO DO только для наших тестов
+        # {"label": "Тестирование", "pos": (50, 150), "selected": True},  # TO DO только для наших тестов
         {"label": "Обучение модели", "pos": (50, 100), "selected": False},
         {"label": "Отрисовка результатов", "pos": (50, 50), "selected": False},
     ]
@@ -190,11 +190,11 @@ def input_screen() -> tuple[int, int, int, int]:
 
 
 def handle_selected_radio_button(selected_label) -> int:
-    label = 3
+    label = 1#3
     if selected_label == "Отрисовка результатов":
         label = 2
     elif selected_label == "Обучение модели":
         label = 1
-    elif selected_label == "Тестирование":
-        label = 3
+    # elif selected_label == "Тестирование":
+    #     label = 3
     return label

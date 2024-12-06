@@ -8,14 +8,14 @@ from logging_system.logger import logging
 
 
 class TestingModel:
-    def __init__(self, env, model, log=False, render_mode=False):
+    def __init__(self, env, model, log=False, render=False):
         self.env = env
         self.log_status = log
         self.model = model
         self.mission = 1
         self.step = 0
         self.total_reward = 0
-        self.render_mode = render_mode
+        self.render_mode = render
 
     def test_model(self):
         missions = 1
@@ -34,6 +34,7 @@ class TestingModel:
                 obs, info = self.terminate_mission(truncated)
 
     def test_model_render(self):
+        pygame.init()
         clock = pygame.time.Clock()
         pygame.display.set_caption(self.env.scenario.__str__())
         obs, info = self.env.reset()
@@ -48,7 +49,7 @@ class TestingModel:
             action, _ = self.model.predict(obs)
             pygame.time.wait(10)
             obs, reward, terminated, truncated, info = self.env.step(action)
-            print(reward, self.total_reward)
+            # print(reward, self.total_reward)
             self.total_reward += reward
             if self.log_status:
                 log_to_csv(self.mission, self.step, int(reward), int(self.total_reward),

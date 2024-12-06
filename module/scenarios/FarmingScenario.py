@@ -93,8 +93,8 @@ class FarmingScenario(BaseScenario, ABC):
         self.step_reward += agent_reward
 
         if self._check_system_termination():
-            self.step_reward = 0
-            self.total_reward = 0
+            # self.step_reward = 0
+            # self.total_reward = 0
             return obs, self.step_reward, agent_terminated, agent_truncated, info
 
         obs, system_reward = self._get_system_reward(obs, new_position, agent)
@@ -103,6 +103,7 @@ class FarmingScenario(BaseScenario, ABC):
 
         termination_reward, terminated, truncated, info = self._check_scenario_termination()
         self.step_reward += termination_reward
+
         self.current_map = np.maximum(obs['coords'], self.current_map)
         self.total_reward += self.step_reward
         self.step_count += 1
@@ -119,7 +120,11 @@ class FarmingScenario(BaseScenario, ABC):
         Check are all agents terminated or truncated mission.
         :return: True or false
         """
-        if all(self.all_terminated) or all(self.all_truncated):
+        if all(self.all_terminated):
+            return True
+        elif all(self.all_truncated):
+            self.step_reward -= 300
+            print(self.step_reward)
             return True
 
     @abstractmethod
