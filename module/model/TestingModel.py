@@ -49,7 +49,6 @@ class TestingModel:
             action, _ = self.model.predict(obs)
             pygame.time.wait(10)
             obs, reward, terminated, truncated, info = self.env.step(action)
-            # print(reward, self.total_reward)
             self.total_reward += reward
             if self.log_status:
                 log_to_csv(self.mission, self.step, int(reward), int(self.total_reward),

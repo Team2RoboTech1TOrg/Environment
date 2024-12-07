@@ -94,6 +94,7 @@ class SprayingScenario(FarmingScenario, ABC):
         if self.step_count >= self.max_steps:
             logging.info("Достигнуто максимальное количество шагов в миссии. ")
             truncated = True
+            self.step_reward -= self.reward_complexion * 0.5
 
         elif info["done"] == self.count_targets:
             terminated = True

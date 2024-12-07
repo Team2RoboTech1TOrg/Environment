@@ -24,7 +24,7 @@ class ExplorationScenario(FarmingScenario, ABC):
 
     def _reset_scenario(self, *, seed=None, options=None):
         self.start_time = time.time()
-        self.max_steps = self.grid_size ** 2 * self.num_agents * 3  # TEST поставить среднее значение для миссии
+        self.max_steps = self.grid_size ** 2 * self.num_agents * 1.5 # TEST поставить среднее значение для миссии
         self.min_steps = self.grid_size ** 2 * self.num_agents
         self.reward_complexion = c.REWARD_DONE * self.count_targets
         self.reward_coef = 1  # TEST динамический коэф
@@ -45,7 +45,7 @@ class ExplorationScenario(FarmingScenario, ABC):
         return obs
 
     def _get_system_reward(self, obs: dict[str, list[tuple]], new_position: tuple[int, int], agent: Agent) -> tuple[
-            dict[str, list[tuple]], float]:
+        dict[str, list[tuple]], float]:
 
         """
         If cell is not explored, it had status - viewed or empty.
@@ -56,12 +56,11 @@ class ExplorationScenario(FarmingScenario, ABC):
         :return: Updated system observation and current agent reward for scenario
         """
         reward = 0
-        self.reward_coef *= 1.001  # dynamical coefficient
 
         x, y = new_position
         if obs['coords'][x][y][0] in (Point.viewed.value, Point.empty.value):
             obs['coords'][x][y][0] = Point.visited.value
-        else:
+        # else:
             # TEST как лучше со штрафом или без
             # reward -= c.PENALTY_RETURN
             # reward -= c.PENALTY_RETURN * self.reward_coef
@@ -72,7 +71,17 @@ class ExplorationScenario(FarmingScenario, ABC):
             if (x, y) in self.target_positions:
                 if obs['coords'][x][y][2] == Done.empty.value:
                     obs['coords'][x][y][2] = Done.done.value
-                    reward += c.REWARD_EXPLORE
+                    # переписать!
+                    known_targets = int(sum(element[2] == Done.done.value for row
+                                            in self.current_map for element in row))
+                    if known_targets > self.count_targets * 0.9:
+                        self.reward_coef *= 1.01  # dynamical coefficient
+                        reward += c.REWARD_EXPLORE * self.reward_coef
+                    elif known_targets > self.count_targets * 0.75:
+                        self.reward_coef *= 1.001  # dynamical coefficient
+                        reward += c.REWARD_EXPLORE * self.reward_coef
+                    else:
+                        reward += c.REWARD_EXPLORE
                     # TEST если делать динамическую награду
                     # reward += c.REWARD_EXPLORE * self.reward_coef
                     logging.info(f"{agent.name} исследовал новую клетку {x, y} + {reward}")
@@ -114,8 +123,10 @@ class ExplorationScenario(FarmingScenario, ABC):
                                 in self.current_map for element in row)),
                 "agent": self.current_agent}
 
-        if self.step_count >= self.max_steps:
+        if self.step_count == self.max_steps:
             logging.info("Достигнуто максимальное количество шагов в миссии. ")
+            self.step_reward -= self.reward_complexion
+            self.total_reward = 0
             truncated = True
 
         elif info["done"] == self.count_targets:
@@ -127,7 +138,7 @@ class ExplorationScenario(FarmingScenario, ABC):
                 reward = self.reward_complexion * 2
                 logging.info(f"Увеличенная награда: {reward} за шагов меньше, чем {self.min_steps}")
             else:
-                reward = self.reward_complexion
+                reward = self.reward_complexion * 0.5
                 logging.info(f"Награда за выполненную миссию: {reward}")
         return reward, terminated, truncated, info
 

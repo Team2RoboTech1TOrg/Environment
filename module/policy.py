@@ -47,7 +47,8 @@ class CustomPolicy(MultiInputActorCriticPolicy):
             optimizer_kwargs,
         )
 
-        self.net_arch = {"pi": [128, 64, 32], "vf": [128, 64, 32]}
-        self.activation_fn = th.nn.ReLU
+        self.net_arch = {"pi": [256, 128, 64, 32], "vf": [128, 64, 32]}
+        self.activation_fn = th.nn.Tanh#LeakyReLU#ReLU
+        self.optimizer_class = th.optim.ASGD
 
 

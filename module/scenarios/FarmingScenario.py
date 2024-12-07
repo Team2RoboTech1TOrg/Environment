@@ -88,13 +88,12 @@ class FarmingScenario(BaseScenario, ABC):
         agent = self.agents[idx]
 
         new_position, agent_reward, agent_terminated, agent_truncated, info = agent.take_action(action)
-        self.all_terminated.append(agent_terminated)
-        self.all_truncated.append(agent_truncated)
         self.step_reward += agent_reward
+        self.all_truncated.append(agent_truncated)
+        self.all_terminated.append(agent_terminated)
 
         if self._check_system_termination():
-            # self.step_reward = 0
-            # self.total_reward = 0
+            self.step_reward = 0
             return obs, self.step_reward, agent_terminated, agent_truncated, info
 
         obs, system_reward = self._get_system_reward(obs, new_position, agent)
@@ -120,11 +119,7 @@ class FarmingScenario(BaseScenario, ABC):
         Check are all agents terminated or truncated mission.
         :return: True or false
         """
-        if all(self.all_terminated):
-            return True
-        elif all(self.all_truncated):
-            self.step_reward -= 300
-            print(self.step_reward)
+        if all(self.all_terminated) or all(self.all_truncated):
             return True
 
     @abstractmethod

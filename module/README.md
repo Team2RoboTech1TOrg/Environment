@@ -40,3 +40,14 @@ self.min_steps = self.grid_size ** 2 * 2
 ```
 reward -= c.PENALTY_RETURN
 ```
+9. В ExplorationScenario.py попробовать разные критерии и значения динамики для награды.
+```
+if known_targets > self.count_targets * 0.9:
+    self.reward_coef *= 1.01  # dynamical coefficient
+    reward += c.REWARD_EXPLORE * self.reward_coef
+elif known_targets > self.count_targets * 0.75:
+    self.reward_coef *= 1.001  # dynamical coefficient
+    reward += c.REWARD_EXPLORE * self.reward_coef
+else:
+    reward += c.REWARD_EXPLORE
+```

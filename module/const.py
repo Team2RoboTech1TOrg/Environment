@@ -1,15 +1,15 @@
 # Параметры модели ВЫДЕЛИТЬ В ОТДЕЛЬНЫЙ КОНФ
-TIME = 5000
+TIME = 100000
 LEARNING_RATE = 0.0001
-GAMMA = 0.9
+GAMMA = 0.99
 CLIP_RANGE = 0.2
 N_STEPS = 2048 # должна быть привязка к кол-ву шагов эпизода
 COEF = 0.001
-VF_COEF = 0.5
+VF_COEF = 0.1
 CLIP_RANGE_VF = 0.2
-N_EPOCHS = 2#0#0#0
+N_EPOCHS = 30#0#0#0
 BATCH_SIZE = 512#256#12
-MISSIONS_FOR_TEST = 8
+MISSIONS_FOR_TEST = 4
 
 # Параметры экрана и сетки
 SCREEN_SIZE = 900
@@ -25,7 +25,7 @@ ANIMALS_PERCENT = 0.05
 STATION_SIZE = 2
 ON_TARGET_CONSUMPTION = 10  # Расход
 TANK_CAPACITY = 20 * ON_TARGET_CONSUMPTION  # Как-то продумать его
-ENERGY_CAPACITY = 3000  # Максимальный запас энергии
+ENERGY_CAPACITY = 10000  # Максимальный запас энергии
 ENERGY_CONSUMPTION_MOVE = 1
 ENERGY_CONSUMPTION_DONE = 2
 COUNT_ACTIONS = 9
