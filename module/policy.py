@@ -1,12 +1,12 @@
 from typing import Optional, Union, List, Type, Dict, Any
-from stable_baselines3.common.policies import MultiInputActorCriticPolicy
+from stable_baselines3.common.policies import MultiInputActorCriticPolicy, ActorCriticPolicy
 from gymnasium import spaces
 from stable_baselines3.common.torch_layers import BaseFeaturesExtractor, CombinedExtractor
 from stable_baselines3.common.type_aliases import Schedule
 import torch as th
 
 
-class CustomPolicy(MultiInputActorCriticPolicy):
+class CustomPolicy(ActorCriticPolicy):
     def __init__(
         self,
         observation_space: spaces.Dict,
@@ -47,8 +47,10 @@ class CustomPolicy(MultiInputActorCriticPolicy):
             optimizer_kwargs,
         )
 
-        self.net_arch = {"pi": [256, 128, 64, 32], "vf": [128, 64, 32]}
-        self.activation_fn = th.nn.Tanh#LeakyReLU#ReLU
-        self.optimizer_class = th.optim.ASGD
-
-
+        # self.net_arch = {"pi": [256, 128, 64, 32], "vf": [128, 64, 32]}
+        self.activation_fn = th.nn.LeakyReLU #ReLUTanh
+        # self.optimizer_class = th.optim.ASGD
+        # self.features_extractor_class = 'cnn'
+        if self.optimizer_class == th.optim.Adam:
+            self.optimizer_kwargs["eps"] = 1e-5
+            self.optimizer_kwargs['l2_reg_coef'] = 0.01

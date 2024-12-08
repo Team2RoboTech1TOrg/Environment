@@ -60,7 +60,7 @@ class SprayingScenario(FarmingScenario, ABC):
         x, y = new_position
 
         if obs['coords'][x][y][0] == Point.visited.value:
-            reward -= c.PENALTY_RETURN
+            # reward -= c.PENALTY_RETURN
             # reward -= c.PENALTY_RETURN * self.reward_coef
             logging.info(f"{agent.name} тут уже кто-то был {new_position} + {reward}")
         elif obs['coords'][x][y][0] == Point.viewed.value:
@@ -77,7 +77,28 @@ class SprayingScenario(FarmingScenario, ABC):
             reward += c.REWARD_DONE
             # reward = const.REWARD_EXPLORE * self.reward_coef
             logging.info(f"{self} выполнена задача {new_position}, награда {reward, 2}")
+
+        reward += self.check_agents_distance(new_position)
         return obs, reward
+
+    def check_agents_distance(self, agent_position: tuple[int, int]) -> int:
+        """
+        Check distance between current agent and other agents, distance value
+         depends on range view of current agent.
+        :param agent_position: Coordinates x, y of agent
+        :return: penalty: Agent penalty depend on distance
+        """
+        agent_position = np.array(agent_position)
+        penalty = 0
+        distance = self.agents[self.current_agent].view_range
+        if self.step_count > self.num_agents:
+            for i, position in enumerate(self.agents_positions):
+                if i != self.current_agent:
+                    position = np.array(position)
+                    if np.linalg.norm(position - agent_position) == distance:
+                        logging.info(f"Агенты слишком близко друг к другу {position}, {agent_position}")
+                        penalty -= c.PENALTY_DISTANCE
+        return penalty
 
     def _check_scenario_termination(self) -> tuple:
         """
@@ -87,8 +108,7 @@ class SprayingScenario(FarmingScenario, ABC):
         reward = 0
         terminated = False
         truncated = False
-        info = {"done": int(sum(element[2] == Done.done.value for row
-                                in self.current_map for element in row)),
+        info = {"done": np.sum(self.current_map[:, :, 2] == Done.done.value),
                 "agent": self.current_agent}
 
         if self.step_count >= self.max_steps:
@@ -155,7 +175,7 @@ class SprayingScenario(FarmingScenario, ABC):
                     text_x2, text_y2)
         render_text(self.screen,
                     f"Отработано целей:"
-                    f" {int(np.sum(element[2] == Done.done.value for row in self.current_map for element in row))}"
+                    f" {np.sum(self.current_map[:, :, 2] == Done.done.value)}"
                     f"/{self.count_targets}",
                     font, color,
                     text_x2, text_y3)

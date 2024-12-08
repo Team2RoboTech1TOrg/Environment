@@ -24,8 +24,8 @@ class ExplorationScenario(FarmingScenario, ABC):
 
     def _reset_scenario(self, *, seed=None, options=None):
         self.start_time = time.time()
-        self.max_steps = self.grid_size ** 2 * self.num_agents * 1.5 # TEST поставить среднее значение для миссии
-        self.min_steps = self.grid_size ** 2 * self.num_agents
+        self.max_steps = self.grid_size ** 2 // self.num_agents * 10   # TEST поставить среднее значение для миссии
+        self.min_steps = self.grid_size ** 2 // self.num_agents * 5
         self.reward_complexion = c.REWARD_DONE * self.count_targets
         self.reward_coef = 1  # TEST динамический коэф
 
@@ -45,7 +45,7 @@ class ExplorationScenario(FarmingScenario, ABC):
         return obs
 
     def _get_system_reward(self, obs: dict[str, list[tuple]], new_position: tuple[int, int], agent: Agent) -> tuple[
-        dict[str, list[tuple]], float]:
+            dict[str, list[tuple]], float]:
 
         """
         If cell is not explored, it had status - viewed or empty.
@@ -71,14 +71,12 @@ class ExplorationScenario(FarmingScenario, ABC):
             if (x, y) in self.target_positions:
                 if obs['coords'][x][y][2] == Done.empty.value:
                     obs['coords'][x][y][2] = Done.done.value
-                    # переписать!
-                    known_targets = int(sum(element[2] == Done.done.value for row
-                                            in self.current_map for element in row))
+                    known_targets = np.sum(obs['coords'][:, :, 2] == Done.done.value)
                     if known_targets > self.count_targets * 0.9:
-                        self.reward_coef *= 1.01  # dynamical coefficient
+                        self.reward_coef *= 1.1  # dynamical coefficient
                         reward += c.REWARD_EXPLORE * self.reward_coef
                     elif known_targets > self.count_targets * 0.75:
-                        self.reward_coef *= 1.001  # dynamical coefficient
+                        self.reward_coef *= 1.01  # dynamical coefficient
                         reward += c.REWARD_EXPLORE * self.reward_coef
                     else:
                         reward += c.REWARD_EXPLORE
@@ -119,13 +117,13 @@ class ExplorationScenario(FarmingScenario, ABC):
         reward = 0
         terminated = False
         truncated = False
-        info = {"done": int(sum(element[2] == Done.done.value for row
-                                in self.current_map for element in row)),
+        done = np.sum(self.current_map[:, :, 2] == Done.done.value)
+        info = {"done": done,
                 "agent": self.current_agent}
 
         if self.step_count == self.max_steps:
             logging.info("Достигнуто максимальное количество шагов в миссии. ")
-            self.step_reward -= self.reward_complexion
+            self.step_reward -= c.REWARD_DONE * done
             self.total_reward = 0
             truncated = True
 
@@ -162,7 +160,6 @@ class ExplorationScenario(FarmingScenario, ABC):
                 obstacle_icon = self.obstacle_icons[i % len(self.obstacle_icons)]
                 self.screen.blit(obstacle_icon, (x * cell, y * cell))
 
-        # Накладываем исследование области
         for x in range(self.grid_size):
             for y in range(self.grid_size):
                 if self.current_map[x, y, 0] == 0:
@@ -170,12 +167,10 @@ class ExplorationScenario(FarmingScenario, ABC):
                     dark_overlay.fill((0, 0, 0, 200))
                     self.screen.blit(dark_overlay, (x * cell, y * cell))
 
-        # Отрисовка агента
         for agent in self.agents:
             self.screen.blit(agent_icon, (agent.position[0] * cell,
                                           agent.position[1] * cell))
 
-        # Отрисовка времени, очков, заряда и уровня воды
         elapsed_time = time.time() - self.start_time
 
         color = c.BLACK
@@ -186,7 +181,7 @@ class ExplorationScenario(FarmingScenario, ABC):
                     text_x2, text_y1)
         render_text(self.screen,
                     f"Отработано целей:"
-                    f" {int(np.sum(element[2] == Done.done.value for row in self.current_map for element in row))}"
+                    f" {np.sum(self.current_map[:, :, 2] == Done.done.value)}"
                     f"/{self.count_targets}",
                     font, color,
                     text_x2, text_y2)

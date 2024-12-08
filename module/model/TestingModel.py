@@ -26,6 +26,7 @@ class TestingModel:
             action, _ = self.model.predict(obs)
             obs, reward, terminated, truncated, info = self.env.step(action)
             self.total_reward += reward
+            # print(self.total_reward, reward)
             if self.log_status:
                 log_to_csv(self.mission, self.step, int(reward), int(self.total_reward),
                            info['done'], action, info['agent'])

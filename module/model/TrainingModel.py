@@ -22,6 +22,7 @@ class TrainingModel:
         self.epochs = c.N_EPOCHS
         self.batch = c.BATCH_SIZE
         self.total_steps = c.TIME
+        self.gae_lambda = c.GAE
         self.render_mode = render
 
     def render_hyperparameters_message(self) -> str:
@@ -53,6 +54,7 @@ class TrainingModel:
             self.env,
             learning_rate=self.learning_rate,
             gamma=self.gamma,
+            gae_lambda=self.gae_lambda,
             clip_range=self.clip_range,
             n_steps=self.steps,
             ent_coef=self.entropy,

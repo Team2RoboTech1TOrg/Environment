@@ -25,7 +25,7 @@ def run_server():
         print(f"Ошибка: сценарий с номером {selected} не найден. Выбран сценарий по умолчанию.")
         selected_scenario = scenarios[1]
 
-    print("Для обучения модели нажите - 1\n Запись логов тестов модели в csv - 2")#\n Тестирование - 3")
+    print("Для обучения модели нажите - 1\nЗапись логов тестов модели в csv - 2")#\n Тестирование - 3")
     selected_mode = int(input()) or 1
     try:
         env = FarmingEnv(selected_scenario)

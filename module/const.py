@@ -1,15 +1,16 @@
 # Параметры модели ВЫДЕЛИТЬ В ОТДЕЛЬНЫЙ КОНФ
-TIME = 100000
+TIME = 50000
 LEARNING_RATE = 0.0001
-GAMMA = 0.99
+GAMMA = 0.9
 CLIP_RANGE = 0.2
-N_STEPS = 2048 # должна быть привязка к кол-ву шагов эпизода
+N_STEPS = 1024 #2048 # должна быть привязка к кол-ву шагов эпизода
 COEF = 0.001
 VF_COEF = 0.1
+GAE = 0.5
 CLIP_RANGE_VF = 0.2
 N_EPOCHS = 30#0#0#0
-BATCH_SIZE = 512#256#12
-MISSIONS_FOR_TEST = 4
+BATCH_SIZE = 128#12
+MISSIONS_FOR_TEST = 10
 
 # Параметры экрана и сетки
 SCREEN_SIZE = 900

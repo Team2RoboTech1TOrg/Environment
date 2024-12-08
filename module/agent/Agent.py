@@ -101,8 +101,7 @@ class Agent:
         new_position, reward = self.get_agent_rewards(new_position, value_new_position[1])
         self.position = new_position
 
-        info = {"done": int(sum(element[2] == Done.done.value for row
-                                in self.env.current_map for element in row)),
+        info = {"done": np.sum(self.env.current_map[:, :, 2] == Done.done.value),
                 "agent": self.name}
         logging.info(f"{self.name} действие: {action} - позиция: {new_position}")
 
